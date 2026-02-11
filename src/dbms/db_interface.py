@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 import duckdb
 import pandas as pd
+from pandas.api.types import is_string_dtype
 
 
 class DBExecutor:
@@ -15,6 +16,13 @@ class DBExecutor:
         if tid_column not in df.columns:
             df = df.copy()
             df[tid_column] = range(1, len(df) + 1)
+        else:
+            df = df.copy()
+        
+        # Convert StringDtype columns to object dtype for DuckDB compatibility
+        for col in df.columns:
+            if is_string_dtype(df[col]):
+                df[col] = df[col].astype('object')
 
         self.conn.register(table_name, df)
 

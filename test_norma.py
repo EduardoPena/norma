@@ -570,13 +570,17 @@ def test_norma_document_mapping():
         print(f"Ratio: {len(results)/len(sentences):.2f} constraints per sentence")
 
 if __name__ == "__main__":
+    
     # test_load()
     # test_llm_clients()
     # test_sql()
-    # test_classifier()
+    
+    test_classifier()
+
     # test_mapper()
     # test_mapper_all()
+    
+    ## Norma Pipeline tests - uncomment to run
     # test_norma_sentence_direct()
-
     # test_norma_sentence_filtered()
-    test_norma_document_mapping()
+    # test_norma_document_mapping()
