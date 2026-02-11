@@ -1,4 +1,9 @@
 """Utilities"""
-from .table_context import TableContextBuilder
+from .result_saver import ResultSaver
 
-__all__ = ['TableContextBuilder']
+try:
+    from .table_context import TableContextBuilder
+except (ImportError, ValueError):
+    TableContextBuilder = None
+
+__all__ = ['ResultSaver', 'TableContextBuilder']

@@ -1,0 +1,164 @@
+# Document-level mapping prompts for constraint extraction
+# Processes entire document as single text in one LLM call
+
+basic: |
+  Task: Extract ALL denial constraints from the document below.
+
+  Definition: A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+
+  Table context:
+  {table_context}
+
+  Instructions:
+  1. Read the entire document as a coherent text
+  2. Extract ALL valid denial constraints found in the document
+  3. Use t1. and t2. as tuple identifiers
+  4. Map document terms to table columns
+  5. Extract concrete values directly from the text (e.g., 'approved', 100, 'Denver')
+  6. Each predicate MUST use format: t1.column operator value OR t1.col1 operator t2.col2
+  7. Operators: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL, LIKE, NOT LIKE
+  8. Ignore: headings, titles, definitions, rationales, procedures
+  9. Return a JSON array where each element is an array of predicate strings
+  10. Output ONLY the JSON array - no explanations, no markdown labels, no extra text
+
+  Predicate Format:
+  - Single-tuple: t1.field_name OPERATOR constant OR t1.field_name OPERATOR t1.field_name2
+  - Cross-tuple: t1.field_name OPERATOR t2.field_name OR t1.field_name OPERATOR t2.field_name2
+
+  Available predicates:
+  {predicates_list}
+
+  Document:
+  {sentences}
+
+  Output (JSON array of denial constraints):
+
+basic_with_examples: |
+  Task: Extract ALL denial constraints from the document below.
+
+  Definition: A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+
+  Table context:
+  {table_context}
+
+  Instructions:
+  1. Read the entire document as a coherent text
+  2. Extract ALL valid denial constraints (may be more or fewer than number of statements)
+  3. Use t1. and t2. as tuple identifiers
+  4. Map document terms to table columns
+  5. Extract concrete values directly from text (strings in single quotes, numbers without quotes)
+  6. Each predicate: t1.column operator value OR t1.col1 operator t2.col2
+  7. Operators: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL, LIKE, NOT LIKE
+  8. Ignore: headings, titles, definitions, rationales, procedures
+  9. Return ONLY valid JSON array - no explanations, no markdown
+
+  Predicate Format:
+  - Single-tuple: t1.field_name OPERATOR constant OR t1.field_name OPERATOR t1.field_name2
+    Examples: t1.value < 100, t1.status = 'active', t1.start_date < t1.end_date
+  - Cross-tuple: t1.field_name OPERATOR t2.field_name OR t1.field_name OPERATOR t2.field_name2
+    Examples: t1.id = t2.id, t1.amount != t2.amount, t1.priority < t2.priority
+
+  Example Constraint Patterns:
+
+  Threshold:
+  "Value must be at least 100" → ["t1.value < 100"]
+
+  Set membership:
+  "Status must be approved, pending, or rejected" → ["t1.status NOT IN ('approved', 'pending', 'rejected')"]
+
+  Cross-tuple consistency:
+  "Records with same ID must have same status" → ["t1.id = t2.id", "t1.status != t2.status"]
+
+  Field comparison:
+  "Start date must be before end date" → ["t1.start_date >= t1.end_date"]
+
+  Required field:
+  "Email is required" → ["t1.email IS NULL"]
+
+  Pattern matching:
+  "Comments cannot contain spam" → ["t1.comment LIKE '%spam%'"]
+
+  Conditional requirement:
+  "If active, email required" → ["t1.status = 'active'", "t1.email IS NULL"]
+
+  Available predicates:
+  {predicates_list}
+
+  Document:
+  {sentences}
+
+  Output (JSON array of denial constraints):
+
+detailed: |
+  Task: Extract ALL denial constraints from the document below.
+
+  Definition: A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+
+  Table context:
+  {table_context}
+
+  Instructions:
+  1. Read entire document as coherent text
+  2. Extract ALL valid denial constraints
+  3. Multiple statements may describe ONE constraint - consolidate them
+  4. One statement may contain MULTIPLE constraints - extract all
+  5. Use t1. and t2. as tuple identifiers
+  6. Map document terms to table columns
+  7. Extract concrete values from text (strings use single quotes, numbers don't)
+  8. Format: t1.column operator value OR t1.col1 operator t2.col2
+  9. Operators: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL, LIKE, NOT LIKE
+  10. Ignore: headings, definitions, rationales, procedures
+  11. Output ONLY JSON array - no explanations
+
+  Predicate Format:
+  
+  Single-tuple with concrete values:
+  - t1.city = 'Denver' - string equality (use single quotes)
+  - t1.amount > 1000 - numeric comparison (no quotes)
+  - t1.grade IN ('A', 'B', 'C') - value in set
+  - t1.status NOT IN ('pending', 'cancelled') - value not in set
+  
+  Pattern matching:
+  - t1.description LIKE '%refund%' - contains text
+  - t1.code NOT LIKE 'TEMP%' - does not start with prefix
+  
+  Null checks:
+  - t1.email IS NULL - missing value
+  - t1.phone IS NOT NULL - value required
+  
+  Single-tuple cross-column (same row):
+  - t1.start_date > t1.end_date - temporal ordering
+  - t1.min_value > t1.max_value - range constraint
+  - t1.lower_bound <= t1.upper_bound - bounds
+  
+  Cross-tuple (different rows):
+  - t1.id = t2.id, t1.status != t2.status - consistency
+  - t1.department = t2.department, t1.salary != t2.salary - relative constraint
+  - t1.priority > t2.priority, t1.score <= t2.score - ordering
+
+  Constraint Types to Extract:
+
+  1. Required fields:
+     "Field X required" → ["t1.X IS NULL"]
+
+  2. Value restrictions:
+     "X must be positive" → ["t1.X <= 0"]
+     "Y in {A,B,C}" → ["t1.Y NOT IN ('A', 'B', 'C')"]
+
+  3. Cross-field dependencies:
+     "If A then B required" → ["t1.A = 'value'", "t1.B IS NULL"]
+     "Start < End" → ["t1.start >= t1.end"]
+
+  4. Cross-tuple consistency:
+     "Same ID → same value" → ["t1.id = t2.id", "t1.value != t2.value"]
+
+  5. Uniqueness:
+     "X unique" → ["t1.X = t2.X", "t1.rowid != t2.rowid"]
+
+  Available predicates:
+  {predicates_list}
+
+  Document:
+  {sentences}
+
+  Output (JSON array of denial constraints):
