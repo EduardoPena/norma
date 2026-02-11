@@ -1,0 +1,199 @@
+# Classification prompts for rule detection
+
+zero_shot: |
+  Task: For each sentence, decide if it states a DATA QUALITY RULE.
+
+  Definition: A data quality rule is a statement that can be VERIFIED (true/false) using only the dataset's fields/rows.
+
+  YES — rule types:
+  - Required/non-null field
+  - Allowed or forbidden values
+  - Numeric bounds or comparisons
+  - Conditional requirements (if X then Y)
+  - Forbidden combinations
+  - Cross-row consistency, uniqueness, or ordering
+  - Determinacy (same X implies same Y)
+  - Referential integrity
+  - Temporal constraints
+
+  NO — includes:
+  - Headings, titles, citations
+  - Definitions or descriptions
+  - Rationale or explanations
+  - Procedures or human decisions
+  - Statements not decidable from data
+
+  Note: Words like "may/can/should" do not decide. If they describe a data condition, answer YES; if they describe permission or process, answer NO.
+  Note: Phrasing does not disqualify a rule. Observations ("X are larger than Y") and system behavior statements ("X will be sorted by Y", "Z will be provided for each W") are rules if the outcome is verifiable in the data.
+
+  Sentences:
+  {sentences}
+
+  Instructions:
+  - Respond ONLY in the format "<number>. YES" or "<number>. NO", one answer per line
+  - CRITICAL: Output exactly one answer for EACH input sentence (if 10 sentences, then 10 answers)
+  - Do NOT include explanations, justifications, reasoning, or any extra text
+  - Output format example: "1. YES\n2. NO\n3. YES"
+
+zero_shot_with_table: |
+  Task: For each sentence, decide if it states a DATA QUALITY RULE that can be VERIFIED using the provided table.
+
+  Definition: A data quality rule is a statement that can be VERIFIED (true/false) using the available fields/rows.
+
+  YES — rule types (verifiable directly or through field transformations):
+  - Required/non-null field
+  - Allowed or forbidden values
+  - Numeric bounds or comparisons
+  - Conditional requirements (if X then Y)
+  - Forbidden combinations
+  - Cross-row consistency, uniqueness, or ordering
+  - Determinacy (same X implies same Y)
+  - Referential integrity
+  - Temporal constraints
+
+  NO — includes:
+  - No plausible mapping to available fields
+  - Headings, titles, citations
+  - Definitions or descriptions
+  - Rationale or explanations
+  - Procedures or human decisions
+
+  Note: Words like "may/can/should" do not decide. If they describe a data condition, answer YES; if they describe permission or process, answer NO.
+  Note: Phrasing does not disqualify a rule. Observations ("X are larger than Y") and system behavior statements ("X will be sorted by Y", "Z will be provided for each W") are rules if the outcome is verifiable in the data.
+
+  Table Context:
+  {table_context}
+
+  Sentences:
+  {sentences}
+
+  Instructions:
+  - Respond ONLY in the format "<number>. YES" or "<number>. NO", one answer per line
+  - CRITICAL: Output exactly one answer for EACH input sentence (if 10 sentences, then 10 answers)
+  - Do NOT include explanations, justifications, reasoning, or any extra text
+  - Output format example: "1. YES\n2. NO\n3. YES"
+
+with_examples: |
+  Task: For each sentence, decide if it states a DATA QUALITY RULE.
+
+  Definition: A data quality rule is a statement that can be VERIFIED (true/false) using only the dataset's fields/rows.
+
+  YES — rule types:
+  - Required/non-null field
+  - Allowed or forbidden values
+  - Numeric bounds or comparisons
+  - Conditional requirements (if X then Y)
+  - Forbidden combinations
+  - Cross-row consistency, uniqueness, or ordering
+  - Determinacy (same X implies same Y)
+  - Referential integrity
+  - Temporal constraints
+
+  NO — includes:
+  - Headings, titles, citations
+  - Definitions or descriptions
+  - Rationale or explanations
+  - Procedures or human decisions
+  - Statements not decidable from data
+
+  Note: Words like "may/can/should" do not decide. If they describe a data condition, answer YES; if they describe permission or process, answer NO.
+  Note: Phrasing does not disqualify a rule. Observations ("X are larger than Y") and system behavior statements ("X will be sorted by Y", "Z will be provided for each W") are rules if the outcome is verifiable in the data.
+
+  Examples:
+
+  YES:
+  1. "Field X is required."
+  2. "If Field A = 'Y' then Field B is required."
+  3. "Field C must be one of {{U, V, W}}."
+  4. "If Field D > 0 then Field E must not be NULL."
+  5. "If Field F = 'P' then Field G must not be 'Q'."
+  6. "Two rows with the same Key must not disagree on Field H."
+  7. "Within the same Group, if Score1 < Score2 then Rank1 must not be better than Rank2."
+  8. "Records in category X have higher values of Y than those in category Z."
+  9. "Each record is uniquely identified by Field A and Field B."
+  10. "Two records with the same X must have the same Y."
+  11. "A record with lower X cannot have higher Y."
+  12. "Records will be sorted in descending order by Field Y."
+  13. "The system will assign a value to Field Z for each unique combination of A and B."
+
+  NO:
+  14. "Section Title"
+  15. "Item (b)."
+  16. "This text describes the system."
+  17. "A person may review a case and decide what to do."
+  18. "Values are collected during a process step."
+  19. "Field X represents the total amount."
+  20. "Staff verify that records meet requirements before saving."
+
+  Sentences:
+  {sentences}
+
+  Instructions:
+  - Respond ONLY in the format "<number>. YES" or "<number>. NO", one answer per line
+  - CRITICAL: Output exactly one answer for EACH input sentence (if 10 sentences, then 10 answers)
+  - Do NOT include explanations, justifications, reasoning, or any extra text
+  - Output format example: "1. YES\n2. NO\n3. YES"
+
+with_examples_and_table: |
+  Task: For each sentence, decide if it states a DATA QUALITY RULE that can be VERIFIED using the provided table.
+
+  Definition: A data quality rule is a statement that can be VERIFIED (true/false) using the available fields/rows.
+
+  YES — rule types (verifiable directly or through field transformations):
+  - Required/non-null field
+  - Allowed or forbidden values
+  - Numeric bounds or comparisons
+  - Conditional requirements (if X then Y)
+  - Forbidden combinations
+  - Cross-row consistency, uniqueness, or ordering
+  - Determinacy (same X implies same Y)
+  - Referential integrity
+  - Temporal constraints
+
+  NO — includes:
+  - No plausible mapping to available fields
+  - Headings, titles, citations
+  - Definitions or descriptions
+  - Rationale or explanations
+  - Procedures or human decisions
+
+  Note: Words like "may/can/should" do not decide. If they describe a data condition, answer YES; if they describe permission or process, answer NO.
+  Note: Phrasing does not disqualify a rule. Observations ("X are larger than Y") and system behavior statements ("X will be sorted by Y", "Z will be provided for each W") are rules if the outcome is verifiable in the data.
+
+  Examples:
+
+  YES:
+  1. "Field X is required."
+  2. "If Field A = 'Y' then Field B is required."
+  3. "Field C must be one of {{U, V, W}}."
+  4. "If Field D > 0 then Field E must not be NULL."
+  5. "If Field F = 'P' then Field G must not be 'Q'."
+  6. "Two rows with the same Key must not disagree on Field H."
+  7. "Within the same Group, if Score1 < Score2 then Rank1 must not be better than Rank2."
+  8. "Records in category X have higher values of Y than those in category Z."
+  9. "Each record is uniquely identified by Field A and Field B."
+  10. "Two records with the same X must have the same Y."
+  11. "A record with lower X cannot have higher Y."
+  12. "Records will be sorted in descending order by Field Y."
+  13. "The system will assign a value to Field Z for each unique combination of A and B."
+
+  NO:
+  14. "Section Title"
+  15. "Item (b)."
+  16. "This text describes the system."
+  17. "A person may review a case and decide what to do."
+  18. "Values are collected during a process step."
+  19. "Field X represents the total amount."
+  20. "Staff verify that records meet requirements before saving."
+
+  Table Context:
+  {table_context}
+
+  Sentences:
+  {sentences}
+
+  Instructions:
+  - Respond ONLY in the format "<number>. YES" or "<number>. NO", one answer per line
+  - CRITICAL: Output exactly one answer for EACH input sentence (if 10 sentences, then 10 answers)
+  - Do NOT include explanations, justifications, reasoning, or any extra text
+  - Output format example: "1. YES\n2. NO\n3. YES"

@@ -1,0 +1,73 @@
+"""Base classifier for rule detection in regulatory text"""
+from abc import ABC, abstractmethod
+from typing import List, Tuple, Optional, Dict, Any
+
+
+class BaseRuleClassifier(ABC):
+    """
+    Base class for rule classification.
+    
+    Implementations only need to override `_classify_sentences()`.
+    Chunking is handled automatically.
+    """
+
+    def __init__(self, chunk_size: Optional[int] = None):
+        """
+        Args:
+            chunk_size: Max sentences per API call (None = process all at once)
+        """
+        self.chunk_size = chunk_size
+
+    def classify(self,
+                 sentences: List[str],
+                 context: Optional[Dict[str, Any]] = None) -> List[Tuple[str, bool]]:
+        """
+        Classify sentences as rules or non-rules.
+        
+        Args:
+            sentences: List of sentences to classify
+            context: Optional context dictionary (e.g., from TableContextBuilder)
+            
+        Returns:
+            List of (sentence, is_rule) tuples
+        """
+        if not sentences:
+            return []
+        
+        # Use empty context if not provided
+        context = context or {}
+        
+        # Process in chunks if chunk_size is set
+        if self.chunk_size and len(sentences) > self.chunk_size:
+            predictions = []
+            for start_idx in range(0, len(sentences), self.chunk_size):
+                chunk = sentences[start_idx : start_idx + self.chunk_size]
+                chunk_results = self._classify_sentences(chunk, context)
+                predictions.extend(chunk_results)
+        else:
+            predictions = self._classify_sentences(sentences, context)
+        
+        # Validate output
+        if len(predictions) != len(sentences):
+            raise ValueError(
+                f"Classifier returned {len(predictions)} predictions "
+                f"for {len(sentences)} sentences"
+            )
+        
+        return list(zip(sentences, predictions))
+
+    @abstractmethod
+    def _classify_sentences(self,
+                           sentences: List[str],
+                           context: Dict[str, Any]) -> List[bool]:
+        """
+        Implementation-specific classification logic.
+        
+        Args:
+            sentences: Sentences to classify (respects chunk_size if set)
+            context: Context dictionary (may be empty)
+                
+        Returns:
+            List of boolean predictions (same length as sentences)
+        """
+        pass
