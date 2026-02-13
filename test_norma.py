@@ -580,7 +580,7 @@ if __name__ == "__main__":
     # test_mapper()
     # test_mapper_all()
     
-    ## Norma Pipeline tests - uncomment to run
-    # test_norma_sentence_direct()
-    # test_norma_sentence_filtered()
-    # test_norma_document_mapping()
+    # Norma Pipeline tests - uncomment to run
+    test_norma_sentence_direct()
+    test_norma_sentence_filtered()
+    test_norma_document_mapping()

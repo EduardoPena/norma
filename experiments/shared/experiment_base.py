@@ -81,16 +81,9 @@ class BaseExperiment:
         loader = DatasetLoader(str(data_dir))
         df, sentences, sentence2dcs_map, predicate_space = loader.load()
         
-        # Load ground truth in the original format (list of dicts with id, sentences, rules)
-        annotated_file = data_dir / f"{dataset_name}_annotated-sentences.json"
-        with open(annotated_file) as f:
-            gt_data = json.load(f)
-        ground_truth = gt_data["mapping"]
+       
         
-        # Create dataframes dict (single table case)
-        dataframes = {dataset_name: df}
-        
-        return df, predicate_space, ground_truth, dataframes
+        return  df, sentences, sentence2dcs_map, predicate_space
     
     def save_execution_config(self):
         """

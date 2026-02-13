@@ -380,7 +380,7 @@ if __name__ == "__main__":
     test_classification_evaluation()
 
 
-    # test_norma_sentence_filtered_evaluation()
+    test_norma_sentence_filtered_evaluation()
 
 
     test_norma_document_evaluation()
