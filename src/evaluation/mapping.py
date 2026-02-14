@@ -12,23 +12,18 @@ from src.dbms.sql_translator import SQLTranslator
 
 @dataclass
 class SentenceMappingResult:
-    """Result for a single sentence mapping"""
+    """Result for a single sentence mapping (pairwise evaluation)"""
     sentence: str
     gold_is_rule: bool
     pred_is_rule: bool
-    detection_status: str  # 'TP', 'TN', 'FP', 'FN'
     
     # Syntactic metrics (only for gold rules)
     strict_correct: Optional[bool] = None
     predicate_jaccard: Optional[float] = None
-    soft_jaccard: Optional[float] = None
     
     # Execution metrics (only for gold rules)
     execution_exact: Optional[bool] = None
     execution_jaccard: Optional[float] = None
-    execution_precision: Optional[float] = None
-    execution_recall: Optional[float] = None
-    execution_f1: Optional[float] = None
     
     # Raw data
     gold_rule: Optional[List[str]] = None
@@ -40,42 +35,34 @@ class SentenceMappingResult:
 @dataclass
 class MappingMetrics:
     """Aggregate mapping metrics"""
-    # Detection metrics (all sentences)
-    detection_precision: float
-    detection_recall: float
-    detection_f1: float
-    detection_tp: int
-    detection_tn: int
-    detection_fp: int
-    detection_fn: int
-    detection_total: int
+    # Constraint exact match metrics (set membership)
+    constraint_exact_precision: float
+    constraint_exact_recall: float
+    constraint_exact_f1: float
+    constraint_exact_tp: int
+    constraint_exact_fp: int
+    constraint_exact_fn: int
+    num_pred_constraints: int
+    num_gold_constraints: int
     
-    # Syntactic metrics (only gold rules)
-    strict_accuracy: float
-    strict_correct: int
-    strict_total: int
-    avg_predicate_jaccard: float
-    std_predicate_jaccard: float
-    avg_soft_jaccard: float
-    std_soft_jaccard: float
+    # Pairwise syntactic metrics (only for sentence-level with known pairing)
+    pairwise_strict_accuracy: Optional[float] = None
+    pairwise_strict_correct: Optional[int] = None
+    pairwise_strict_total: Optional[int] = None
+    pairwise_avg_predicate_jaccard: Optional[float] = None
+    pairwise_std_predicate_jaccard: Optional[float] = None
     
-    # Execution metrics - per-rule (only gold rules)
-    execution_accuracy: Optional[float] = None
-    execution_correct: Optional[int] = None
-    execution_total: Optional[int] = None
-    avg_execution_jaccard: Optional[float] = None
-    std_execution_jaccard: Optional[float] = None
-    avg_execution_precision: Optional[float] = None
-    std_execution_precision: Optional[float] = None
-    avg_execution_recall: Optional[float] = None
-    std_execution_recall: Optional[float] = None
-    avg_execution_f1: Optional[float] = None
-    std_execution_f1: Optional[float] = None
+    # Pairwise execution metrics (only for sentence-level with known pairing)
+    pairwise_execution_accuracy: Optional[float] = None
+    pairwise_execution_correct: Optional[int] = None
+    pairwise_execution_total: Optional[int] = None
+    pairwise_avg_execution_jaccard: Optional[float] = None
+    pairwise_std_execution_jaccard: Optional[float] = None
     
-    # Execution metrics - union-based (global)
-    union_precision: Optional[float] = None
-    union_recall: Optional[float] = None
-    union_f1: Optional[float] = None
+    # Aggregate violation metrics (union-based, for both levels)
+    aggregate_violation_precision: Optional[float] = None
+    aggregate_violation_recall: Optional[float] = None
+    aggregate_violation_f1: Optional[float] = None
     total_gold_violations: Optional[int] = None
     total_pred_violations: Optional[int] = None
     total_overlap_violations: Optional[int] = None
@@ -83,34 +70,37 @@ class MappingMetrics:
     def to_dict(self) -> Dict:
         """Convert to dictionary"""
         result = {
-            'detection_precision': self.detection_precision,
-            'detection_recall': self.detection_recall,
-            'detection_f1': self.detection_f1,
-            'detection_tp': self.detection_tp,
-            'detection_tn': self.detection_tn,
-            'detection_fp': self.detection_fp,
-            'detection_fn': self.detection_fn,
-            'detection_total': self.detection_total,
-            'strict_accuracy': self.strict_accuracy,
-            'strict_correct': self.strict_correct,
-            'strict_total': self.strict_total,
-            'avg_predicate_jaccard': self.avg_predicate_jaccard,
-            'avg_soft_jaccard': self.avg_soft_jaccard,
+            'constraint_exact_precision': self.constraint_exact_precision,
+            'constraint_exact_recall': self.constraint_exact_recall,
+            'constraint_exact_f1': self.constraint_exact_f1,
+            'constraint_exact_tp': self.constraint_exact_tp,
+            'constraint_exact_fp': self.constraint_exact_fp,
+            'constraint_exact_fn': self.constraint_exact_fn,
+            'num_pred_constraints': self.num_pred_constraints,
+            'num_gold_constraints': self.num_gold_constraints,
         }
         
-        # Add execution metrics if available
-        if self.execution_accuracy is not None:
+        # Add pairwise metrics if available (sentence-level only)
+        if self.pairwise_strict_accuracy is not None:
             result.update({
-                'execution_accuracy': self.execution_accuracy,
-                'execution_correct': self.execution_correct,
-                'execution_total': self.execution_total,
-                'avg_execution_jaccard': self.avg_execution_jaccard,
-                'avg_execution_precision': self.avg_execution_precision,
-                'avg_execution_recall': self.avg_execution_recall,
-                'avg_execution_f1': self.avg_execution_f1,
-                'union_precision': self.union_precision,
-                'union_recall': self.union_recall,
-                'union_f1': self.union_f1,
+                'pairwise_strict_accuracy': self.pairwise_strict_accuracy,
+                'pairwise_strict_correct': self.pairwise_strict_correct,
+                'pairwise_strict_total': self.pairwise_strict_total,
+                'pairwise_avg_predicate_jaccard': self.pairwise_avg_predicate_jaccard,
+                'pairwise_std_predicate_jaccard': self.pairwise_std_predicate_jaccard,
+                'pairwise_execution_accuracy': self.pairwise_execution_accuracy,
+                'pairwise_execution_correct': self.pairwise_execution_correct,
+                'pairwise_execution_total': self.pairwise_execution_total,
+                'pairwise_avg_execution_jaccard': self.pairwise_avg_execution_jaccard,
+                'pairwise_std_execution_jaccard': self.pairwise_std_execution_jaccard,
+            })
+        
+        # Add aggregate violation metrics if available
+        if self.aggregate_violation_precision is not None:
+            result.update({
+                'aggregate_violation_precision': self.aggregate_violation_precision,
+                'aggregate_violation_recall': self.aggregate_violation_recall,
+                'aggregate_violation_f1': self.aggregate_violation_f1,
                 'total_gold_violations': self.total_gold_violations,
                 'total_pred_violations': self.total_pred_violations,
                 'total_overlap_violations': self.total_overlap_violations,
@@ -121,14 +111,19 @@ class MappingMetrics:
 
 class MappingEvaluator:
     """
-    Evaluator for rule mapping with multiple evaluation levels.
+    Evaluator for rule mapping with two evaluation approaches:
     
-    Evaluation levels:
-    1. Detection: Precision/Recall/F1 for rule identification (all sentences)
-    2. Syntactic: Exact match, Jaccard, Soft Jaccard (gold rules only)
-    3. Execution: DB-based validation (gold rules only, requires dataframe)
-       - Per-rule: Exact match, Jaccard, P/R/F1
-       - Union-based: Global P/R/F1 across all violations
+    1. Exact Match Constraint Evaluation (both sentence & document level):
+       - Simple set membership check: is predicted constraint in gold constraint set?
+       - Computes TP/FP/FN, Precision/Recall/F1 at constraint level
+    
+    2. Pairwise Metrics (sentence-level only, requires known pairing):
+       - Syntactic: Exact match, Predicate Jaccard
+       - Execution: Exact match, Violation Jaccard
+    
+    3. Aggregate Violation Metrics (both levels):
+       - Union all violations from all constraints
+       - Compute Precision/Recall/F1 on violation row IDs
     """
     
     def __init__(self, 
@@ -150,10 +145,67 @@ class MappingEvaluator:
             self.db = None
             self.translator = None
     
+    def evaluate_constraint_exact_match(self,
+                                       predicted_rules: List[List[str]],
+                                       gold_rules: List[List[str]]) -> Dict[str, Any]:
+        """
+        Evaluate constraints using exact match (set membership).
+        
+        Algorithm: For each predicted constraint, check if it exists in gold constraint set.
+        No pairing algorithm needed - just set membership check.
+        
+        Args:
+            predicted_rules: List of predicted denial constraints
+            gold_rules: List of ground truth denial constraints
+        
+        Returns:
+            Dict with tp, fp, fn, precision, recall, f1
+        """
+        # Convert constraints to normalized frozensets for comparison
+        def normalize_constraint(rule: List[str]) -> frozenset:
+            """Convert constraint to normalized frozenset of predicate strings"""
+            if not rule:
+                return frozenset()
+            # Sort predicates to ensure consistent representation
+            return frozenset(sorted(rule))
+        
+        gold_set = {normalize_constraint(rule) for rule in gold_rules}
+        pred_set = {normalize_constraint(rule) for rule in predicted_rules}
+        
+        # Remove empty constraints
+        gold_set.discard(frozenset())
+        pred_set.discard(frozenset())
+        
+        # Compute TP, FP, FN
+        tp = len(pred_set & gold_set)  # Predicted constraints that are in gold
+        fp = len(pred_set - gold_set)  # Predicted constraints not in gold
+        fn = len(gold_set - pred_set)  # Gold constraints not predicted
+        
+        # Compute precision, recall, F1
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+        
+        return {
+            'tp': tp,
+            'fp': fp,
+            'fn': fn,
+            'precision': precision,
+            'recall': recall,
+            'f1': f1,
+            'num_pred': len(pred_set),
+            'num_gold': len(gold_set)
+        }
+    
     def evaluate(self,
                  predictions: List[Tuple[str, Optional[List[str]]]]) -> Tuple[MappingMetrics, List[SentenceMappingResult]]:
         """
         Evaluate mapping predictions (sentence-level).
+        
+        Computes:
+        1. Exact match constraint evaluation (set membership)
+        2. Pairwise metrics (using known sentence->constraint mapping)
+        3. Aggregate violation metrics
         
         Args:
             predictions: List of (sentence, predicates) tuples from mapper
@@ -164,14 +216,22 @@ class MappingEvaluator:
         if not predictions:
             raise ValueError("No predictions to evaluate")
         
-        # Evaluate each sentence
+        # Extract all predicted and gold constraints
+        pred_rules = [pred_rule for _, pred_rule in predictions if pred_rule and len(pred_rule) > 0]
+        gold_rules = [self.ground_truth.get(sent) for sent, _ in predictions 
+                     if self.ground_truth.get(sent) and len(self.ground_truth.get(sent)) > 0]
+        
+        # 1. Exact match constraint evaluation
+        exact_match_result = self.evaluate_constraint_exact_match(pred_rules, gold_rules)
+        
+        # 2. Evaluate each sentence (pairwise metrics)
         sentence_results = []
         for sentence, pred_rule in predictions:
             result = self._evaluate_single(sentence, pred_rule)
             sentence_results.append(result)
         
-        # Compute aggregate metrics
-        metrics = self._compute_metrics(sentence_results)
+        # 3. Compute aggregate metrics (pairwise + aggregate violations)
+        metrics = self._compute_metrics(sentence_results, exact_match_result)
         
         return metrics, sentence_results
     
@@ -182,8 +242,8 @@ class MappingEvaluator:
         Evaluate document-level predictions.
         
         Computes:
-        1. Constraint discovery metrics (precision/recall/F1 at constraint level)
-        2. Violation discovery metrics (aggregate precision/recall/F1)
+        1. Exact match constraint evaluation (set membership)
+        2. Aggregate violation discovery metrics
         
         Args:
             predicted_rules: List of predicted denial constraints
@@ -197,78 +257,35 @@ class MappingEvaluator:
         
         print(f"\nEvaluating {len(predicted_rules)} predicted vs {len(gold_rules)} gold constraints")
         
-        # Execute all gold rules and store per-constraint violations
+        # 1. Exact match constraint evaluation
+        print("Computing exact match constraint metrics...")
+        exact_match_result = self.evaluate_constraint_exact_match(predicted_rules, gold_rules)
+        print(f"  TP: {exact_match_result['tp']}, FP: {exact_match_result['fp']}, FN: {exact_match_result['fn']}")
+        
+        # 2. Aggregate violation metrics
+        # Execute all gold rules
         print("Executing gold constraints...")
-        gold_violations_list = []
         gold_violations_union = set()
         for i, dc in enumerate(gold_rules, 1):
             violations = self._execute_rule(dc)
-            gold_violations_list.append(violations)
             gold_violations_union.update(violations)
             if i % 10 == 0:
                 print(f"  Processed {i}/{len(gold_rules)} gold constraints")
         
         print(f"  Total unique gold violations: {len(gold_violations_union)}")
         
-        # Execute all predicted rules and store per-constraint violations
+        # Execute all predicted rules
         print("Executing predicted constraints...")
-        pred_violations_list = []
         pred_violations_union = set()
         for i, dc in enumerate(predicted_rules, 1):
             violations = self._execute_rule(dc)
-            pred_violations_list.append(violations)
             pred_violations_union.update(violations)
             if i % 10 == 0:
                 print(f"  Processed {i}/{len(predicted_rules)} predicted constraints")
         
         print(f"  Total unique pred violations: {len(pred_violations_union)}")
         
-        # === CONSTRAINT-LEVEL MATCHING ===
-        # Match predicted constraints to gold constraints based on violation overlap
-        print("\nMatching constraints by violation overlap...")
-        
-        matched_pred_indices = set()
-        matched_gold_indices = set()
-        
-        # For each predicted constraint, find best matching gold constraint
-        for pred_idx, pred_viols in enumerate(pred_violations_list):
-            if not pred_viols:  # Skip empty violation sets
-                continue
-            
-            best_match_idx = -1
-            best_jaccard = 0.0
-            
-            for gold_idx, gold_viols in enumerate(gold_violations_list):
-                if not gold_viols:
-                    continue
-                
-                overlap = len(pred_viols & gold_viols)
-                union = len(pred_viols | gold_viols)
-                jaccard = overlap / union if union > 0 else 0.0
-                
-                if jaccard > best_jaccard:
-                    best_jaccard = jaccard
-                    best_match_idx = gold_idx
-            
-            # Consider it a match if Jaccard >= 0.5 (at least 50% overlap)
-            if best_jaccard >= 0.5:
-                matched_pred_indices.add(pred_idx)
-                matched_gold_indices.add(best_match_idx)
-        
-        # Compute constraint-level precision/recall/F1
-        num_matched_preds = len(matched_pred_indices)
-        num_matched_golds = len(matched_gold_indices)
-        
-        constraint_precision = num_matched_preds / len(predicted_rules) if len(predicted_rules) > 0 else 0.0
-        constraint_recall = num_matched_golds / len(gold_rules) if len(gold_rules) > 0 else 0.0
-        constraint_f1 = (2 * constraint_precision * constraint_recall / (constraint_precision + constraint_recall)
-                        if (constraint_precision + constraint_recall) > 0 else 0.0)
-        
-        print(f"  Matched predicted: {num_matched_preds}/{len(predicted_rules)}")
-        print(f"  Matched gold: {num_matched_golds}/{len(gold_rules)}")
-        
-        # === VIOLATION-LEVEL METRICS (AGGREGATE) ===
-        # Compute union metrics
+        # Compute aggregate violation metrics
         overlap_violations = gold_violations_union & pred_violations_union
         
         violation_precision = len(overlap_violations) / len(pred_violations_union) if len(pred_violations_union) > 0 else 0.0
@@ -277,18 +294,19 @@ class MappingEvaluator:
                        if (violation_precision + violation_recall) > 0 else 0.0)
         
         return {
-            # Constraint discovery metrics
-            'constraint_precision': constraint_precision,
-            'constraint_recall': constraint_recall,
-            'constraint_f1': constraint_f1,
-            'num_matched_pred_constraints': num_matched_preds,
-            'num_matched_gold_constraints': num_matched_golds,
-            'num_gold_constraints': len(gold_rules),
-            'num_pred_constraints': len(predicted_rules),
-            # Violation discovery metrics (aggregate)
-            'violation_precision_aggregate': violation_precision,
-            'violation_recall_aggregate': violation_recall,
-            'violation_f1_aggregate': violation_f1,
+            # Constraint exact match metrics
+            'constraint_exact_precision': exact_match_result['precision'],
+            'constraint_exact_recall': exact_match_result['recall'],
+            'constraint_exact_f1': exact_match_result['f1'],
+            'constraint_exact_tp': exact_match_result['tp'],
+            'constraint_exact_fp': exact_match_result['fp'],
+            'constraint_exact_fn': exact_match_result['fn'],
+            'num_pred_constraints': exact_match_result['num_pred'],
+            'num_gold_constraints': exact_match_result['num_gold'],
+            # Aggregate violation metrics
+            'aggregate_violation_precision': violation_precision,
+            'aggregate_violation_recall': violation_recall,
+            'aggregate_violation_f1': violation_f1,
             'total_gold_violations': len(gold_violations_union),
             'total_pred_violations': len(pred_violations_union),
             'total_overlap_violations': len(overlap_violations),
@@ -297,21 +315,11 @@ class MappingEvaluator:
     def _evaluate_single(self, 
                         sentence: str, 
                         pred_rule: Optional[List[str]]) -> SentenceMappingResult:
-        """Evaluate a single sentence prediction"""
+        """Evaluate a single sentence prediction (pairwise)"""
         # Get ground truth
         gold_rule = self.ground_truth.get(sentence, None)
         gold_is_rule = gold_rule is not None and len(gold_rule) > 0
         pred_is_rule = pred_rule is not None and len(pred_rule) > 0
-        
-        # Detection status
-        if gold_is_rule and pred_is_rule:
-            detection_status = 'TP'
-        elif not gold_is_rule and not pred_is_rule:
-            detection_status = 'TN'
-        elif not gold_is_rule and pred_is_rule:
-            detection_status = 'FP'
-        else:
-            detection_status = 'FN'
         
         # For non-rules, return early
         if not gold_is_rule:
@@ -319,34 +327,23 @@ class MappingEvaluator:
                 sentence=sentence,
                 gold_is_rule=False,
                 pred_is_rule=pred_is_rule,
-                detection_status=detection_status,
                 pred_rule=pred_rule
             )
         
-        # For gold rules: compute syntactic metrics
+        # For gold rules: compute pairwise metrics
         gold_set = self._rule_to_predicate_set(gold_rule)
         
-        # Strict correctness
+        # Syntactic metrics
         strict_correct = False
+        predicate_jaccard = 0.0
         if pred_is_rule:
             pred_set = self._rule_to_predicate_set(pred_rule)
             strict_correct = (gold_set == pred_set)
-        
-        # Jaccard similarity
-        if not pred_is_rule:
-            predicate_jaccard = 0.0
-            soft_jaccard = 0.0
-        else:
-            pred_set = self._rule_to_predicate_set(pred_rule)
             predicate_jaccard = self._jaccard_similarity(gold_set, pred_set)
-            soft_jaccard = self._soft_jaccard_similarity(gold_set, pred_set)
         
         # Execution metrics
         exec_exact = None
         exec_jaccard = None
-        exec_precision = None
-        exec_recall = None
-        exec_f1 = None
         gold_violations = None
         pred_violations = None
         
@@ -359,49 +356,25 @@ class MappingEvaluator:
             
             # Jaccard
             exec_jaccard = self._set_jaccard(gold_violations, pred_violations)
-            
-            # Precision/Recall/F1
-            if len(pred_violations) > 0 or len(gold_violations) > 0:
-                overlap = len(gold_violations & pred_violations)
-                exec_precision = overlap / len(pred_violations) if len(pred_violations) > 0 else 0.0
-                exec_recall = overlap / len(gold_violations) if len(gold_violations) > 0 else 0.0
-                exec_f1 = (2 * exec_precision * exec_recall / (exec_precision + exec_recall) 
-                          if (exec_precision + exec_recall) > 0 else 0.0)
         
         return SentenceMappingResult(
             sentence=sentence,
             gold_is_rule=True,
             pred_is_rule=pred_is_rule,
-            detection_status=detection_status,
             strict_correct=strict_correct,
             predicate_jaccard=predicate_jaccard,
-            soft_jaccard=soft_jaccard,
             execution_exact=exec_exact,
             execution_jaccard=exec_jaccard,
-            execution_precision=exec_precision,
-            execution_recall=exec_recall,
-            execution_f1=exec_f1,
             gold_rule=gold_rule,
             pred_rule=pred_rule,
             gold_violations=gold_violations,
             pred_violations=pred_violations
         )
     
-    def _compute_metrics(self, results: List[SentenceMappingResult]) -> MappingMetrics:
+    def _compute_metrics(self, results: List[SentenceMappingResult], 
+                        exact_match_result: Dict[str, Any]) -> MappingMetrics:
         """Compute aggregate metrics from sentence results"""
-        # Detection metrics (all sentences)
-        tp = sum(1 for r in results if r.detection_status == 'TP')
-        tn = sum(1 for r in results if r.detection_status == 'TN')
-        fp = sum(1 for r in results if r.detection_status == 'FP')
-        fn = sum(1 for r in results if r.detection_status == 'FN')
-        total = len(results)
-        
-        det_precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-        det_recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        det_f1 = (2 * det_precision * det_recall / (det_precision + det_recall) 
-                  if (det_precision + det_recall) > 0 else 0.0)
-        
-        # Syntactic metrics (only gold rules)
+        # Pairwise syntactic metrics (only gold rules)
         gold_rules = [r for r in results if r.gold_is_rule]
         strict_correct = sum(1 for r in gold_rules if r.strict_correct)
         strict_total = len(gold_rules)
@@ -411,31 +384,21 @@ class MappingEvaluator:
         avg_jaccard = sum(jaccard_scores) / len(jaccard_scores) if jaccard_scores else 0.0
         std_jaccard = float(np.std(jaccard_scores)) if len(jaccard_scores) > 1 else 0.0
         
-        soft_jaccard_scores = [r.soft_jaccard for r in gold_rules if r.soft_jaccard is not None]
-        avg_soft_jaccard = sum(soft_jaccard_scores) / len(soft_jaccard_scores) if soft_jaccard_scores else 0.0
-        std_soft_jaccard = float(np.std(soft_jaccard_scores)) if len(soft_jaccard_scores) > 1 else 0.0
-        
-        # Execution metrics
+        # Pairwise execution metrics
         exec_accuracy = None
         exec_correct = None
         exec_total = None
         avg_exec_jaccard = None
         std_exec_jaccard = None
-        avg_exec_precision = None
-        std_exec_precision = None
-        avg_exec_recall = None
-        std_exec_recall = None
-        avg_exec_f1 = None
-        std_exec_f1 = None
-        union_precision = None
-        union_recall = None
-        union_f1 = None
+        agg_violation_precision = None
+        agg_violation_recall = None
+        agg_violation_f1 = None
         total_gold_viols = None
         total_pred_viols = None
         total_overlap = None
         
         if self.db is not None:
-            # Per-rule execution metrics
+            # Pairwise execution metrics
             exec_exact_matches = [r for r in gold_rules if r.execution_exact is not None and r.execution_exact]
             exec_correct = len(exec_exact_matches)
             exec_total = len([r for r in gold_rules if r.execution_exact is not None])
@@ -445,19 +408,7 @@ class MappingEvaluator:
             avg_exec_jaccard = sum(exec_jaccard_scores) / len(exec_jaccard_scores) if exec_jaccard_scores else 0.0
             std_exec_jaccard = float(np.std(exec_jaccard_scores)) if len(exec_jaccard_scores) > 1 else 0.0
             
-            exec_prec_scores = [r.execution_precision for r in gold_rules if r.execution_precision is not None]
-            avg_exec_precision = sum(exec_prec_scores) / len(exec_prec_scores) if exec_prec_scores else 0.0
-            std_exec_precision = float(np.std(exec_prec_scores)) if len(exec_prec_scores) > 1 else 0.0
-            
-            exec_rec_scores = [r.execution_recall for r in gold_rules if r.execution_recall is not None]
-            avg_exec_recall = sum(exec_rec_scores) / len(exec_rec_scores) if exec_rec_scores else 0.0
-            std_exec_recall = float(np.std(exec_rec_scores)) if len(exec_rec_scores) > 1 else 0.0
-            
-            exec_f1_scores = [r.execution_f1 for r in gold_rules if r.execution_f1 is not None]
-            avg_exec_f1 = sum(exec_f1_scores) / len(exec_f1_scores) if exec_f1_scores else 0.0
-            std_exec_f1 = float(np.std(exec_f1_scores)) if len(exec_f1_scores) > 1 else 0.0
-            
-            # Union-based metrics
+            # Aggregate violation metrics
             gold_union = set()
             pred_union = set()
             
@@ -473,41 +424,37 @@ class MappingEvaluator:
             total_pred_viols = len(pred_union)
             total_overlap = len(overlap_union)
             
-            union_precision = total_overlap / total_pred_viols if total_pred_viols > 0 else 0.0
-            union_recall = total_overlap / total_gold_viols if total_gold_viols > 0 else 0.0
-            union_f1 = (2 * union_precision * union_recall / (union_precision + union_recall)
-                       if (union_precision + union_recall) > 0 else 0.0)
+            agg_violation_precision = total_overlap / total_pred_viols if total_pred_viols > 0 else 0.0
+            agg_violation_recall = total_overlap / total_gold_viols if total_gold_viols > 0 else 0.0
+            agg_violation_f1 = (2 * agg_violation_precision * agg_violation_recall / (agg_violation_precision + agg_violation_recall)
+                       if (agg_violation_precision + agg_violation_recall) > 0 else 0.0)
         
         return MappingMetrics(
-            detection_precision=det_precision,
-            detection_recall=det_recall,
-            detection_f1=det_f1,
-            detection_tp=tp,
-            detection_tn=tn,
-            detection_fp=fp,
-            detection_fn=fn,
-            detection_total=total,
-            strict_accuracy=strict_accuracy,
-            strict_correct=strict_correct,
-            strict_total=strict_total,
-            avg_predicate_jaccard=avg_jaccard,
-            std_predicate_jaccard=std_jaccard,
-            avg_soft_jaccard=avg_soft_jaccard,
-            std_soft_jaccard=std_soft_jaccard,
-            execution_accuracy=exec_accuracy,
-            execution_correct=exec_correct,
-            execution_total=exec_total,
-            avg_execution_jaccard=avg_exec_jaccard,
-            std_execution_jaccard=std_exec_jaccard,
-            avg_execution_precision=avg_exec_precision,
-            std_execution_precision=std_exec_precision,
-            avg_execution_recall=avg_exec_recall,
-            std_execution_recall=std_exec_recall,
-            avg_execution_f1=avg_exec_f1,
-            std_execution_f1=std_exec_f1,
-            union_precision=union_precision,
-            union_recall=union_recall,
-            union_f1=union_f1,
+            # Constraint exact match (from exact_match_result)
+            constraint_exact_precision=exact_match_result['precision'],
+            constraint_exact_recall=exact_match_result['recall'],
+            constraint_exact_f1=exact_match_result['f1'],
+            constraint_exact_tp=exact_match_result['tp'],
+            constraint_exact_fp=exact_match_result['fp'],
+            constraint_exact_fn=exact_match_result['fn'],
+            num_pred_constraints=exact_match_result['num_pred'],
+            num_gold_constraints=exact_match_result['num_gold'],
+            # Pairwise syntactic metrics
+            pairwise_strict_accuracy=strict_accuracy,
+            pairwise_strict_correct=strict_correct,
+            pairwise_strict_total=strict_total,
+            pairwise_avg_predicate_jaccard=avg_jaccard,
+            pairwise_std_predicate_jaccard=std_jaccard,
+            # Pairwise execution metrics
+            pairwise_execution_accuracy=exec_accuracy,
+            pairwise_execution_correct=exec_correct,
+            pairwise_execution_total=exec_total,
+            pairwise_avg_execution_jaccard=avg_exec_jaccard,
+            pairwise_std_execution_jaccard=std_exec_jaccard,
+            # Aggregate violation metrics
+            aggregate_violation_precision=agg_violation_precision,
+            aggregate_violation_recall=agg_violation_recall,
+            aggregate_violation_f1=agg_violation_f1,
             total_gold_violations=total_gold_viols,
             total_pred_violations=total_pred_viols,
             total_overlap_violations=total_overlap

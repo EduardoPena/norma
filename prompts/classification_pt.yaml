@@ -1,0 +1,197 @@
+zero_shot_pt: |
+  Tarefa: Para cada sentença, decida se ela expressa uma REGRA DE QUALIDADE DE DADOS.
+
+  Definição: Uma regra de qualidade de dados é uma declaração que pode ser VERIFICADA (verdadeira/falsa) usando apenas os campos/linhas do conjunto de dados.
+
+  SIM — tipos de regra:
+  - Campo obrigatório/não-nulo
+  - Valores permitidos ou proibidos
+  - Limites numéricos ou comparações
+  - Requisitos condicionais (se X então Y)
+  - Combinações proibidas
+  - Consistência entre linhas, unicidade ou ordenação
+  - Determinação (mesmo X implica mesmo Y)
+  - Integridade referencial
+  - Restrições temporais
+
+  NÃO — inclui:
+  - Cabeçalhos, títulos, citações
+  - Definições ou descrições
+  - Justificativas ou explicações
+  - Procedimentos ou decisões humanas
+  - Declarações não decidíveis a partir dos dados
+
+  Observação: Palavras como "pode/podem/deve" não decidem. Se descrevem uma condição de dados, responda SIM; se descrevem permissão ou processo, responda NÃO.
+  Observação: A formulação não desqualifica uma regra. Observações ("X são maiores que Y") e declarações de comportamento do sistema ("X será ordenado por Y", "Z será fornecido para cada W") são regras se o resultado for verificável nos dados.
+
+  Sentenças:
+  {sentences}
+
+  Instruções:
+  - Responda APENAS no formato "<número>. YES" ou "<número>. NO", uma resposta por linha
+  - CRÍTICO: Produza exatamente uma resposta para CADA sentença de entrada (se 10 sentenças, então 10 respostas)
+  - NÃO inclua explicações, justificativas, raciocínio ou qualquer texto extra
+  - Exemplo de formato de saída: "1. YES\n2. NO\n3. YES"
+
+zero_shot_with_table_pt: |
+  Tarefa: Para cada sentença, decida se ela expressa uma REGRA DE QUALIDADE DE DADOS que pode ser VERIFICADA usando a tabela fornecida.
+
+  Definição: Uma regra de qualidade de dados é uma declaração que pode ser VERIFICADA (verdadeira/falsa) usando os campos/linhas disponíveis.
+
+  SIM — tipos de regra (verificáveis diretamente ou através de transformações de campos):
+  - Campo obrigatório/não-nulo
+  - Valores permitidos ou proibidos
+  - Limites numéricos ou comparações
+  - Requisitos condicionais (se X então Y)
+  - Combinações proibidas
+  - Consistência entre linhas, unicidade ou ordenação
+  - Determinação (mesmo X implica mesmo Y)
+  - Integridade referencial
+  - Restrições temporais
+
+  NÃO — inclui:
+  - Nenhum mapeamento plausível para campos disponíveis
+  - Cabeçalhos, títulos, citações
+  - Definições ou descrições
+  - Justificativas ou explicações
+  - Procedimentos ou decisões humanas
+
+  Observação: Palavras como "pode/podem/deve" não decidem. Se descrevem uma condição de dados, responda SIM; se descrevem permissão ou processo, responda NÃO.
+  Observação: A formulação não desqualifica uma regra. Observações ("X são maiores que Y") e declarações de comportamento do sistema ("X será ordenado por Y", "Z será fornecido para cada W") são regras se o resultado for verificável nos dados.
+
+  Contexto da Tabela:
+  {table_context}
+
+  Sentenças:
+  {sentences}
+
+  Instruções:
+  - Responda APENAS no formato "<número>. YES" ou "<número>. NO", uma resposta por linha
+  - CRÍTICO: Produza exatamente uma resposta para CADA sentença de entrada (se 10 sentenças, então 10 respostas)
+  - NÃO inclua explicações, justificativas, raciocínio ou qualquer texto extra
+  - Exemplo de formato de saída: "1. YES\n2. NO\n3. YES"
+
+with_examples_pt: |
+  Tarefa: Para cada sentença, decida se ela expressa uma REGRA DE QUALIDADE DE DADOS.
+
+  Definição: Uma regra de qualidade de dados é uma declaração que pode ser VERIFICADA (verdadeira/falsa) usando apenas os campos/linhas do conjunto de dados.
+
+  SIM — tipos de regra:
+  - Campo obrigatório/não-nulo
+  - Valores permitidos ou proibidos
+  - Limites numéricos ou comparações
+  - Requisitos condicionais (se X então Y)
+  - Combinações proibidas
+  - Consistência entre linhas, unicidade ou ordenação
+  - Determinação (mesmo X implica mesmo Y)
+  - Integridade referencial
+  - Restrições temporais
+
+  NÃO — inclui:
+  - Cabeçalhos, títulos, citações
+  - Definições ou descrições
+  - Justificativas ou explicações
+  - Procedimentos ou decisões humanas
+  - Declarações não decidíveis a partir dos dados
+
+  Observação: Palavras como "pode/podem/deve" não decidem. Se descrevem uma condição de dados, responda SIM; se descrevem permissão ou processo, responda NÃO.
+  Observação: A formulação não desqualifica uma regra. Observações ("X são maiores que Y") e declarações de comportamento do sistema ("X será ordenado por Y", "Z será fornecido para cada W") são regras se o resultado for verificável nos dados.
+
+  Exemplos:
+
+  SIM:
+  1. "O campo X é obrigatório."
+  2. "Se o campo A = 'Y' então o campo B é obrigatório."
+  3. "O campo C deve ser um de {{U, V, W}}."
+  4. "Se o campo D > 0 então o campo E não deve ser NULL."
+  5. "Se o campo F = 'P' então o campo G não deve ser 'Q'."
+  6. "Duas linhas com a mesma chave não devem discordar no campo H."
+  7. "Dentro do mesmo grupo, se Score1 < Score2 então Rank1 não deve ser melhor que Rank2."
+  8. "Registros na categoria X têm valores maiores de Y do que aqueles na categoria Z."
+  9. "Cada registro é identificado unicamente pelo campo A e campo B."
+  10. "Dois registros com o mesmo X devem ter o mesmo Y."
+  11. "Um registro com X menor não pode ter Y maior."
+  12. "Os registros serão ordenados em ordem decrescente pelo campo Y."
+  13. "O sistema atribuirá um valor ao campo Z para cada combinação única de A e B."
+
+  NÃO:
+  14. "Título da Seção"
+  15. "Item (b)."
+  16. "Este texto descreve o sistema."
+  17. "Uma pessoa pode revisar um caso e decidir o que fazer."
+  18. "Os valores são coletados durante uma etapa do processo."
+  19. "O campo X representa o valor total."
+  20. "A equipe verifica se os registros atendem aos requisitos antes de salvar."
+
+  Sentenças:
+  {sentences}
+
+  Instruções:
+  - Responda APENAS no formato "<número>. YES" ou "<número>. NO", uma resposta por linha
+  - CRÍTICO: Produza exatamente uma resposta para CADA sentença de entrada (se 10 sentenças, então 10 respostas)
+  - NÃO inclua explicações, justificativas, raciocínio ou qualquer texto extra
+  - Exemplo de formato de saída: "1. YES\n2. NO\n3. YES"
+
+with_examples_and_table_pt: |
+  Tarefa: Para cada sentença, decida se ela expressa uma REGRA DE QUALIDADE DE DADOS que pode ser VERIFICADA usando a tabela fornecida.
+
+  Definição: Uma regra de qualidade de dados é uma declaração que pode ser VERIFICADA (verdadeira/falsa) usando os campos/linhas disponíveis.
+
+  SIM — tipos de regra (verificáveis diretamente ou através de transformações de campos):
+  - Campo obrigatório/não-nulo
+  - Valores permitidos ou proibidos
+  - Limites numéricos ou comparações
+  - Requisitos condicionais (se X então Y)
+  - Combinações proibidas
+  - Consistência entre linhas, unicidade ou ordenação
+  - Determinação (mesmo X implica mesmo Y)
+  - Integridade referencial
+  - Restrições temporais
+
+  NÃO — inclui:
+  - Nenhum mapeamento plausível para campos disponíveis
+  - Cabeçalhos, títulos, citações
+  - Definições ou descrições
+  - Justificativas ou explicações
+  - Procedimentos ou decisões humanas
+
+  Observação: Palavras como "pode/podem/deve" não decidem. Se descrevem uma condição de dados, responda SIM; se descrevem permissão ou processo, responda NÃO.
+  Observação: A formulação não desqualifica uma regra. Observações ("X são maiores que Y") e declarações de comportamento do sistema ("X será ordenado por Y", "Z será fornecido para cada W") são regras se o resultado for verificável nos dados.
+
+  Exemplos:
+
+  SIM:
+  1. "O campo X é obrigatório."
+  2. "Se o campo A = 'Y' então o campo B é obrigatório."
+  3. "O campo C deve ser um de {{U, V, W}}."
+  4. "Se o campo D > 0 então o campo E não deve ser NULL."
+  5. "Se o campo F = 'P' então o campo G não deve ser 'Q'."
+  6. "Duas linhas com a mesma chave não devem discordar no campo H."
+  7. "Dentro do mesmo grupo, se Score1 < Score2 então Rank1 não deve ser melhor que Rank2."
+  8. "Registros na categoria X têm valores maiores de Y do que aqueles na categoria Z."
+  9. "Cada registro é identificado unicamente pelo campo A e campo B."
+  10. "Dois registros com o mesmo X devem ter o mesmo Y."
+  11. "Um registro com X menor não pode ter Y maior."
+  12. "Os registros serão ordenados em ordem decrescente pelo campo Y."
+  13. "O sistema atribuirá um valor ao campo Z para cada combinação única de A e B."
+
+  NÃO:
+  14. "Título da Seção"
+  15. "Item (b)."
+  16. "Este texto descreve o sistema."
+  17. "Uma pessoa pode revisar um caso e decidir o que fazer."
+  18. "Os valores são coletados durante uma etapa do processo."
+  19. "O campo X representa o valor total."
+  20. "A equipe verifica se os registros atendem aos requisitos antes de salvar."
+
+  Contexto da Tabela:
+  {table_context}
+
+  Sentenças:
+  {sentences}
+
+  Instruções:
+  - Responda APENAS no formato "<número>. YES" ou "<número>. NO", uma resposta por linha
+  - CRÍTICO: Produza exatamente uma resposta para CADA sentença de entrada (se 10 sentenças, então 10 respostas)
+  - NÃO inclua explicações, justificativas, raciocínio ou qualquer texto extra
+  - Exemplo de formato de saída: "1. YES\n2. NO\n3. YES"

@@ -327,8 +327,10 @@ class ClassifierExperiment(BaseExperiment):
             if not prompt_key:
                 raise ValueError("LLM implementation requires 'prompt_key'")
 
-            prompt_template = self.prompt_loader.load(
-                "classification", prompt_key)
+            if "_pt" in prompt_key:
+                prompt_template = self.prompt_loader.load("classification_pt", prompt_key)    
+            else:
+                prompt_template = self.prompt_loader.load("classification", prompt_key)
 
             return LLMRuleClassifier(
                 model_name=model,

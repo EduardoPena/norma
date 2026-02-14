@@ -43,6 +43,30 @@ class OpenAIClient(LLMClient):
             raise RuntimeError(f"OpenAI API error: {e}") from e
 
 
+class MaritacaAIClient(LLMClient):
+    """Maritaca client"""
+    
+    def __init__(self, api_key: str, model_name: str = "sabiazinho-4"):
+        from openai import OpenAI
+        
+        self.client = OpenAI(api_key=api_key,  base_url="https://chat.maritaca.ai/api")
+        self.model_name = model_name
+        # GPT-5 and some models only support temperature=1
+        self.temperature = 1 if model_name.startswith("sabia") else 0.0
+    
+    def complete(self, prompt: str) -> str:
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=self.temperature
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            raise RuntimeError(f"Maritaca API error: {e}") from e
+
+
+
 class AnthropicClient(LLMClient):
     """Anthropic Claude client"""
     
@@ -131,6 +155,12 @@ def get_llm_client(model_name: str = "gpt-5-mini") -> LLMClient:
         if not api_key:
             raise ValueError("OPENAI_API_KEY environment variable not set")
         return OpenAIClient(api_key=api_key, model_name=model_name)
+    
+    if model_name.startswith("sabia"):
+        api_key = os.getenv("MARITACA_API_KEY")
+        if not api_key:
+            raise ValueError("MARITACA_API_KEY environment variable not set")
+        return MaritacaAIClient(api_key=api_key, model_name=model_name)
     
     if model_name.startswith("claude-"):
         api_key = os.getenv("ANTHROPIC_API_KEY")

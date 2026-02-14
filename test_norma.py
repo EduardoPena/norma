@@ -1,7 +1,7 @@
 # test.py - Quick migration testing
 
 
-DATA_PATH = 'data/person/'  # Adjust as needed
+DATA_PATH = 'data/tax/'  # Adjust as needed
 
 
 def test_load():
@@ -154,6 +154,81 @@ def test_classifier():
             print(f"[{label}] {sentence[:60]}...")
 
     print("\nOK")
+
+
+def test_slm_classifier():
+    """Test SLM-based classifier."""
+    from src.classifiers.slm import SLMRuleClassifier
+    from src.data import DatasetLoader
+    from src.utils.table_context import TableContextBuilder
+    import os
+
+    print("\nTesting SLM Classifier")
+
+    # Option 1: Local trained classification model
+    # model_path = "models/slm_classifier"
+    
+    # Option 2: Sentence transformer from HuggingFace (e.g., mpnet)
+    # This will use embeddings without a classifier head (returns neutral probabilities)
+    model_path = "sentence-transformers/all-mpnet-base-v2"
+    
+    # Option 3: Local sentence transformer with trained classifier head
+    # model_path = "models/mpnet_with_classifier"
+    
+    # Uncomment to check local path
+    # if not os.path.exists(model_path):
+    #     print(f"Skipping - Model not found at {model_path}")
+    #     print("Train a model first or update the model_path variable")
+    #     return
+
+    loader = DatasetLoader(DATA_PATH)
+    df, sentences, sentence2dcs_map, predicate_space = loader.load()
+
+    print(f"Loaded {len(sentences)} sentences")
+
+    # Initialize SLM classifier
+    try:
+        classifier = SLMRuleClassifier(
+            model_path=model_path,
+            batch_size=16,
+            device=None,  # Auto-detect
+            model_type='auto'  # Can be 'classification', 'sentence-transformer', or 'auto'
+        )
+        
+        # Display model info
+        model_info = classifier.get_model_info()
+        print(f"\nModel info:")
+        for key, value in model_info.items():
+            print(f"  {key}: {value}")
+        
+        # Test on first 10 sentences
+        test_sentences = sentences[:10]
+        
+        # Build table context
+        context_builder = TableContextBuilder(sample_strategy="head", num_rows=3)
+        context = context_builder.build(df)
+        
+        print(f"\nClassifying {len(test_sentences)} sentences...")
+        results = classifier.classify(test_sentences, context=context)
+        
+        print("\nResults:")
+        for sentence, is_rule in results:
+            gt_dc = sentence2dcs_map.get(sentence, 'Unknown')
+            has_gt_rule = bool(gt_dc and gt_dc != 'Unknown')
+            match = "✓" if is_rule == has_gt_rule else "✗"
+            label = "RULE" if is_rule else "NOT"
+            print(f"{match} [{label}] {sentence[:60]}...")
+            if gt_dc and gt_dc != 'Unknown':
+                print(f"   Ground truth: {gt_dc}")
+        
+        print("\nOK")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+        print("Make sure the model is properly trained and saved")
+
 
 
 def test_mapper():
@@ -460,6 +535,107 @@ def test_norma_sentence_filtered():
     print(f"✓ Results saved to {result_file}")
 
 
+def test_norma_slm_filtered():
+    """Test the full Norma pipeline in SENTENCE_FILTERED mode with SLM classifier."""
+    from src.pipelines.norma_pipeline import NormaPipeline, ProcessingMode
+    from src.classifiers.slm import SLMRuleClassifier
+    from src.mappers.llm import LLMMapper
+    from src.data import DatasetLoader
+    from src.utils.table_context import TableContextBuilder
+    import os
+    from src.llm.helper import PromptLoader
+
+    print("\nTesting Norma Pipeline - SENTENCE_FILTERED mode with SLM")
+    print("-" * 60)
+
+    # Check if model exists
+    model_path = "models/slm_classifier"  # Adjust this path as needed
+    
+    if not os.path.exists(model_path):
+        print(f"Skipping - SLM model not found at {model_path}")
+        print("Train a model first or update the model_path variable")
+        return
+
+    if not os.getenv("OPENAI_API_KEY") and not os.getenv("MISTRAL_API_KEY"):
+        print("Skipping - No LLM API key set for mapper")
+        return
+
+    # Load data
+    loader = DatasetLoader(DATA_PATH)
+    df, sentences, sentence2dcs_map, predicate_space = loader.load()
+
+    print(f"Loaded {len(sentences)} sentences, {len(df)} rows")
+    print(f"Predicate space: {len(predicate_space['predicates'])} predicates")
+
+    # Build table context
+    context_builder = TableContextBuilder(sample_strategy="head", num_rows=3)
+    context = context_builder.build(df)
+    print(f"\nTable context preview:\n{context['table_context']}...\n")
+
+    prompt_loader = PromptLoader()
+    mapping_prompt_names = prompt_loader.list_prompts("mapping")
+
+    # Test first prompt only for brevity
+    mapping_prompt = mapping_prompt_names[0]
+
+    print(f"Available mapping prompts: {mapping_prompt_names}, but using {mapping_prompt}\n")
+
+    # Initialize SLM classifier
+    try:
+        classifier = SLMRuleClassifier(
+            model_path=model_path,
+            batch_size=16,
+            device=None  # Auto-detect
+        )
+        
+        # Display model info
+        model_info = classifier.get_model_info()
+        print(f"SLM Model info:")
+        for key, value in model_info.items():
+            print(f"  {key}: {value}")
+        print()
+        
+    except Exception as e:
+        print(f"Error loading SLM classifier: {e}")
+        return
+    
+    mapper = LLMMapper(
+        model_name="mistral-small-2506",
+        prompt_name=mapping_prompt,
+        allowed_predicates=predicate_space['predicates'],
+        chunk_size=10
+    )
+
+    # Initialize Norma pipeline in SENTENCE_FILTERED mode
+    pipeline = NormaPipeline(
+        mode=ProcessingMode.SENTENCE_FILTERED, classifier=classifier, mapper=mapper)
+
+    # Process sentences through the pipeline
+    print("Processing sentences...")
+    results = pipeline.process(sentences, context=context)
+
+    # Save results
+    results_dir = "results/test"
+    os.makedirs(results_dir, exist_ok=True)
+    dataset_name = os.path.basename(os.path.normpath(DATA_PATH))
+    result_file = os.path.join(results_dir, f"test_norma_slm_filtered_results_{dataset_name}.csv")
+
+    print("\nSaving results to results/test...")
+    pipeline.save(results, output_file=result_file, ground_truth=sentence2dcs_map)
+    print(f"✓ Results saved to {result_file}")
+
+    # Display results for first 5 sentences
+    print("\nFirst 5 results:")
+    for sentence, is_rule, predicates in results[:5]:
+        gt_dc = sentence2dcs_map.get(sentence, 'Non rule sentence')
+        print(f"\nSentence: {sentence}")
+        print(f"Ground Truth: {gt_dc}")
+        print(f"Is Rule: {is_rule}")
+        print(f"Predicates: {predicates}")
+
+    print("\nNorma Pipeline with SLM test complete!")
+
+
 def test_norma_document_mapping():
     """Test the full Norma pipeline in DOCUMENT mode."""
     from src.pipelines.norma_pipeline import NormaPipeline, ProcessingMode
@@ -569,18 +745,22 @@ def test_norma_document_mapping():
     if len(sentences) > 0:
         print(f"Ratio: {len(results)/len(sentences):.2f} constraints per sentence")
 
+
 if __name__ == "__main__":
     
     # test_load()
     # test_llm_clients()
     # test_sql()
     
-    test_classifier()
+    # test_classifier()
+
+    test_slm_classifier()
 
     # test_mapper()
     # test_mapper_all()
     
     # Norma Pipeline tests - uncomment to run
-    test_norma_sentence_direct()
-    test_norma_sentence_filtered()
-    test_norma_document_mapping()
+    # test_norma_sentence_direct()
+    # test_norma_sentence_filtered()
+    # test_norma_slm_filtered()  # SLM-based pipeline test
+    # test_norma_document_mapping()

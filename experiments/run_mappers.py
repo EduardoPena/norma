@@ -218,17 +218,17 @@ class MapperExperiment(BaseExperiment):
             )
             
             # Display metrics
-            print(f"\n  CONSTRAINT DISCOVERY (How many constraints were found):")
-            print(f"     Constraint Precision: {metrics['constraint_precision']:.3f}")
-            print(f"     Constraint Recall:    {metrics['constraint_recall']:.3f}")
-            print(f"     Constraint F1:        {metrics['constraint_f1']:.3f} [PRIMARY]")
-            print(f"     Matched predicted:    {metrics['num_matched_pred_constraints']}/{metrics['num_pred_constraints']}")
-            print(f"     Matched gold:         {metrics['num_matched_gold_constraints']}/{metrics['num_gold_constraints']}")
+            print(f"\n  CONSTRAINT EXACT MATCH (Set membership):")
+            print(f"     Precision: {metrics['constraint_exact_precision']:.3f}")
+            print(f"     Recall:    {metrics['constraint_exact_recall']:.3f}")
+            print(f"     F1:        {metrics['constraint_exact_f1']:.3f} [PRIMARY]")
+            print(f"     TP: {metrics['constraint_exact_tp']}, FP: {metrics['constraint_exact_fp']}, FN: {metrics['constraint_exact_fn']}")
+            print(f"     Predicted: {metrics['num_pred_constraints']}, Gold: {metrics['num_gold_constraints']}")
             
-            print(f"\n  VIOLATION DISCOVERY - AGGREGATE (All constraints pooled, union-based):")
-            print(f"     Violation Precision: {metrics['violation_precision_aggregate']:.3f}")
-            print(f"     Violation Recall:    {metrics['violation_recall_aggregate']:.3f}")
-            print(f"     Violation F1:        {metrics['violation_f1_aggregate']:.3f}")
+            print(f"\n  AGGREGATE VIOLATION DISCOVERY (All constraints pooled):")
+            print(f"     Violation Precision: {metrics['aggregate_violation_precision']:.3f}")
+            print(f"     Violation Recall:    {metrics['aggregate_violation_recall']:.3f}")
+            print(f"     Violation F1:        {metrics['aggregate_violation_f1']:.3f} [PRIMARY]")
             print(f"     Gold violations:     {metrics['total_gold_violations']}")
             print(f"     Pred violations:     {metrics['total_pred_violations']}")
             print(f"     Overlap violations:  {metrics['total_overlap_violations']}")
@@ -263,36 +263,32 @@ class MapperExperiment(BaseExperiment):
             )
             
             # Display detailed metrics
-            print(f"\n  CONSTRAINT DETECTION (Which sentences contain constraints):")
-            print(f"     Precision: {metrics.detection_precision:.3f}")
-            print(f"     Recall:    {metrics.detection_recall:.3f}")
-            print(f"     F1:        {metrics.detection_f1:.3f}")
-            print(f"     Confusion: TP={metrics.detection_tp}, FP={metrics.detection_fp}, "
-                  f"FN={metrics.detection_fn}, TN={metrics.detection_tn}")
+            print(f"\n  CONSTRAINT EXACT MATCH (Set membership):")
+            print(f"     Precision: {metrics.constraint_exact_precision:.3f}")
+            print(f"     Recall:    {metrics.constraint_exact_recall:.3f}")
+            print(f"     F1:        {metrics.constraint_exact_f1:.3f} [PRIMARY]")
+            print(f"     TP: {metrics.constraint_exact_tp}, FP: {metrics.constraint_exact_fp}, FN: {metrics.constraint_exact_fn}")
+            print(f"     Predicted: {metrics.num_pred_constraints}, Gold: {metrics.num_gold_constraints}")
             
-            print(f"\n  CONSTRAINT SYNTACTIC QUALITY (How well constraints match syntactically, n={metrics.strict_total}):")
-            print(f"     Exact Match:       {metrics.strict_accuracy:.3f} ({metrics.strict_correct}/{metrics.strict_total})")
-            print(f"     Predicate Jaccard: {metrics.avg_predicate_jaccard:.3f} (±{metrics.std_predicate_jaccard:.3f})")
-            print(f"     Soft Jaccard:      {metrics.avg_soft_jaccard:.3f} (±{metrics.std_soft_jaccard:.3f})")
+            print(f"\n  PAIRWISE SYNTACTIC QUALITY (Known sentence->constraint pairing, n={metrics.pairwise_strict_total}):")
+            print(f"     Exact Match:       {metrics.pairwise_strict_accuracy:.3f} ({metrics.pairwise_strict_correct}/{metrics.pairwise_strict_total})")
+            print(f"     Predicate Jaccard: {metrics.pairwise_avg_predicate_jaccard:.3f} (±{metrics.pairwise_std_predicate_jaccard:.3f})")
             
-            print(f"\n  VIOLATION DISCOVERY - PER-CONSTRAINT (How well each constraint finds violations):")
-            print(f"     Exact Match:       {metrics.execution_accuracy:.3f} ({metrics.execution_correct}/{metrics.execution_total})")
-            print(f"     Violation Jaccard: {metrics.avg_execution_jaccard:.3f} (±{metrics.std_execution_jaccard:.3f}) [PRIMARY]")
-            print(f"     Avg Precision:     {metrics.avg_execution_precision:.3f} (±{metrics.std_execution_precision:.3f})")
-            print(f"     Avg Recall:        {metrics.avg_execution_recall:.3f} (±{metrics.std_execution_recall:.3f})")
-            print(f"     Avg F1:            {metrics.avg_execution_f1:.3f} (±{metrics.std_execution_f1:.3f})")
+            print(f"\n  PAIRWISE VIOLATION DISCOVERY (Known pairing):")
+            print(f"     Exact Match:       {metrics.pairwise_execution_accuracy:.3f} ({metrics.pairwise_execution_correct}/{metrics.pairwise_execution_total})")
+            print(f"     Violation Jaccard: {metrics.pairwise_avg_execution_jaccard:.3f} (±{metrics.pairwise_std_execution_jaccard:.3f})")
             
-            print(f"\n  VIOLATION DISCOVERY - AGGREGATE (All constraints pooled, union-based):")
-            print(f"     Violation Precision:    {metrics.union_precision:.3f}")
-            print(f"     Violation Recall:       {metrics.union_recall:.3f}")
-            print(f"     Violation F1:           {metrics.union_f1:.3f} [PRIMARY]")
+            print(f"\n  AGGREGATE VIOLATION DISCOVERY (All constraints pooled):")
+            print(f"     Violation Precision:    {metrics.aggregate_violation_precision:.3f}")
+            print(f"     Violation Recall:       {metrics.aggregate_violation_recall:.3f}")
+            print(f"     Violation F1:           {metrics.aggregate_violation_f1:.3f} [PRIMARY]")
             print(f"     Gold violations:        {metrics.total_gold_violations}")
             print(f"     Predicted violations:   {metrics.total_pred_violations}")
             print(f"     Overlap violations:     {metrics.total_overlap_violations}")
             
             # Show syntactic vs violation-based gap
-            gap = metrics.execution_accuracy - metrics.strict_accuracy
-            print(f"\n  INSIGHT: Syntactic Quality vs Violation Discovery Gap = {gap:.3f}")
+            gap = metrics.pairwise_execution_accuracy - metrics.pairwise_strict_accuracy
+            print(f"\n  INSIGHT: Syntactic vs Violation Gap (pairwise) = {gap:.3f}")
             if gap > 0:
                 print(f"     {gap*100:.1f}% of constraints find correct violations despite syntactic differences")
             elif gap < 0:
@@ -378,27 +374,22 @@ class MapperExperiment(BaseExperiment):
                 'sentence': r.sentence,
                 'gold_is_constraint': r.gold_is_rule,
                 'pred_is_constraint': r.pred_is_rule,
-                'constraint_detection_status': r.detection_status,
                 'gold_constraint': str(r.gold_rule) if r.gold_rule else None,
                 'pred_constraint': str(r.pred_rule) if r.pred_rule else None,
             }
             
-            # Add syntactic metrics (only for gold constraints)
+            # Add pairwise syntactic metrics (only for gold constraints)
             if r.gold_is_rule:
                 record.update({
-                    'constraint_syntactic_exact_match': r.strict_correct,
-                    'constraint_syntactic_predicate_jaccard': r.predicate_jaccard,
-                    'constraint_syntactic_soft_jaccard': r.soft_jaccard,
+                    'pairwise_syntactic_exact_match': r.strict_correct,
+                    'pairwise_syntactic_predicate_jaccard': r.predicate_jaccard,
                 })
             
-            # Add violation discovery metrics (only for gold constraints)
+            # Add pairwise violation discovery metrics (only for gold constraints)
             if r.execution_exact is not None:
                 record.update({
-                    'violation_discovery_exact_match': r.execution_exact,
-                    'violation_discovery_jaccard': r.execution_jaccard,
-                    'violation_discovery_precision': r.execution_precision,
-                    'violation_discovery_recall': r.execution_recall,
-                    'violation_discovery_f1': r.execution_f1,
+                    'pairwise_violation_exact_match': r.execution_exact,
+                    'pairwise_violation_jaccard': r.execution_jaccard,
                     'num_gold_violations': len(r.gold_violations) if r.gold_violations else 0,
                     'num_pred_violations': len(r.pred_violations) if r.pred_violations else 0,
                     'num_overlap_violations': len(r.gold_violations & r.pred_violations) if r.gold_violations and r.pred_violations else 0,
@@ -418,10 +409,11 @@ class MapperExperiment(BaseExperiment):
         return {
             'evaluation_type': 'sentence',
             'summary_metrics': {
-                'detection_f1': metrics.detection_f1,
-                'execution_accuracy': metrics.execution_accuracy,
-                'avg_execution_jaccard': metrics.avg_execution_jaccard,
-                'union_f1': metrics.union_f1
+                'constraint_exact_f1': metrics.constraint_exact_f1,
+                'pairwise_syntactic_exact': metrics.pairwise_strict_accuracy,
+                'pairwise_violation_exact': metrics.pairwise_execution_accuracy,
+                'pairwise_violation_jaccard': metrics.pairwise_avg_execution_jaccard,
+                'aggregate_violation_f1': metrics.aggregate_violation_f1
             }
         }
     
@@ -430,8 +422,8 @@ class MapperExperiment(BaseExperiment):
         return {
             'evaluation_type': 'document',
             'summary_metrics': {
-                'constraint_f1': metrics['constraint_f1'],
-                'violation_f1_aggregate': metrics['violation_f1_aggregate']
+                'constraint_exact_f1': metrics['constraint_exact_f1'],
+                'aggregate_violation_f1': metrics['aggregate_violation_f1']
             },
             'num_predicted': len(predicted_rules),
             'num_gold': len(gold_rules)
@@ -453,69 +445,58 @@ class MapperExperiment(BaseExperiment):
         if result['type'] == 'document':
             metrics = result['metrics']
             base_dict.update({
-                # Constraint discovery
-                'constraint_discovery_precision': metrics['constraint_precision'],
-                'constraint_discovery_recall': metrics['constraint_recall'],
-                'constraint_discovery_f1': metrics['constraint_f1'],
-                'num_matched_pred_constraints': metrics['num_matched_pred_constraints'],
-                'num_matched_gold_constraints': metrics['num_matched_gold_constraints'],
+                # Constraint exact match
+                'constraint_exact_precision': metrics['constraint_exact_precision'],
+                'constraint_exact_recall': metrics['constraint_exact_recall'],
+                'constraint_exact_f1': metrics['constraint_exact_f1'],
+                'constraint_exact_tp': metrics['constraint_exact_tp'],
+                'constraint_exact_fp': metrics['constraint_exact_fp'],
+                'constraint_exact_fn': metrics['constraint_exact_fn'],
                 'num_gold_constraints': metrics['num_gold_constraints'],
                 'num_pred_constraints': metrics['num_pred_constraints'],
-                # Violation discovery - aggregate
-                'violation_precision_aggregate': metrics['violation_precision_aggregate'],
-                'violation_recall_aggregate': metrics['violation_recall_aggregate'],
-                'violation_f1_aggregate': metrics['violation_f1_aggregate'],
+                # Aggregate violation discovery
+                'aggregate_violation_precision': metrics['aggregate_violation_precision'],
+                'aggregate_violation_recall': metrics['aggregate_violation_recall'],
+                'aggregate_violation_f1': metrics['aggregate_violation_f1'],
                 'total_gold_violations': metrics['total_gold_violations'],
                 'total_pred_violations': metrics['total_pred_violations'],
                 'total_overlap_violations': metrics['total_overlap_violations'],
                 # N/A for sentence-only metrics
-                'constraint_detection_f1': 'N/A',
-                'constraint_syntactic_quality': 'N/A',
-                'violation_discovery_per_constraint_exact': 'N/A',
-                'violation_discovery_per_constraint_jaccard': 'N/A'
+                'pairwise_syntactic_exact': 'N/A',
+                'pairwise_violation_exact': 'N/A',
             })
         else:
-            # Sentence-level modes: include all detailed metrics
+            # Sentence-level modes: include all metrics
             metrics = result['metrics']
             base_dict.update({
-                # Constraint Detection
-                'constraint_detection_precision': metrics.detection_precision,
-                'constraint_detection_recall': metrics.detection_recall,
-                'constraint_detection_f1': metrics.detection_f1,
-                'constraint_detection_tp': metrics.detection_tp,
-                'constraint_detection_fp': metrics.detection_fp,
-                'constraint_detection_fn': metrics.detection_fn,
-                'constraint_detection_tn': metrics.detection_tn,
-                # Constraint Syntactic Quality
-                'constraint_syntactic_exact_match': metrics.strict_accuracy,
-                'constraint_syntactic_exact_match_count': metrics.strict_correct,
-                'constraint_syntactic_total': metrics.strict_total,
-                'constraint_syntactic_predicate_jaccard': metrics.avg_predicate_jaccard,
-                'constraint_syntactic_predicate_jaccard_std': metrics.std_predicate_jaccard,
-                'constraint_syntactic_soft_jaccard': metrics.avg_soft_jaccard,
-                'constraint_syntactic_soft_jaccard_std': metrics.std_soft_jaccard,
-                # Violation Discovery - Per-Constraint
-                'violation_discovery_per_constraint_exact': metrics.execution_accuracy,
-                'violation_discovery_per_constraint_exact_count': metrics.execution_correct,
-                'violation_discovery_per_constraint_total': metrics.execution_total,
-                'violation_discovery_per_constraint_jaccard': metrics.avg_execution_jaccard,
-                'violation_discovery_per_constraint_jaccard_std': metrics.std_execution_jaccard,
-                'violation_discovery_per_constraint_precision': metrics.avg_execution_precision,
-                'violation_discovery_per_constraint_precision_std': metrics.std_execution_precision,
-                'violation_discovery_per_constraint_recall': metrics.avg_execution_recall,
-                'violation_discovery_per_constraint_recall_std': metrics.std_execution_recall,
-                'violation_discovery_per_constraint_f1': metrics.avg_execution_f1,
-                'violation_discovery_per_constraint_f1_std': metrics.std_execution_f1,
-                # Violation Discovery - Aggregate
-                'violation_precision_aggregate': metrics.union_precision,
-                'violation_recall_aggregate': metrics.union_recall,
-                'violation_f1_aggregate': metrics.union_f1,
+                # Constraint exact match
+                'constraint_exact_precision': metrics.constraint_exact_precision,
+                'constraint_exact_recall': metrics.constraint_exact_recall,
+                'constraint_exact_f1': metrics.constraint_exact_f1,
+                'constraint_exact_tp': metrics.constraint_exact_tp,
+                'constraint_exact_fp': metrics.constraint_exact_fp,
+                'constraint_exact_fn': metrics.constraint_exact_fn,
+                'num_gold_constraints': metrics.num_gold_constraints,
+                'num_pred_constraints': metrics.num_pred_constraints,
+                # Pairwise syntactic quality
+                'pairwise_syntactic_exact_match': metrics.pairwise_strict_accuracy,
+                'pairwise_syntactic_exact_match_count': metrics.pairwise_strict_correct,
+                'pairwise_syntactic_total': metrics.pairwise_strict_total,
+                'pairwise_syntactic_predicate_jaccard': metrics.pairwise_avg_predicate_jaccard,
+                'pairwise_syntactic_predicate_jaccard_std': metrics.pairwise_std_predicate_jaccard,
+                # Pairwise violation discovery
+                'pairwise_violation_exact_match': metrics.pairwise_execution_accuracy,
+                'pairwise_violation_exact_match_count': metrics.pairwise_execution_correct,
+                'pairwise_violation_total': metrics.pairwise_execution_total,
+                'pairwise_violation_jaccard': metrics.pairwise_avg_execution_jaccard,
+                'pairwise_violation_jaccard_std': metrics.pairwise_std_execution_jaccard,
+                # Aggregate violation discovery
+                'aggregate_violation_precision': metrics.aggregate_violation_precision,
+                'aggregate_violation_recall': metrics.aggregate_violation_recall,
+                'aggregate_violation_f1': metrics.aggregate_violation_f1,
                 'total_gold_violations': metrics.total_gold_violations,
                 'total_pred_violations': metrics.total_pred_violations,
                 'total_overlap_violations': metrics.total_overlap_violations,
-                # Counts
-                'num_gold_constraints': num_rules,
-                'num_pred_constraints': 'N/A'
             })
         
         return base_dict
@@ -530,12 +511,10 @@ class MapperExperiment(BaseExperiment):
             'num_sentences': num_sentences,
             'status': 'failed',
             'error': error,
-            'constraint_detection_f1': 'N/A',
-            'constraint_discovery_f1': 'N/A',
-            'constraint_syntactic_quality': 'N/A',
-            'violation_discovery_per_constraint_exact': 'N/A',
-            'violation_discovery_per_constraint_jaccard': 'N/A',
-            'violation_f1_aggregate': 'N/A'
+            'constraint_exact_f1': 'N/A',
+            'pairwise_syntactic_exact': 'N/A',
+            'pairwise_violation_exact': 'N/A',
+            'aggregate_violation_f1': 'N/A'
         }
     
     def _print_comparison_table(self, results: Dict):
@@ -551,41 +530,41 @@ class MapperExperiment(BaseExperiment):
         if sentence_results:
             print("\nSentence-Level Results (Detailed):")
             print(f"{'Variant':<40} {'Mode':<18} {'Const':<8} {'Syntax':<8} {'Viol/Con':<8} {'Viol Jac':<8} {'Viol Agg':<8}")
-            print(f"{'':40} {'':18} {'Det F1':<8} {'Quality':<8} {'Exact':<8} {'(per-C)':<8} {'F1':<8}")
+            print(f"{'':40} {'':18} {'Exact F1':<8} {'Exact':<8} {'Exact':<8} {'(pair)':<8} {'F1':<8}")
             print("-" * 110)
             
             for name, result in sentence_results.items():
                 m = result['metrics']
                 print(f"{name:<40} {result.get('mode', 'DIRECT'):<18} "
-                      f"{m.detection_f1:<8.3f} {m.strict_accuracy:<8.3f} "
-                      f"{m.execution_accuracy:<8.3f} {m.avg_execution_jaccard:<8.3f} {m.union_f1:<8.3f}")
+                      f"{m.constraint_exact_f1:<8.3f} {m.pairwise_strict_accuracy:<8.3f} "
+                      f"{m.pairwise_execution_accuracy:<8.3f} {m.pairwise_avg_execution_jaccard:<8.3f} {m.aggregate_violation_f1:<8.3f}")
             
             print(f"\n{'Key Metrics:':<40}")
-            best_det = max(sentence_results.items(), key=lambda x: x[1]['metrics'].detection_f1)
-            print(f"  Best Constraint Detection F1:      {best_det[0][:50]} ({best_det[1]['metrics'].detection_f1:.3f})")
+            best_const = max(sentence_results.items(), key=lambda x: x[1]['metrics'].constraint_exact_f1)
+            print(f"  Best Constraint Exact Match F1:    {best_const[0][:50]} ({best_const[1]['metrics'].constraint_exact_f1:.3f})")
             
-            best_exec = max(sentence_results.items(), key=lambda x: x[1]['metrics'].execution_accuracy)
-            print(f"  Best Violation Discovery (per-C):  {best_exec[0][:50]} ({best_exec[1]['metrics'].execution_accuracy:.3f})")
+            best_viol_pair = max(sentence_results.items(), key=lambda x: x[1]['metrics'].pairwise_execution_accuracy)
+            print(f"  Best Violation Exact (pairwise):   {best_viol_pair[0][:50]} ({best_viol_pair[1]['metrics'].pairwise_execution_accuracy:.3f})")
             
-            best_union = max(sentence_results.items(), key=lambda x: x[1]['metrics'].union_f1)
-            print(f"  Best Violation Discovery (agg):    {best_union[0][:50]} ({best_union[1]['metrics'].union_f1:.3f})")
+            best_viol_agg = max(sentence_results.items(), key=lambda x: x[1]['metrics'].aggregate_violation_f1)
+            print(f"  Best Violation F1 (aggregate):     {best_viol_agg[0][:50]} ({best_viol_agg[1]['metrics'].aggregate_violation_f1:.3f})")
         
         if document_results:
             print("\nDocument-Level Results:")
-            print(f"{'Variant':<40} {'Const F1':<10} {'Viol F1':<10} {'Matched':<15}")
-            print(f"{'':40} {'(discovery)':<10} {'(aggregate)':<10} {'(C/V)':<15}")
+            print(f"{'Variant':<40} {'Const F1':<10} {'Viol F1':<10} {'Pred/Gold':<15}")
+            print(f"{'':40} {'(exact)':<10} {'(aggregate)':<10} {'Counts':<15}")
             print("-" * 80)
             
             for name, result in document_results.items():
                 m = result['metrics']
-                matched_str = f"{m['num_matched_pred_constraints']}/{m['num_pred_constraints']}"
-                print(f"{name:<40} {m['constraint_f1']:<10.3f} "
-                      f"{m['violation_f1_aggregate']:<10.3f} {matched_str:<15}")
+                counts_str = f"{m['num_pred_constraints']}/{m['num_gold_constraints']}"
+                print(f"{name:<40} {m['constraint_exact_f1']:<10.3f} "
+                      f"{m['aggregate_violation_f1']:<10.3f} {counts_str:<15}")
             
-            best_constraint = max(document_results.items(), key=lambda x: x[1]['metrics']['constraint_f1'])
-            best_violation = max(document_results.items(), key=lambda x: x[1]['metrics']['violation_f1_aggregate'])
-            print(f"\nBest Constraint Discovery: {best_constraint[0]} ({best_constraint[1]['metrics']['constraint_f1']:.3f})")
-            print(f"Best Violation Discovery:  {best_violation[0]} ({best_violation[1]['metrics']['violation_f1_aggregate']:.3f})")
+            best_constraint = max(document_results.items(), key=lambda x: x[1]['metrics']['constraint_exact_f1'])
+            best_violation = max(document_results.items(), key=lambda x: x[1]['metrics']['aggregate_violation_f1'])
+            print(f"\nBest Constraint Exact Match: {best_constraint[0]} ({best_constraint[1]['metrics']['constraint_exact_f1']:.3f})")
+            print(f"Best Violation F1 (agg):     {best_violation[0]} ({best_violation[1]['metrics']['aggregate_violation_f1']:.3f})")
         
         print("=" * 80)
 

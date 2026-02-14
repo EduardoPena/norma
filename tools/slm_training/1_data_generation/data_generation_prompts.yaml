@@ -1,0 +1,157 @@
+# Prompts for synthetic data generation
+
+paraphrase_rule:
+  description: "Paraphrase existing DQ rules"
+  template: |
+    Definition: A data quality rule is a statement that can be VERIFIED (true/false) using only the dataset's fields/rows.
+    
+    Rule types include:
+    - Required/non-null field
+    - Allowed or forbidden values
+    - Numeric bounds or comparisons
+    - Conditional requirements (if X then Y)
+    - Forbidden combinations
+    - Cross-row consistency, uniqueness, or ordering
+    - Determinacy (same X implies same Y)
+    - Referential integrity
+    - Temporal constraints
+    
+    Paraphrase the following data quality rule {n_samples} times. Each paraphrase should:
+    - Maintain the SAME verifiable constraint
+    - Use different wording and sentence structure
+    - Remain a verifiable data quality rule
+    - Be realistic and clear
+    
+    Original rule:
+    {example}
+    
+    Generate {n_samples} paraphrased versions, one per line:
+
+paraphrase_non_rule:
+  description: "Paraphrase existing non-DQ sentences"
+  template: |
+    NON-rules include:
+    - Headings, titles, citations
+    - Definitions or descriptions
+    - Rationale or explanations
+    - Procedures or human decisions
+    - Statements not decidable from data
+    
+    Paraphrase the following NON-RULE sentence {n_samples} times. Each paraphrase should:
+    - Maintain the same meaning
+    - Use different wording and sentence structure
+    - Remain a NON-rule (descriptive, explanatory, or procedural)
+    - NOT be a verifiable data quality constraint
+    
+    Original sentence:
+    {example}
+    
+    Generate {n_samples} paraphrased versions, one per line:
+
+
+
+domain_adaptation_rules:
+  description: "Generate DQ rules for target domain based on other domains"
+  template: |
+    Definition: A data quality rule is a statement that can be VERIFIED (true/false) using only the dataset's fields/rows.
+    
+    Rule types include:
+    - Required/non-null field
+    - Allowed or forbidden values
+    - Numeric bounds or comparisons
+    - Conditional requirements (if X then Y)
+    - Forbidden combinations
+    - Cross-row consistency, uniqueness, or ordering
+    - Determinacy (same X implies same Y)
+    - Referential integrity
+    - Temporal constraints
+    
+    Note: Phrasing does not disqualify a rule. Observations ("X are larger than Y") and system behavior statements ("X will be sorted by Y", "Z will be provided for each W") are rules if the outcome is verifiable in the data.
+    
+    === RULES FROM OTHER DOMAINS ===
+    {other_domain_rules}
+    
+    === NON-RULES FROM OTHER DOMAINS ===
+    {other_domain_non_rules}
+    
+    === TARGET DOMAIN SCHEMA ===
+    Columns: {target_schema}
+    
+    === TARGET DOMAIN SAMPLE DATA ===
+    {target_samples}
+    
+    Based on the target domain schema and data, generate {n_samples} data quality rules
+    that would be applicable to this domain. Each rule should:
+    - Be a VERIFIABLE constraint using the schema columns
+    - Be relevant to the target domain columns and data types
+    - Follow similar patterns as the example rules
+    - Reference actual column names from the schema
+    - Be one of the rule types listed above
+    
+    OUTPUT FORMAT - CRITICAL:
+    - Write ONLY the rule sentences, one per line
+    - NO numbering (no "1.", "2.", etc.)
+    - NO markdown formatting (no **, no #, no -)
+    - NO category labels (no "Required field:", no "Numeric bounds:", etc.)
+    - NO introductory text (no "Here are X rules...")
+    - NO explanations or justifications
+    - Just the plain rule sentence
+    
+    Example of CORRECT output (from different domains):
+    The StudentID field must not be null.
+    The Amount field must be greater than zero.
+    If PaymentStatus is Pending then DueDate must not be null.
+    Two records with the same OrderID must have the same CustomerName.
+    
+    Generate {n_samples} rules now:
+
+domain_adaptation_non_rules:
+  description: "Generate non-rule sentences for target domain based on other domains"
+  template: |
+    NON-rules include:
+    - Headings, titles, citations
+    - Definitions or descriptions
+    - Rationale or explanations
+    - Procedures or human decisions
+    - Statements not decidable from data
+    
+    Note: If a statement describes a verifiable data condition, it IS a rule. Non-rules are descriptive, explanatory, or procedural statements that cannot be verified from the data alone.
+    
+    === RULES FROM OTHER DOMAINS ===
+    {other_domain_rules}
+    
+    === NON-RULES FROM OTHER DOMAINS ===
+    {other_domain_non_rules}
+    
+    === TARGET DOMAIN SCHEMA ===
+    Columns: {target_schema}
+    
+    === TARGET DOMAIN SAMPLE DATA ===
+    {target_samples}
+    
+    Based on the target domain, generate {n_samples} sentences that are
+    NOT data quality rules. These should be:
+    - Descriptive, explanatory, or informational about the data or process
+    - Relevant to the target domain columns and context
+    - Similar in style to the example non-rules
+    - NOT verifiable constraints or validations
+    - One of the non-rule types listed above
+    
+    OUTPUT FORMAT - CRITICAL:
+    - Write ONLY the non-rule sentences, one per line
+    - NO numbering (no "1.", "2.", etc.)
+    - NO markdown formatting (no **, no #, no -)
+    - NO category labels (no "Description:", no "Explanation:", etc.)
+    - NO introductory text (no "Here are X sentences...")
+    - NO explanations or justifications
+    - Just the plain sentence
+    
+    Example of CORRECT output (from different domains):
+    The TransactionDate field represents when the payment was processed.
+    Students may request academic transcript copies through the registrar office.
+    Temperature readings are typically collected every 15 minutes.
+    The system administrator reviews access logs weekly.
+    
+    Generate {n_samples} non-rule sentences now:
+
+
