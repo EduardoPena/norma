@@ -1,0 +1,400 @@
+# Multi-Step Refinement Prompts - Less Restrictive Version
+# Emphasizes flexibility and trying to map constraints even when uncertain
+
+# Step 1: Check if sentence is mappable to a denial constraint
+check_mappability: |
+  Determine if this sentence can be mapped to a denial constraint.
+
+  Sentence: "{sentence}"
+
+  DENIAL CONSTRAINT REMINDER:
+  A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+  If they ARE all true, that indicates a data quality violation.
+
+  WHAT IS MAPPABLE (Be flexible and inclusive):
+  
+  ✓ Data quality rules about field values, relationships, or conditions
+  ✓ "Must be X", "Cannot be Y", "Should have Z", "If A then B"
+  ✓ Uniqueness, required fields, value ranges, dependencies
+  ✓ Temporal constraints (gaps, durations, ordering)
+  ✓ Conditional rules ("If X then Y must...")
+  ✓ Comparative rules between rows or within a row
+  ✓ ANY rule that can be checked by looking at data values
+  
+  WHEN TO TRY MAPPING (default to YES):
+  - If the sentence describes what data MUST or MUST NOT be
+  - If it sets boundaries or limits on values
+  - If it describes relationships between fields
+  - If it's about timing, frequency, or ordering
+  - If you're uncertain → TRY IT (better to attempt than reject)
+  
+  ONLY REJECT IF:
+  - Pure procedural description (no checkable condition)
+  - External actions outside the database ("post a sign", "contact supervisor")
+  - Vague policy statements with no specific data requirement
+  - Headings, titles, or navigation text
+  
+  EXAMPLES:
+
+  "At least one inspection per year" → MAPPABLE
+  (Can check time gaps between inspections)
+  
+  "Score 0-13 must be grade A" → MAPPABLE
+  (Clear field value constraint)
+  
+  "May be closed if scores 28+ on three consecutive inspections" → MAPPABLE  
+  (Conditional rule - if condition met, action should follow)
+  
+  "Operators may attend an informal meeting" → NOT MAPPABLE
+  (Optional procedural action, no data requirement)
+  
+  "Grade card must be posted on front window" → NOT MAPPABLE
+  (Physical action, not about database values)
+
+  IMPORTANT: When uncertain, say IS MAPPABLE and provide reasoning.
+  Let later steps determine if predicates actually exist.
+
+  Respond with JSON:
+  {{
+    "is_mappable": true/false,
+    "reasoning": "why this is or isn't mappable",
+    "mentioned_concepts": ["concept1", "concept2"],
+    "constraint_category": "uniqueness|required|bound|dependency|temporal|conditional|comparative|other"
+  }}
+
+# Step 2: Understand schema and identify relevant columns
+understand_schema: |
+  Identify ALL columns relevant to this constraint.
+
+  Sentence: "{sentence}"
+
+  {schema_desc}
+
+  {column_profiles_desc}
+
+  TASK: Find ALL columns mentioned or implied by the sentence.
+
+  COLUMN MATCHING (Cast a wide net):
+  - Look for exact matches first
+  - Consider synonyms and related concepts
+  - Check derived/computed columns (gaps, durations, counts, flags)
+  - Look for columns that might not match literally but represent the concept
+  
+  COMMON PATTERNS:
+  - "per year" / "annually" → look for date columns, year columns, gap columns
+  - "at least one" / "minimum" → look for count columns or gap columns  
+  - "consecutive" → look for ordering columns, sequence columns
+  - "immediately" / "must be posted" → look for date comparison columns
+  - "unique" → the column being discussed
+  - "score X results in grade Y" → score column, grade column
+
+  EXAMPLES:
+
+  Sentence: "At least one inspection per year"
+  Columns: [inspection_date, inspection_year, days_to_next_inspection]
+  Analysis: "per year" relates to time gaps; days_to_next_inspection is relevant
+
+  Sentence: "Score 0-13 results in grade A"  
+  Columns: [score, grade]
+  Analysis: Direct mentions of both columns
+
+  Sentence: "Must be posted immediately"
+  Columns: [grade_date, inspection_date]
+  Analysis: "immediately" means dates should match
+
+  Sentence: "If scores 28+ on three consecutive inspections"
+  Columns: [score, inspection_order, consecutive_high_scores]
+  Analysis: "consecutive" relates to ordering; consecutive_high_scores is a derived flag
+
+  BE INCLUSIVE: If unsure whether a column is relevant, include it.
+  If key concepts have no matching columns, report them as missing but still set is_valid=true
+  if you found SOME relevant columns.
+
+  Respond with JSON:
+  {{
+    "is_valid": true/false,
+    "relevant_columns": ["col1", "col2"],
+    "reasoning": "why these columns are relevant",
+    "missing_concepts": ["concept with no column match"],
+    "reason": "why invalid (only if is_valid=false)"
+  }}
+
+  Set is_valid=false ONLY if absolutely NO relevant columns found.
+
+# Step 3: Select predicates from allowed set
+select_predicates: |
+  Select predicates needed to express this constraint.
+
+  Sentence: "{sentence}"
+
+  Relevant columns: {relevant_columns}
+
+  Available predicates (ONLY use from this list):
+  {predicates_desc}
+
+  TASK: Select 1-8 predicates that together can express the constraint.
+
+  STRATEGIES BY CONSTRAINT TYPE:
+
+  1) SINGLE-ROW BOUND: "Value must be X" or "Gap must not exceed Y"
+     Example: "At least one inspection per year"
+     Strategy: Find bound predicate on gap/duration column
+     → ["t1.days_to_next_inspection > 365"]
+  
+  2) FUNCTIONAL DEPENDENCY: "X determines Y" or "Same X → same Y"
+     Example: "ID uniquely identifies name"
+     Strategy: Same X but different Y is violation
+     → ["t1.id = t2.id", "t1.name != t2.name"]
+  
+  3) VALUE MAPPING: "If value in range A then field must be B"
+     Example: "Score 0-13 results in grade A"
+     Strategy: Value in range BUT field is wrong
+     → ["t1.score >= 0", "t1.score <= 13", "t1.grade != 'A'"]
+  
+  4) CONDITIONAL RULE: "If condition A then requirement B"
+     Example: "If reinspection with grade A, post immediately"
+     Strategy: Condition true BUT requirement not met
+     → ["t1.inspection_type LIKE '%Re-inspection%'", "t1.grade = 'A'", "t1.grade_date != t1.inspection_date"]
+
+  5) TEMPORAL/ORDERING: About time gaps, sequences, ordering
+     Example: "Grade must be posted immediately"
+     Strategy: Two dates that should match but don't
+     → ["t1.grade_date != t1.inspection_date"]
+
+  6) COMPARATIVE: Comparing values within or across rows
+     Example: "A grades inspected less often than B/C"
+     Strategy: A-grade row has shorter gap than B/C row
+     → ["t1.grade = 'A'", "t2.grade IN ('B','C')", "t1.days_to_next < t2.days_to_next"]
+
+  KEY PRINCIPLES:
+  - Start with available predicates - don't invent new ones
+  - Single-row constraints use only t1 (no t2 needed)
+  - Cross-row constraints use both t1 and t2
+  - For derived columns (days_to_*, consecutive_*, etc.) - USE THEM!
+  - Inequality predicates are your friend (!=, <, >)
+  - When uncertain, try a combination and explain reasoning
+
+  IMPORTANT: If predicates exist for the relevant columns, try to use them!
+  Don't reject just because it seems complex - attempt a mapping.
+
+  Respond with JSON:
+  {{
+    "is_valid": true/false,
+    "selected_predicates": ["pred1", "pred2"],
+    "reasoning": "why these predicates express the constraint",
+    "constraint_pattern": "bound|functional_dependency|conditional|temporal|comparative",
+    "is_single_row": true/false,
+    "confidence": "high|medium|low",
+    "reason": "why invalid (only if is_valid=false)"
+  }}
+
+  If you genuinely cannot find predicates, set is_valid=false and explain in "reason".
+
+# Step 4: Construct the denial constraint
+construct_constraint: |
+  Construct a denial constraint from selected predicates.
+
+  Sentence: "{sentence}"
+
+  Relevant columns: {relevant_columns}
+
+  Selected predicates: {selected_predicates}
+
+  DENIAL CONSTRAINT FORMAT:
+  A JSON array of predicate strings: ["pred1", "pred2", ...]
+  These predicates CANNOT all be true together - if they are, it's a violation.
+
+  CONSTRUCTION PATTERNS:
+
+  1) SINGLE-ROW BOUND: One or more predicates on t1 only
+     Example: "Gap must not exceed 365 days"
+     → ["t1.days_to_next_inspection > 365"]
+     Meaning: If gap exceeds 365, that's a violation
+
+  2) VALUE RANGE MAPPING: Range check + wrong outcome
+     Example: "Score 0-13 must be grade A"
+     → ["t1.score >= 0", "t1.score <= 13", "t1.grade != 'A'"]
+     Meaning: If in range [0-13] BUT not grade A, violation
+
+  3) FUNCTIONAL DEPENDENCY: Same key, different value
+     → ["t1.id = t2.id", "t1.name != t2.name"]
+     Meaning: Two rows same ID but different name, violation
+
+  4) CONDITIONAL RULE: Condition + violated requirement
+     Example: "If A then must B"
+     → ["t1.type = 'A'", "t1.field != 'B'"]
+     Meaning: If condition holds BUT requirement not met, violation
+
+  5) TEMPORAL MISMATCH: Dates that should match but don't
+     Example: "Must be posted immediately"
+     → ["t1.grade_date != t1.inspection_date"]
+     Meaning: If dates differ, violation (not immediate)
+
+  6) REQUIRED FIELD: Field is null
+     → ["t1.field IS NULL"]
+
+  7) COMPARATIVE: Cross-row comparison
+     Example: "A should have larger gap than B"
+     → ["t1.type = 'A'", "t2.type = 'B'", "t1.gap < t2.gap"]
+     Meaning: A-type with smaller gap than B-type, violation
+
+  IMPORTANT NOTES:
+  - Single-row: use only t1 predicates
+  - Cross-row: use both t1 and t2 predicates
+  - List predicates as plain strings, not wrapped in logic operators
+  - Each predicate is independent - system combines them with AND
+  - Think: "What combination of values would indicate a violation?"
+
+  Respond with JSON:
+  {{
+    "constraint": ["pred1", "pred2"] or null,
+    "reasoning": "how these predicates detect violations",
+    "constraint_type": "bound|functional_dependency|conditional|temporal|uniqueness|required|comparative|other",
+    "constraint_interpretation": "In plain language: what scenario is a violation",
+    "is_single_row": true/false
+  }}
+
+  If construction genuinely impossible with available predicates, return null.
+
+# Step 6: Refine constraint based on validation errors
+refine_constraint: |
+  Refine this constraint based on validation errors.
+
+  Original sentence: "{sentence}"
+
+  Current constraint: {constraint}
+
+  Validation error: {error_msg}
+  {sql_error_section}
+
+  Available columns: {available_columns}
+  Available predicates: {available_predicates}
+
+  COMMON ISSUES AND FIXES:
+
+  1) WRONG COLUMN NAME
+     Error: "no such column"
+     Fix: Check available columns list, fix typo or use correct column
+
+  2) WRONG TABLE ALIAS
+     Error: mentions table names instead of t1/t2
+     Fix: Replace actual table names with t1 or t2
+
+  3) TYPE MISMATCH
+     Error: "cannot compare" or type error
+     Fix: Ensure comparisons are between compatible types
+
+  4) TOO MANY/FEW VIOLATIONS
+     - Too many: Constraint too loose, add specificity
+     - Zero violations: Constraint too strict or logic inverted
+     - Consider if you need additional filtering predicates
+
+  5) MISSING OPERATOR
+     Error: syntax error
+     Fix: Check predicate syntax (=, !=, <, >, <=, >=, LIKE, IS NULL)
+
+  6) WRONG LOGIC
+     If constraint finds violations when there shouldn't be any:
+     - Check if inequality direction is correct (!= vs =)
+     - Verify range boundaries (< vs <=)
+     - Consider if AND vs OR logic is implied
+
+  REFINEMENT STRATEGIES:
+  - Look at similar predicates in available list
+  - Check column name spelling carefully  
+  - Ensure table aliases are t1/t2, not actual table names
+  - Test if logic needs reversal (= ↔ !=, < ↔ >)
+  - Add or remove predicates to adjust specificity
+
+  Respond with JSON:
+  {{
+    "refined_constraint": ["pred1", "pred2"],
+    "changes_made": "specific changes from original",
+    "reasoning": "why these changes fix the error",
+    "confidence": "high|medium|low"
+  }}
+
+  If no refinement possible, return the same constraint.
+
+# Simplified version for DirectRefinementMapper  
+generate_initial: |
+  Generate a denial constraint for this sentence.
+
+  Sentence: "{sentence}"
+
+  Available predicates:
+  {predicates_list}
+
+  DENIAL CONSTRAINT: A list of predicates that CANNOT all be true simultaneously.
+  Format: ["t1.col1 = t2.col1", "t1.col2 != t2.col2"]  (JSON array of strings)
+
+  COMMON PATTERNS:
+  
+  1) Bound/Range: "X must be at least N" or "X between A and B"
+     → Single-row constraint on value range
+     Example: "Gap must not exceed 365" → ["t1.gap > 365"]
+  
+  2) Value mapping: "If X in range then Y must be Z"
+     → Range check + required outcome
+     Example: "Score 0-13 → grade A" → ["t1.score >= 0", "t1.score <= 13", "t1.grade != 'A'"]
+  
+  3) Functional dependency: "X uniquely identifies Y"
+     → Cross-row: same X but different Y
+     Example: "ID → name" → ["t1.id = t2.id", "t1.name != t2.name"]
+  
+  4) Uniqueness: "X is unique"
+     → Cross-row: duplicate X values
+     Example: "Email unique" → ["t1.email = t2.email"]
+  
+  5) Required: "X is required" or "X cannot be null"
+     → Single-row: X is null
+     Example: "Name required" → ["t1.name IS NULL"]
+
+  6) Temporal: "Must happen immediately" or "within N days"
+     → Date comparison or gap check
+     Example: "Posted immediately" → ["t1.grade_date != t1.inspection_date"]
+
+  7) Conditional: "If A then B must..."
+     → Condition true BUT requirement not met
+     Example: "If type X then status Y" → ["t1.type = 'X'", "t1.status != 'Y'"]
+
+  TIPS:
+  - Use ONLY predicates from available list
+  - Single-row constraints: use only t1
+  - Cross-row constraints: use both t1 and t2
+  - Look for derived columns (days_to_*, consecutive_*, etc.)
+  - Plain predicate list, no AND/OR/NOT wrappers
+
+  Respond with JSON:
+  {{
+    "constraint": ["pred1", "pred2"] or null,
+    "reasoning": "brief explanation of constraint type and logic"
+  }}
+
+  Return null if this is not a checkable data constraint.
+
+# Simplified refinement
+refine_simple: |
+  Fix this constraint based on the validation error.
+
+  Sentence: "{sentence}"
+  Current constraint: {constraint}
+  Validation error: {error}
+
+  Available predicates:
+  {predicates_list}
+
+  Common fixes:
+  - Column name typos: check available predicates
+  - Wrong table alias: use t1/t2, not table names
+  - Wrong operator: check =, !=, <, >, <=, >=, LIKE, IS NULL
+  - Too many violations: add specificity
+  - Zero violations: logic might be inverted
+
+  Respond with JSON:
+  {{
+    "refined": ["pred1", "pred2"],
+    "fix": "what changed and why"
+  }}
+
+  Return original if no fix possible.

@@ -1,0 +1,226 @@
+# Mapping prompts for constraint extraction
+
+zero_shot_pt: |
+  Tarefa: Converter sentenças em predicados de restrições de negação.
+
+  Definição: Uma restrição de negação é uma lista de predicados que NÃO PODEM ser todos verdadeiros simultaneamente.
+
+  Instruções:
+  1. Use t1. e t2. como identificadores de tupla
+  2. Extraia valores concretos da sentença (substitua $int, $string, etc.)
+  3. Para UMA ÚNICA sentença: Retorne ["pred1", "pred2", ...] ou null se não for uma restrição
+  4. Para MÚLTIPLAS sentenças: Retorne array [resultado1, resultado2, ...] onde cada resultado é ["pred1", ...] ou null se não for uma restrição
+  5. CRÍTICO: O tamanho do array de saída DEVE ser igual ao número de sentenças de entrada - use null para não-restrições
+  6. Produza APENAS o array JSON - sem explicações, sem rótulos markdown, sem texto extra
+
+  Formato de Predicado:
+  - Tupla única: t1.nome_campo OPERADOR constante OU t1.nome_campo OPERADOR t1.nome_campo2
+  - Entre tuplas: t1.nome_campo OPERADOR t2.nome_campo OU t1.nome_campo OPERADOR t2.nome_campo2
+  - Operadores: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL
+
+  Exemplos:
+
+  Sentença única:
+  Entrada: "Registros com mesmo ID devem ter mesmo status"
+  Saída: ["t1.id = t2.id", "t1.status != t2.status"]
+
+  Entrada: "Usuários geralmente preferem o sistema"
+  Saída: null
+
+  Múltiplas sentenças (3 entradas = 3 saídas):
+  Entrada:
+  1. Valor deve ser no mínimo 100
+  2. Usuários geralmente preferem o sistema
+  3. Email é obrigatório
+  Saída: [["t1.value < 100"], null, ["t1.email IS NULL"]]
+
+  Predicados disponíveis:
+  {predicates_list}
+
+  Sentenças:
+  {sentences}
+
+  Saída:
+
+zero_shot_with_table_pt: |
+  Tarefa: Converter sentenças em predicados de restrições de negação usando o contexto da tabela.
+
+  Definição: Uma restrição de negação é uma lista de predicados que NÃO PODEM ser todos verdadeiros simultaneamente.
+
+  Contexto da tabela:
+  {table_context}
+
+  Instruções:
+  1. Use t1. e t2. como identificadores de tupla
+  2. Mapeie termos da sentença para colunas da tabela
+  3. Extraia valores concretos da sentença (substitua $int, $string, etc.)
+  4. Para UMA ÚNICA sentença: Retorne ["pred1", ...] ou null se não for uma restrição
+  5. Para MÚLTIPLAS sentenças: Retorne array [resultado1, resultado2, ...] onde cada resultado é ["pred1", ...] ou null se não for uma restrição
+  6. CRÍTICO: O tamanho do array de saída DEVE ser igual ao número de sentenças de entrada - use null para não-restrições
+  7. Produza APENAS o array JSON - sem explicações, sem rótulos markdown, sem texto extra
+
+  Formato de Predicado:
+  - Tupla única: t1.nome_campo OPERADOR constante OU t1.nome_campo OPERADOR t1.nome_campo2
+  - Entre tuplas: t1.nome_campo OPERADOR t2.nome_campo OU t1.nome_campo OPERADOR t2.nome_campo2
+  - Operadores: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL
+
+  Exemplos:
+
+  Sentença única:
+  Entrada: "Valor deve ser no mínimo 100"
+  Saída: ["t1.value < 100"]
+
+  Entrada: "Este é um comentário geral"
+  Saída: null
+
+  Múltiplas sentenças (4 entradas = 4 saídas):
+  Entrada:
+  1. Valor deve ser no mínimo 100
+  2. Categoria deve ser A ou B
+  3. O sistema está funcionando bem
+  4. Email é obrigatório
+  Saída: [["t1.value < 100"], ["t1.category NOT IN ('A', 'B')"], null, ["t1.email IS NULL"]]
+
+  Predicados disponíveis:
+  {predicates_list}
+
+  Sentenças:
+  {sentences}
+
+  Saída:
+
+with_examples_pt: |
+  Tarefa: Converter sentenças em predicados de restrições de negação.
+
+  Definição: Uma restrição de negação é uma lista de predicados que NÃO PODEM ser todos verdadeiros simultaneamente.
+
+  Instruções:
+  1. Use t1. e t2. como identificadores de tupla
+  2. Aplique semântica de negação: "deve ser X" significa violação quando "!= X"
+  3. Extraia valores concretos da sentença (substitua $int, $string, $values com valores reais)
+  4. Para UMA ÚNICA sentença: Retorne ["pred1", ...] ou null se não for uma restrição
+  5. Para MÚLTIPLAS sentenças: Retorne array [resultado1, resultado2, ...] onde cada resultado é ["pred1", ...] ou null se não for uma restrição
+  6. CRÍTICO: O tamanho do array de saída DEVE ser igual ao número de sentenças de entrada - use null para não-restrições
+  7. Produza APENAS o array JSON - sem explicações, sem rótulos markdown, sem texto extra
+
+  Formato de Predicado:
+  - Tupla única: t1.nome_campo OPERADOR constante OU t1.nome_campo OPERADOR t1.nome_campo2
+    Exemplos: t1.value < 100, t1.status = 'active', t1.start_date < t1.end_date, t1.email IS NOT NULL
+  - Entre tuplas: t1.nome_campo OPERADOR t2.nome_campo OU t1.nome_campo OPERADOR t2.nome_campo2
+    Exemplos: t1.amount > t2.amount, t1.id = t2.id, t1.created_date < t2.updated_date
+  - Operadores: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL
+  - Placeholders: $int (números), $string (texto), $values (listas)
+
+  Exemplos:
+
+  Exemplo 1 - Restrição de limiar:
+  Entrada: "Valor deve ser no mínimo 100"
+  Análise: Violação ocorre quando value < 100
+  Saída: ["t1.value < 100"]
+
+  Exemplo 2 - Consistência entre tuplas:
+  Entrada: "Registros com mesmo ID devem ter mesmo status"
+  Análise: Mesmo ID + status diferente = violação
+  Saída: ["t1.id = t2.id", "t1.status != t2.status"]
+
+  Exemplo 3 - Comparação entre campos:
+  Entrada: "Data de início deve ser anterior à data de término"
+  Análise: Violação quando start_date >= end_date
+  Saída: ["t1.start_date >= t1.end_date"]
+
+  Exemplo 4 - Campo obrigatório:
+  Entrada: "Email é obrigatório"
+  Análise: Violação quando email é nulo
+  Saída: ["t1.email IS NULL"]
+
+  Exemplo 5 - Não é uma restrição:
+  Entrada: "Usuários geralmente preferem o novo sistema"
+  Análise: Isto é uma preferência, não uma restrição aplicável
+  Saída: null
+
+  Exemplo 6 - Múltiplas sentenças (5 entradas = 5 saídas):
+  Entrada:
+  1. Valor deve ser no mínimo 100
+  2. Registros com mesmo ID devem ter mesmo status
+  3. Usuários geralmente preferem o novo sistema
+  4. Email é obrigatório
+  5. O banco de dados é rápido
+  Saída: [["t1.value < 100"], ["t1.id = t2.id", "t1.status != t2.status"], null, ["t1.email IS NULL"], null]
+
+  Predicados disponíveis:
+  {predicates_list}
+
+  Sentenças:
+  {sentences}
+
+  Saída:
+
+with_examples_and_table_pt: |
+  Tarefa: Converter sentenças em predicados de restrições de negação usando o contexto da tabela.
+
+  Definição: Uma restrição de negação é uma lista de predicados que NÃO PODEM ser todos verdadeiros simultaneamente.
+
+  Contexto da tabela:
+  {table_context}
+
+  Instruções:
+  1. Use t1. e t2. como identificadores de tupla
+  2. Mapeie termos da sentença para colunas da tabela
+  3. Aplique semântica de negação: "deve ser X" significa violação quando "!= X"
+  4. Extraia valores concretos da sentença (substitua $int, $string, $values com valores reais)
+  5. Para UMA ÚNICA sentença: Retorne ["pred1", ...] ou null se não for uma restrição
+  6. Para MÚLTIPLAS sentenças: Retorne array [resultado1, resultado2, ...] onde cada resultado é ["pred1", ...] ou null se não for uma restrição
+  7. CRÍTICO: O tamanho do array de saída DEVE ser igual ao número de sentenças de entrada - use null para não-restrições
+  8. Produza APENAS o array JSON - sem explicações, sem rótulos markdown, sem texto extra
+
+  Formato de Predicado:
+  - Tupla única: t1.nome_campo OPERADOR constante OU t1.nome_campo OPERADOR t1.nome_campo2
+    Exemplos: t1.value < 100, t1.status = 'active', t1.start_date < t1.end_date, t1.email IS NOT NULL
+  - Entre tuplas: t1.nome_campo OPERADOR t2.nome_campo OU t1.nome_campo OPERADOR t2.nome_campo2
+    Exemplos: t1.amount > t2.amount, t1.id = t2.id, t1.created_date < t2.updated_date
+  - Operadores: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL
+  - Placeholders: $int (números), $string (texto), $values (listas)
+
+  Exemplos:
+
+  Exemplo 1 - Restrição de limiar:
+  Entrada: "Valor deve ser no mínimo 100"
+  Saída: ["t1.value < 100"]
+
+  Exemplo 2 - Pertencimento a conjunto:
+  Entrada: "Categoria deve ser A, B ou C"
+  Saída: ["t1.category NOT IN ('A', 'B', 'C')"]
+
+  Exemplo 3 - Consistência entre tuplas:
+  Entrada: "Registros com mesmo ID devem ter mesmo status"
+  Saída: ["t1.id = t2.id", "t1.status != t2.status"]
+
+  Exemplo 4 - Comparação entre campos:
+  Entrada: "Data de início deve ser anterior à data de término"
+  Saída: ["t1.start_date >= t1.end_date"]
+
+  Exemplo 5 - Campo obrigatório:
+  Entrada: "Nome não pode estar vazio"
+  Saída: ["t1.name IS NULL"]
+
+  Exemplo 6 - Não é uma restrição:
+  Entrada: "O sistema funciona bem"
+  Saída: null
+
+  Exemplo 7 - Múltiplas sentenças (6 entradas = 6 saídas):
+  Entrada:
+  1. Valor deve ser no mínimo 100
+  2. Categoria deve ser A, B ou C
+  3. O sistema funciona bem
+  4. Registros com mesmo ID devem ter mesmo status
+  5. Observação geral sobre os dados
+  6. Nome não pode estar vazio
+  Saída: [["t1.value < 100"], ["t1.category NOT IN ('A', 'B', 'C')"], null, ["t1.id = t2.id", "t1.status != t2.status"], null, ["t1.name IS NULL"]]
+
+  Predicados disponíveis:
+  {predicates_list}
+
+  Sentenças:
+  {sentences}
+
+  Saída:

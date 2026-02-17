@@ -24,6 +24,7 @@ class PredicateSpaceBuilder:
         categorical_threshold: int = 10,
         cross_column_overlap: float = 0.3,
         min_distinct_for_cross: int = 3,
+        enable_same_type_comparisons: bool = True,
     ):
         """
         Args:
@@ -31,11 +32,13 @@ class PredicateSpaceBuilder:
             categorical_threshold: Max distinct values for IN/NOT IN. -1 to disable.
             cross_column_overlap: Min overlap ratio to consider columns joinable.
             min_distinct_for_cross: Min distinct values to consider cross-column (avoids binary).
+            enable_same_type_comparisons: Allow comparisons between same-type columns (dates, timestamps, etc.) without overlap requirement.
         """
         self.table_alias = table_alias
         self.categorical_threshold = categorical_threshold
         self.cross_column_overlap = cross_column_overlap
         self.min_distinct_for_cross = min_distinct_for_cross
+        self.enable_same_type_comparisons = enable_same_type_comparisons
         self.t1 = f"{table_alias}1"
         self.t2 = f"{table_alias}2"
     
@@ -107,6 +110,38 @@ class PredicateSpaceBuilder:
         
         return len(intersection) / smaller if smaller > 0 else 0.0
     
+    def _detect_column_semantic_type(self, col_name: str) -> Optional[str]:
+        """
+        Detect semantic type from column name patterns.
+        
+        Returns:
+            'date', 'timestamp', 'time', 'location', 'coordinate', or None
+        """
+        col_lower = col_name.lower()
+        
+        # Date/time patterns
+        date_patterns = ['date', 'dt', 'day']
+        timestamp_patterns = ['timestamp', 'ts', 'datetime']
+        time_patterns = ['time', 'hour', 'minute', 'second']
+        
+        # Location patterns
+        location_patterns = ['location', 'address', 'city', 'state', 'country', 'zip', 'postal']
+        coordinate_patterns = ['lat', 'lon', 'lng', 'latitude', 'longitude', 'coord']
+        
+        # Check patterns
+        if any(pattern in col_lower for pattern in timestamp_patterns):
+            return 'timestamp'
+        if any(pattern in col_lower for pattern in date_patterns):
+            return 'date'
+        if any(pattern in col_lower for pattern in time_patterns):
+            return 'time'
+        if any(pattern in col_lower for pattern in coordinate_patterns):
+            return 'coordinate'
+        if any(pattern in col_lower for pattern in location_patterns):
+            return 'location'
+        
+        return None
+    
     def _build_cross_column_predicates(self, df: pd.DataFrame) -> Set[str]:
         """Build predicates comparing different columns within same tuple."""
         predicates = set()
@@ -129,18 +164,34 @@ class PredicateSpaceBuilder:
                 if not (both_numeric or both_string):
                     continue
                 
-                # Check domain overlap
-                overlap = self._get_column_overlap(df, col1, col2)
-                if overlap < self.cross_column_overlap:
+                # Check semantic types (date, timestamp, location, etc.)
+                sem_type1 = self._detect_column_semantic_type(col1) if self.enable_same_type_comparisons else None
+                sem_type2 = self._detect_column_semantic_type(col2) if self.enable_same_type_comparisons else None
+                same_semantic_type = sem_type1 and sem_type2 and sem_type1 == sem_type2
+                
+                # Check domain overlap (skip for same semantic types)
+                if same_semantic_type:
+                    # Allow comparisons between same semantic types without overlap check
+                    overlap_ok = True
+                else:
+                    overlap = self._get_column_overlap(df, col1, col2)
+                    overlap_ok = overlap >= self.cross_column_overlap
+                
+                if not overlap_ok:
                     continue
                 
-                # Add cross-column predicates (same tuple)
+                # Add cross-column predicates (same tuple) - both orderings for symmetric ops
                 predicates.add(f"{self.t1}.{col1} = {self.t1}.{col2}")
                 predicates.add(f"{self.t1}.{col1} != {self.t1}.{col2}")
+                predicates.add(f"{self.t1}.{col2} = {self.t1}.{col1}")
+                predicates.add(f"{self.t1}.{col2} != {self.t1}.{col1}")
                 
-                if both_numeric:
+                if both_numeric or same_semantic_type:
+                    # Allow ordering comparisons for numeric or same semantic types (e.g., dates)
+                    # Generate both orderings since <> are opposites but both useful
                     for op in ["<", ">", "<=", ">="]:
                         predicates.add(f"{self.t1}.{col1} {op} {self.t1}.{col2}")
+                        predicates.add(f"{self.t1}.{col2} {op} {self.t1}.{col1}")
         
         return predicates
     

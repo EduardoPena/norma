@@ -1,0 +1,314 @@
+# REDSQL-Inspired Multi-Step Mapper Prompts
+# Each step of the refinement pipeline
+
+# Step 1: Check if the sentence is mappable to denial constraints
+check_mappability: |
+  You are analyzing if a sentence can be mapped to a DENIAL CONSTRAINT.
+
+  CRITICAL UNDERSTANDING: A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+  - It's a DATA QUALITY RULE that can be VERIFIED (true/false) using the dataset's fields/rows
+  - Format: ["t1.col1 = t2.col1", "t1.col2 != t2.col2"]  (JSON array of predicate strings)
+  - NOT this format: "NOT (col1 = col1 AND col2 != col2)"  (WRONG - do not use logical operators in strings)
+
+  Sentence: "{sentence}"
+
+  A sentence is MAPPABLE if it:
+  - References specific data columns/attributes (explicit or implied)
+  - Describes relationships between data values that can be checked
+  - States a verifiable rule about the data (required fields, uniqueness, dependencies, bounds, forbidden combinations)
+  
+  A sentence is NOT MAPPABLE if it:
+  - Is a procedural instruction ("analysts should verify", "system must check")
+  - Is a meta-comment about data collection ("data was collected in 2020")
+  - References abstract concepts without mappable data elements
+  - Is a definition, heading, or description (not a checkable rule)
+
+  Rule types that ARE mappable:
+  - Required/non-null field: "Email is required"
+  - Uniqueness: "Phone number is unique", "ID uniquely identifies name"
+  - Functional dependency: "Same X must have same Y"
+  - Forbidden combinations: "Cannot have both A and B"
+  - Numeric bounds: "Age must be between 0 and 120"
+  - Cross-row consistency: "Start date must be before end date"
+  - Referential integrity: "Every order must have a customer"
+
+  Examples of MAPPABLE:
+  - "ID uniquely identifies name" → YES (functional dependency)
+  - "Value must be between 0 and 100" → YES (numeric bounds)
+  - "Field X is required" → YES (required field)
+  - "Records cannot appear twice" → YES (uniqueness)
+
+  Examples of NOT MAPPABLE:
+  - "Data was collected recently" → NO (historical fact, not a rule)
+  - "Users should verify inputs" → NO (procedural instruction)
+  - "Quality may vary" → NO (abstract statement)
+  - "Section Overview" → NO (heading)
+
+  Respond with JSON:
+  {{
+    "is_mappable": true/false,
+    "reasoning": "brief explanation",
+    "mentioned_concepts": ["list", "of", "potential", "column", "names"]
+  }}
+
+# Step 2: Understand schema and identify relevant columns
+understand_schema: |
+  Identify which columns from the schema are relevant to this constraint.
+
+  Sentence: "{sentence}"
+
+  {schema_desc}
+
+  {column_profiles_desc}
+
+  TASK: Identify ALL relevant columns mentioned or implied by the sentence.
+
+  COLUMN MATCHING GUIDELINES:
+  - Look for exact matches first
+  - Consider common naming patterns: camelCase, snake_case, abbreviations
+  - Match semantic meaning based on context
+  - Examples of naming variations:
+    * "id" → ID, id_number, identifier, record_id
+    * "name" → Name, name_field, entity_name, label
+    * "phone" → phone, phone_number, telephone, contact
+    * "email" → email, email_address, email_addr, contact_email
+    * "value" → value, amount, quantity, number
+
+  VALIDATION:
+  - ALL identified columns MUST actually exist in the schema above
+  - If a column mentioned in the sentence doesn't exist in schema, report it in "missing_columns"
+  - If columns are missing, set is_valid=false
+
+  EXAMPLES:
+
+  Example 1:
+  Sentence: "ID uniquely identifies entity name"
+  Available columns: [ID, EntityName, City, State]
+  Analysis:
+  - "ID" → ID (exact match, exists)
+  - "entity name" → EntityName (exact match, exists)
+  Result: {{"is_valid": true, "relevant_columns": ["ID", "EntityName"]}}
+
+  Example 2:
+  Sentence: "Each record must have a unique identifier"
+  Available columns: [RecordID, Description, Address]
+  Analysis:
+  - "record" → implicit reference to table
+  - "identifier" → RecordID (semantic match to ID-like column)
+  Result: {{"is_valid": true, "relevant_columns": ["RecordID"]}}
+
+  Example 3:
+  Sentence: "License number must match the facility code"
+  Available columns: [RecordID, EntityName, ContactInfo]
+  Analysis:
+  - "license number" → NOT FOUND (no matching column)
+  - "facility code" → RecordID (possible match but uncertain)
+  Result: {{"is_valid": false, "reason": "Column 'license number' not found in schema", "missing_columns": ["license_number"]}}
+
+  Respond with JSON:
+  {{
+    "is_valid": true/false,
+    "relevant_columns": ["column1", "column2"],
+    "reasoning": "explanation of column relevance and matching",
+    "missing_columns": ["any mentioned columns not in schema"],
+    "reason": "why invalid (if is_valid=false)"
+  }}
+
+  Important: Set is_valid=false if key columns mentioned in sentence don't exist in schema.
+
+# Step 3: Select predicates from allowed set
+select_predicates: |
+  Select predicates needed to express this constraint.
+
+  Sentence: "{sentence}"
+
+  Relevant columns: {relevant_columns}
+
+  Available predicates (ONLY use from this list):
+  {predicates_desc}
+
+  Select 2-8 predicates that together express the constraint.
+  
+  For functional dependencies (X → Y):
+  - Use equality predicates for X columns: t1.X = t2.X
+  - Use inequality for Y columns: t1.Y != t2.Y
+  - Meaning: "if X values are same, Y must be same"
+
+  For uniqueness (X is unique):
+  - Use inequality on identifying column(s)
+  - Example: t1.X = t2.X (catches duplicates)
+
+  Respond with JSON:
+  {{
+    "is_valid": true/false,
+    "selected_predicates": ["pred1", "pred2"],
+    "reasoning": "why these predicates express the constraint",
+    "constraint_type": "functional_dependency|uniqueness|forbidden_combination|required_value|other",
+    "reason": "why invalid (if is_valid=false)"
+  }}
+
+  If you cannot express the constraint with available predicates, set is_valid=false.
+
+# Step 4: Construct the denial constraint
+construct_constraint: |
+  Construct a denial constraint for this sentence.
+
+  Sentence: "{sentence}"
+
+  Relevant columns: {relevant_columns}
+  Selected predicates: {selected_predicates}
+
+  CRITICAL - DENIAL CONSTRAINT DEFINITION:
+  A denial constraint is a list of predicates that should NOT ALL be true simultaneously.
+  When all predicates in the list are true, we have detected a data quality violation.
+
+  FORMAT (JSON array of predicate strings):
+  - CORRECT: ["t1.col1 = t2.col1", "t1.col2 != t2.col2"]
+  - WRONG: "NOT (col1 = col1 AND col2 != col2)"  ← DO NOT use logical operators in the string!
+  - WRONG: ["NOT t1.col1 = t2.col1"]  ← DO NOT add NOT to individual predicates!
+
+  CONSTRUCTION PATTERNS:
+
+  1) FUNCTIONAL DEPENDENCY (X → Y): "X uniquely identifies Y" or "Same X must have same Y"
+     - Violation: Two rows with SAME X but DIFFERENT Y
+     - Constraint: ["t1.X = t2.X", "t1.Y != t2.Y"]
+     - Generic example: "Column A uniquely identifies Column B"
+       → ["t1.ColA = t2.ColA", "t1.ColB != t2.ColB"]
+     - Meaning: If two rows have same X value BUT different Y values, that's a violation.
+
+  2) UNIQUENESS: "X is unique" or "No two rows can have the same X"
+     - Violation: Two rows with SAME X (duplicates)
+     - Constraint: ["t1.X = t2.X"]
+     - Generic example: "Field X must be unique"
+       → ["t1.FieldX = t2.FieldX"]
+     - Meaning: If two rows have the same X value, that's a violation (duplicate).
+
+  3) REQUIRED FIELD: "X is required" or "X cannot be null"
+     - Violation: X is null
+     - Constraint: ["t1.X IS NULL"]
+     - Generic example: "Field Y is required"
+       → ["t1.FieldY IS NULL"]
+
+  4) NUMERIC BOUND: "X must be at least N" or "X must be between N and M"
+     - Violation: X violates the bound
+     - Constraint: ["t1.X < N"] or ["t1.X < N", "t1.X > M"]
+     - Generic example: "Value must be at least 10"
+       → ["t1.value < 10"]
+
+  5) FORBIDDEN COMBINATION: "Cannot have both A and B"
+     - Violation: Both A and B are true
+     - Constraint: ["t1.fieldA = valueA", "t1.fieldB = valueB"]
+     - Generic example: "Status cannot be both X and Y"
+       → ["t1.status = 'X'", "t1.deleted = true"]
+
+  IMPORTANT NOTES:
+  - Use t1. and t2. as tuple identifiers (representing different rows)
+  - For single-row constraints: use only t1
+  - For cross-row constraints (FD, uniqueness): use both t1 and t2
+  - DO NOT wrap predicates in NOT(...) or AND operators - just list the predicates!
+  - Each predicate is a plain string like "t1.col = t2.col"
+
+  Respond with JSON:
+  {{
+    "constraint": ["pred1", "pred2"] or null,
+    "reasoning": "explanation of constraint logic",
+    "constraint_type": "functional_dependency|uniqueness|required|bound|forbidden|other",
+    "constraint_interpretation": "In natural language: if all these predicates are true together, we have a violation"
+  }}
+
+  If you cannot construct a valid constraint, return "constraint": null.
+
+# Step 6: Refine constraint based on validation errors
+refine_constraint: |
+  Refine this constraint based on validation errors.
+
+  Original sentence: "{sentence}"
+
+  Current constraint: {constraint}
+
+  Validation error: {error_msg}
+  {sql_error_section}
+
+  Available columns: {available_columns}
+  Available predicates: {available_predicates}
+
+  Common issues and fixes:
+  - Wrong column names → check against available columns
+  - Incorrect table aliases → should be t1, t2 (not table names)
+  - Wrong operator → check if = vs != vs IS NULL is correct
+  - Missing predicates → may need more predicates for complete constraint
+  - Type mismatch → ensure comparisons are between compatible types
+  - Too many violations → constraint logic may be inverted
+
+  Respond with JSON:
+  {{
+    "refined_constraint": ["pred1", "pred2"],
+    "changes_made": "description of specific changes",
+    "reasoning": "why these changes fix the error"
+  }}
+
+  If no refinement possible, return the same constraint.
+
+# Simplified version for DirectRefinementMapper
+generate_initial: |
+  Generate a denial constraint for this sentence.
+
+  Sentence: "{sentence}"
+
+  Available predicates:
+  {predicates_list}
+
+  CRITICAL - DENIAL CONSTRAINT DEFINITION:
+  A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+  Format: ["t1.col1 = t2.col1", "t1.col2 != t2.col2"]  (JSON array of strings, NOT a single string with logical operators)
+
+  Common patterns:
+  
+  1) Functional dependency: "X uniquely identifies Y" or "Same X must have same Y"
+     → ["t1.X = t2.X", "t1.Y != t2.Y"]
+     Example: "ID uniquely identifies name" → ["t1.id = t2.id", "t1.name != t2.name"]
+  
+  2) Uniqueness: "X is unique" or "No duplicates in X"
+     → ["t1.X = t2.X"]
+     Example: "Email is unique" → ["t1.email = t2.email"]
+  
+  3) Required field: "X is required" or "X cannot be null"
+     → ["t1.X IS NULL"]
+     Example: "Name is required" → ["t1.name IS NULL"]
+
+  4) Numeric bound: "X must be at least N"
+     → ["t1.X < N"]
+     Example: "Age must be at least 18" → ["t1.age < 18"]
+
+  IMPORTANT:
+  - Use ONLY predicates from the available list above
+  - DO NOT use formats like "NOT (pred1 AND pred2)"
+  - Just list the predicates: ["pred1", "pred2"]
+  - For non-constraints (procedural statements, headings, descriptions): return null
+
+  Respond with JSON:
+  {{
+    "constraint": ["pred1", "pred2"] or null,
+    "reasoning": "brief explanation of the constraint type and why these predicates"
+  }}
+
+  Return null if this is not a data quality constraint.
+
+# Simplified refinement
+refine_simple: |
+  Fix this constraint based on the validation error.
+
+  Sentence: "{sentence}"
+  Current constraint: {constraint}
+  Validation error: {error}
+
+  Available predicates:
+  {predicates_list}
+
+  Respond with JSON:
+  {{
+    "refined": ["pred1", "pred2"],
+    "fix": "what changed and why"
+  }}
+
+  Return the original constraint if no fix is possible.

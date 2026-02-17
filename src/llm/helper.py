@@ -130,6 +130,8 @@ def parse_numbered_labels(response: str,
     return predictions
 
 
+
+
 def parse_json_response(response: str, expected_type: type = list):
     """
     Parse JSON from LLM response, handling markdown code blocks.
@@ -146,6 +148,19 @@ def parse_json_response(response: str, expected_type: type = list):
     """
     response = response.strip()
 
+   
+
+    # Drop opening fence if present (even if unclosed)
+    response = re.sub(r"^\s*```(?:json)?\s*\n?", "", response, flags=re.IGNORECASE).strip()
+
+    # Drop trailing fence if present
+    response = re.sub(r"\s*```+\s*$", "", response).strip()
+
+
+    
+
+    
+
     # print(f"Parsing response:\n{response}\nExpected type: {expected_type.__name__}")
     
     # Handle explicit null
@@ -158,6 +173,13 @@ def parse_json_response(response: str, expected_type: type = list):
         if match:
             response = match.group(1).strip()
 
+
+
+
+
+
+
+
     try:
         parsed = json.loads(response)
     except json.JSONDecodeError as e:
@@ -166,6 +188,17 @@ def parse_json_response(response: str, expected_type: type = list):
     # Allow None as valid response
     if parsed is None:
         return None
+    
+
+    # print(f"Parsed JSON:\n{parsed}\nType: {type(parsed).__name__}")
+
+    # normalize: [ [ ["a","b"] ], [ ["c","d"] ] ] -> [ ["a","b"], ["c","d"] ]
+    ## for mistral model; aparently it keeps sending nested lists for some reason, even when we ask for a flat list of lists.
+    if isinstance(parsed, list) and parsed and all(isinstance(x, list) and len(x) == 1 and isinstance(x[0], list) for x in parsed):
+        parsed = [x[0] for x in parsed]
+
+        # print(f"Normalized nested lists to expected format:\n{parsed}")
+
 
     if not isinstance(parsed, expected_type):
         raise ValueError(
