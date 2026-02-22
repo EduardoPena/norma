@@ -13,7 +13,7 @@ Usage:
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 import traceback
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -170,6 +170,119 @@ class MapperExperiment(BaseExperiment):
         
         return failed_count
     
+# =========================================================================
+# Semantic Normalization
+# =========================================================================
+
+    def _map_semantically_valid_constraint_predicates(
+        self,
+        predictions: List[Tuple[str, Optional[List[str]]]],
+        sentence2dcs_map: Dict[str, List[str]]
+    ) -> List[Tuple[str, Optional[List[str]]]]:
+        """
+        Normalize predicted predicates toward GT form where semantically equivalent.
+        Applied before evaluation — raw predictions are preserved for saved outputs.
+
+        Equivalence rules:
+        1. Exact match (case-insensitive)
+        2. = vs LIKE  /  != vs NOT LIKE  — string contained in pattern
+        3. IN ('X') vs = 'X'  — single-value list
+        4. > vs >=  /  < vs <=  — boundary operator, same value
+        """
+        mapped = []
+        for sentence, pred_constraint in predictions:
+            if pred_constraint is None or sentence not in sentence2dcs_map:
+                mapped.append((sentence, pred_constraint))
+                continue
+            gt_predicates = sentence2dcs_map[sentence]
+            normalized = [
+                self._match_to_gt_predicate(p, gt_predicates)
+                for p in pred_constraint
+            ]
+            mapped.append((sentence, normalized))
+        return mapped
+
+    def _match_to_gt_predicate(self, pred: str, gt_predicates: List[str]) -> str:
+        """Return GT form if a semantic match exists, otherwise return pred unchanged."""
+        for gt_p in gt_predicates:
+            if self._are_semantically_equivalent(pred, gt_p):
+                return gt_p
+        return pred
+
+    def _are_semantically_equivalent(self, p1: str, p2: str) -> bool:
+        """Check semantic equivalence under the four normalization rules."""
+        if p1.lower() == p2.lower():
+            return True
+
+        col1, op1, val1 = self._parse_predicate(p1)
+        col2, op2, val2 = self._parse_predicate(p2)
+
+        if col1 is None or col1 != col2:
+            return False
+
+        # Rule 1: = vs LIKE  /  != vs NOT LIKE
+        if op1 in ('=', 'LIKE') and op2 in ('=', 'LIKE'):
+            s1, s2 = self._extract_string(val1), self._extract_string(val2)
+            if s1 and s2 and min(len(s1), len(s2)) >= 4:
+                return s1.lower() in s2.lower() or s2.lower() in s1.lower()
+
+        if op1 in ('!=', 'NOT LIKE') and op2 in ('!=', 'NOT LIKE'):
+            s1, s2 = self._extract_string(val1), self._extract_string(val2)
+            if s1 and s2 and min(len(s1), len(s2)) >= 4:
+                return s1.lower() in s2.lower() or s2.lower() in s1.lower()
+
+        # Rule 2: IN ('X') vs = 'X'
+        if op1 == 'IN' and op2 == '=':
+            vals = self._extract_in_values(val1)
+            s2 = self._extract_string(val2)
+            if len(vals) == 1 and s2:
+                return vals[0].lower() == s2.lower()
+        if op2 == 'IN' and op1 == '=':
+            vals = self._extract_in_values(val2)
+            s1 = self._extract_string(val1)
+            if len(vals) == 1 and s1:
+                return vals[0].lower() == s1.lower()
+
+        # Rule 3: boundary operator adjustment, same value
+        if op1 in ('>', '>=') and op2 in ('>', '>='):
+            return val1 == val2
+        if op1 in ('<', '<=') and op2 in ('<', '<='):
+            return val1 == val2
+
+        return False
+
+    def _parse_predicate(self, pred: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        """Parse predicate into (column, operator, value). Best-effort."""
+        pred = pred.strip()
+        for op in ('NOT LIKE', 'NOT IN', 'IS NOT NULL', 'IS NULL',
+                'LIKE', 'IN', '!=', '<=', '>=', '<', '>', '='):
+            upper = pred.upper()
+            idx = upper.find(f' {op} ')
+            if idx != -1:
+                return pred[:idx].strip(), op, pred[idx + len(op) + 2:].strip()
+            if upper.endswith(f' {op}'):
+                return pred[:-(len(op) + 1)].strip(), op, None
+        return None, None, None
+
+    def _extract_string(self, val: Optional[str]) -> Optional[str]:
+        """Strip quotes and % wildcards from a string value."""
+        if not val:
+            return None
+        val = val.strip()
+        if val.startswith("'") and val.endswith("'"):
+            return val[1:-1].replace('%', '').strip()
+        return None
+
+    def _extract_in_values(self, val: Optional[str]) -> List[str]:
+        """Extract values from IN list: ('A', 'B') -> ['A', 'B']"""
+        if not val:
+            return []
+        val = val.strip().strip('()')
+        return [v.strip().strip("'") for v in val.split(',')]
+    
+
+# =========================================================================
+    
     def run_variant(self, name: str, variant: Dict, sentences: List[str],
                    sentence2dcs_map: Dict, predicate_space: Dict, df, dataset_name: str) -> Dict:
         """Run a single variant on ground truth constraint sentences."""
@@ -189,14 +302,20 @@ class MapperExperiment(BaseExperiment):
         
         # Create pipeline
         pipeline = self._create_sentence_direct_pipeline(variant, predicate_space, df)
-        
+
         # Process (only GT constraint sentences)
         print(f"  Processing {len(sentences)} GT constraint sentences...")
         results = pipeline.process(sentences, context=context)
         
         # Evaluate
         print(f"  Evaluating...")
-        predictions = [(sent, preds) for sent, is_rule, preds in results]
+        predictions_raw = [(sent, preds) for sent, is_rule, preds in results]
+
+        predictions = self._map_semantically_valid_constraint_predicates(predictions_raw, sentence2dcs_map)
+
+        for ((sent, raw_pred), (_, mapped_pred)) in zip(predictions_raw, predictions):
+            if raw_pred != mapped_pred:
+                print(f"    Normalized:\n      Sentence: {sent}\n      Raw Pred: {raw_pred}\n      Mapped Pred: {mapped_pred}")
         
         evaluator = MappingEvaluator(ground_truth=sentence2dcs_map, df=df)
         metrics, sentence_results = evaluator.evaluate(predictions)
@@ -231,6 +350,9 @@ class MapperExperiment(BaseExperiment):
         
         print(f"\n  PAIRWISE VIOLATION DISCOVERY (Known pairing):")
         print(f"     Exact Match:       {metrics.pairwise_execution_accuracy:.3f} ({metrics.pairwise_execution_correct}/{metrics.pairwise_execution_total})")
+        print(f"     Precision:         {metrics.pairwise_avg_execution_precision:.3f} (±{metrics.pairwise_std_execution_precision:.3f})")
+        print(f"     Recall:            {metrics.pairwise_avg_execution_recall:.3f} (±{metrics.pairwise_std_execution_recall:.3f})")
+        print(f"     F1:                {metrics.pairwise_avg_execution_f1:.3f} (±{metrics.pairwise_std_execution_f1:.3f})")
         print(f"     Violation Jaccard: {metrics.pairwise_avg_execution_jaccard:.3f} (±{metrics.pairwise_std_execution_jaccard:.3f})")
         
         print(f"\n  AGGREGATE VIOLATION DISCOVERY (All constraints pooled):")
@@ -295,7 +417,6 @@ class MapperExperiment(BaseExperiment):
         """Save detailed per-sentence evaluation results."""
         import pandas as pd
         
-        # Convert to records for DataFrame
         records = []
         for r in sentence_results:
             record = {
@@ -317,6 +438,9 @@ class MapperExperiment(BaseExperiment):
             if r.execution_exact is not None:
                 record.update({
                     'pairwise_violation_exact_match': r.execution_exact,
+                    'pairwise_violation_precision': r.execution_precision,
+                    'pairwise_violation_recall': r.execution_recall,
+                    'pairwise_violation_f1': r.execution_f1,
                     'pairwise_violation_jaccard': r.execution_jaccard,
                     'num_gold_violations': len(r.gold_violations) if r.gold_violations else 0,
                     'num_pred_violations': len(r.pred_violations) if r.pred_violations else 0,
@@ -325,11 +449,10 @@ class MapperExperiment(BaseExperiment):
             
             records.append(record)
         
-        # Save to CSV
-        df = pd.DataFrame(records)
+        df_out = pd.DataFrame(records)
         filename = f"{dataset_name}_{variant_name.replace(' ', '_')}_detailed_results.csv"
         filepath = self.metrics_dir / filename
-        df.to_csv(filepath, index=False)
+        df_out.to_csv(filepath, index=False)
         print(f"  Saved detailed results to: {filepath}")
     
     def _prepare_sentence_metrics(self, metrics, sentence_results):
@@ -340,6 +463,9 @@ class MapperExperiment(BaseExperiment):
                 'constraint_exact_f1': metrics.constraint_exact_f1,
                 'pairwise_syntactic_exact': metrics.pairwise_strict_accuracy,
                 'pairwise_violation_exact': metrics.pairwise_execution_accuracy,
+                'pairwise_violation_precision': metrics.pairwise_avg_execution_precision,
+                'pairwise_violation_recall': metrics.pairwise_avg_execution_recall,
+                'pairwise_violation_f1': metrics.pairwise_avg_execution_f1,
                 'pairwise_violation_jaccard': metrics.pairwise_avg_execution_jaccard,
                 'aggregate_violation_f1': metrics.aggregate_violation_f1
             }
@@ -370,7 +496,6 @@ class MapperExperiment(BaseExperiment):
             'status': 'success'
         }
         
-        # Always sentence-level metrics (only GT constraints)
         metrics = result['metrics']
         base_dict.update({
             # Constraint exact match
@@ -392,6 +517,12 @@ class MapperExperiment(BaseExperiment):
             'pairwise_violation_exact_match': metrics.pairwise_execution_accuracy,
             'pairwise_violation_exact_match_count': metrics.pairwise_execution_correct,
             'pairwise_violation_total': metrics.pairwise_execution_total,
+            'pairwise_violation_precision': metrics.pairwise_avg_execution_precision,
+            'pairwise_violation_precision_std': metrics.pairwise_std_execution_precision,
+            'pairwise_violation_recall': metrics.pairwise_avg_execution_recall,
+            'pairwise_violation_recall_std': metrics.pairwise_std_execution_recall,
+            'pairwise_violation_f1': metrics.pairwise_avg_execution_f1,
+            'pairwise_violation_f1_std': metrics.pairwise_std_execution_f1,
             'pairwise_violation_jaccard': metrics.pairwise_avg_execution_jaccard,
             'pairwise_violation_jaccard_std': metrics.pairwise_std_execution_jaccard,
             # Aggregate violation discovery
@@ -418,6 +549,7 @@ class MapperExperiment(BaseExperiment):
             'constraint_exact_f1': 'N/A',
             'pairwise_syntactic_exact': 'N/A',
             'pairwise_violation_exact': 'N/A',
+            'pairwise_violation_f1': 'N/A',
             'aggregate_violation_f1': 'N/A'
         }
     
@@ -428,7 +560,7 @@ class MapperExperiment(BaseExperiment):
         print("=" * 80)
         
         print("\nResults (SENTENCE_DIRECT on GT Constraints):")
-        print(f"{'Variant':<40} {'Const':<8} {'Syntax':<8} {'Viol/Con':<8} {'Viol Jac':<8} {'Viol Agg':<8}")
+        print(f"{'Variant':<40} {'Const':<8} {'Syntax':<8} {'Viol/Con':<8} {'Viol F1':<8} {'Viol Agg':<8}")
         print(f"{'':40} {'Exact F1':<8} {'Exact':<8} {'Exact':<8} {'(pair)':<8} {'F1':<8}")
         print("-" * 90)
         
@@ -436,7 +568,7 @@ class MapperExperiment(BaseExperiment):
             m = result['metrics']
             print(f"{name:<40} "
                   f"{m.constraint_exact_f1:<8.3f} {m.pairwise_strict_accuracy:<8.3f} "
-                  f"{m.pairwise_execution_accuracy:<8.3f} {m.pairwise_avg_execution_jaccard:<8.3f} {m.aggregate_violation_f1:<8.3f}")
+                  f"{m.pairwise_execution_accuracy:<8.3f} {m.pairwise_avg_execution_f1:<8.3f} {m.aggregate_violation_f1:<8.3f}")
         
         print(f"\n{'Key Metrics:':<40}")
         best_const = max(results.items(), key=lambda x: x[1]['metrics'].constraint_exact_f1)
@@ -444,6 +576,9 @@ class MapperExperiment(BaseExperiment):
         
         best_viol_pair = max(results.items(), key=lambda x: x[1]['metrics'].pairwise_execution_accuracy)
         print(f"  Best Violation Exact (pairwise):   {best_viol_pair[0][:50]} ({best_viol_pair[1]['metrics'].pairwise_execution_accuracy:.3f})")
+
+        best_viol_f1_pair = max(results.items(), key=lambda x: x[1]['metrics'].pairwise_avg_execution_f1)
+        print(f"  Best Violation F1 (pairwise):      {best_viol_f1_pair[0][:50]} ({best_viol_f1_pair[1]['metrics'].pairwise_avg_execution_f1:.3f})")
         
         best_viol_agg = max(results.items(), key=lambda x: x[1]['metrics'].aggregate_violation_f1)
         print(f"  Best Violation F1 (aggregate):     {best_viol_agg[0][:50]} ({best_viol_agg[1]['metrics'].aggregate_violation_f1:.3f})")

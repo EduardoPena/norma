@@ -1,7 +1,7 @@
 # test.py - Quick migration testing
 
 
-DATA_PATH = 'data/person/'  # Adjust as needed
+DATA_PATH = 'data/restaurant/'  # Adjust as needed
 
 
 def test_classification_evaluation():
@@ -375,12 +375,114 @@ def test_norma_sentence_filtered_evaluation():
     print(f"  Execution Jaccard:   {metrics.avg_execution_jaccard:.3f}")
     print(f"  Union F1:            {metrics.union_f1:.3f}")
 
+
+
+def load_predictions(result_file):
+    import json
+    from typing import List, Tuple, Optional
+    predictions: List[Tuple[str, Optional[List[str]]]] = []
+    with open(result_file, 'r') as f:
+        data = json.load(f)
+    for entry in data.get('outputs', []):
+        sentence = entry.get('sentence')
+        pred_str = entry.get('predicted')
+        if pred_str is None or pred_str.strip() == '' or pred_str.strip().lower() == 'none':
+            predictions.append((sentence, None))
+            continue
+        try:
+            preds = eval(pred_str)
+            if not isinstance(preds, list):
+                preds = [str(preds)]
+        except Exception:
+            preds = None
+        predictions.append((sentence, preds))
+    return predictions
+def test_mapping_evaluation():
+
+    from src.pipelines.norma_pipeline import NormaPipeline, ProcessingMode
+    from src.mappers.llm_document_mapper import LLMDocumentMapper
+    from src.evaluation.mapping import MappingEvaluator
+    from src.data import DatasetLoader
+    from src.utils.table_context import TableContextBuilder
+    from src.llm.helper import PromptLoader
+    import os
+
+    print("\nTesting NORMA DOCUMENT Pipeline with Evaluation")
+    print("=" * 80)
+
+    if not os.getenv("OPENAI_API_KEY"):
+        print("Skipping - OPENAI_API_KEY not set")
+        return
+
+    # Load data
+    loader = DatasetLoader(DATA_PATH)
+    df, sentences, sentence2dcs_map, predicate_space = loader.load()
+
+    print(f"Loaded {len(sentences)} sentences, {len(df)} rows")
+    gt_dcs = [dc for dc in sentence2dcs_map.values() if dc]
+    print(f"Ground truth constraints: {len(gt_dcs)}")
+    
+    # for sentence, dc in sentence2dcs_map.items():
+    #     if dc:
+    #         print(f"Sentence: {sentence[:60]}...")
+    #         print(f"  Ground truth DC: {dc}")
+
+    result_file = '/Users/pena/nl2c_projetcts/norma/results/sentence-level_mappers_on_gt_only_-_direct_mode_all_models_20260218_181917/outputs/restaurant_GPT-5-mini_MultiStepRefinement_Less_Restrictive_sentence_mappings_gt.json'
+
+    # result_file = '/Users/pena/nl2c_projetcts/norma/results/sentence-level_mappers_on_gt_only_-_direct_mode_all_models_20260218_185027/outputs/sisu_GPT-5-mini_MultiStepRefinement_Less_Restrictive_sentence_mappings_gt.json'
+
+    predictions = load_predictions(result_file)
+
+    print(f"\nLoaded {len(predictions)} predictions from {result_file}")
+    for pred in predictions:
+        print(f"Sentence: {pred[0][:60]}...")
+        print(f"Predicted DC: {pred[1]}")
+        print("Correct", sentence2dcs_map[pred[0]])
+
+    evaluator = MappingEvaluator(ground_truth=sentence2dcs_map, df=df)
+
+    metrics, sentence_results = evaluator.evaluate(predictions)
+
+    # Display detailed metrics
+    print(f"\n\n  CONSTRAINT EXACT MATCH (Set membership):")
+    print(f"     Precision: {metrics.constraint_exact_precision:.3f}")
+    print(f"     Recall:    {metrics.constraint_exact_recall:.3f}")
+    print(f"     F1:        {metrics.constraint_exact_f1:.3f} [PRIMARY]")
+    print(f"     TP: {metrics.constraint_exact_tp}, FP: {metrics.constraint_exact_fp}, FN: {metrics.constraint_exact_fn}")
+    print(f"     Predicted: {metrics.num_pred_constraints}, Gold: {metrics.num_gold_constraints}")
+    
+    print(f"\n  PAIRWISE SYNTACTIC QUALITY (Known sentence->constraint pairing, n={metrics.pairwise_strict_total}):")
+    print(f"     Exact Match:       {metrics.pairwise_strict_accuracy:.3f} ({metrics.pairwise_strict_correct}/{metrics.pairwise_strict_total})")
+    print(f"     Predicate Jaccard: {metrics.pairwise_avg_predicate_jaccard:.3f} (±{metrics.pairwise_std_predicate_jaccard:.3f})")
+    
+    print(f"\n  PAIRWISE VIOLATION DISCOVERY (Known pairing):")
+    print(f"     Exact Match:       {metrics.pairwise_execution_accuracy:.3f} ({metrics.pairwise_execution_correct}/{metrics.pairwise_execution_total})")
+    print(f"     Precision:         {metrics.pairwise_avg_execution_precision:.3f} (±{metrics.pairwise_std_execution_precision:.3f})")
+    print(f"     Recall:            {metrics.pairwise_avg_execution_recall:.3f} (±{metrics.pairwise_std_execution_recall:.3f})")
+    print(f"     F1:                {metrics.pairwise_avg_execution_f1:.3f} (±{metrics.pairwise_std_execution_f1:.3f})")
+    print(f"     Violation Jaccard: {metrics.pairwise_avg_execution_jaccard:.3f} (±{metrics.pairwise_std_execution_jaccard:.3f})")
+    
+    print(f"\n  AGGREGATE VIOLATION DISCOVERY (All constraints pooled):")
+    print(f"     Violation Precision:    {metrics.aggregate_violation_precision:.3f}")
+    print(f"     Violation Recall:       {metrics.aggregate_violation_recall:.3f}")
+    print(f"     Violation F1:           {metrics.aggregate_violation_f1:.3f} [PRIMARY]")
+    print(f"     Gold violations:        {metrics.total_gold_violations}")
+    print(f"     Predicted violations:   {metrics.total_pred_violations}")
+    print(f"     Overlap violations:     {metrics.total_overlap_violations}")    
+
+
+
 if __name__ == "__main__":
 
-    test_classification_evaluation()
+    # test_classification_evaluation()
 
 
-    test_norma_sentence_filtered_evaluation()
+    # test_norma_sentence_filtered_evaluation()
 
 
-    test_norma_document_evaluation()
+    # test_norma_document_evaluation()
+
+    test_mapping_evaluation()
+
+
+

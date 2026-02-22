@@ -24,6 +24,7 @@ from experiments.shared.experiment_base import BaseExperiment
 from src.pipelines.norma_pipeline import NormaPipeline, ProcessingMode
 from src.classifiers.llm import LLMRuleClassifier
 from src.mappers.llm import LLMMapper
+from src.mappers.multi_step_refinement import MultiStepRefinementMapper
 from src.mappers.llm_document_mapper import LLMDocumentMapper
 from src.evaluation.mapping import MappingEvaluator
 from src.llm.helper import PromptLoader
@@ -106,9 +107,6 @@ class MapperExperiment(BaseExperiment):
             print(f"Error: Failed to load dataset: {e}")
             return len(self.config['variants'])
         
-        
-        
-        
         num_total = len(sentences)
         num_rules = sum(1 for dc in sentence2dcs_map.values() if dc)
         
@@ -181,9 +179,9 @@ class MapperExperiment(BaseExperiment):
         
         # Create pipeline based on mode
         if mode == 'SENTENCE_DIRECT':
-            pipeline = self._create_sentence_direct_pipeline(variant, predicate_space)
+            pipeline = self._create_sentence_direct_pipeline(variant, predicate_space, df)
         elif mode == 'SENTENCE_FILTERED':
-            pipeline = self._create_sentence_filtered_pipeline(variant, predicate_space)
+            pipeline = self._create_sentence_filtered_pipeline(variant, predicate_space, df)
         elif mode == 'DOCUMENT':
             pipeline = self._create_document_pipeline(variant, predicate_space, context)
         else:
@@ -302,22 +300,41 @@ class MapperExperiment(BaseExperiment):
                 'mode': mode,
                 'metrics': metrics
             }
-    
-    def _create_sentence_direct_pipeline(self, variant: Dict, predicate_space: Dict):
+
+    # =========================================================================
+    # Mapper / Pipeline Factory Methods
+    # =========================================================================
+
+    def _create_mapper(self, mapper_config: Dict, predicate_space: Dict, df):
+        """Factory: instantiate the correct mapper based on 'implementation' key."""
+        implementation = mapper_config.get('implementation', 'llm')
+
+        if implementation == 'multi_step_refinement':
+            return MultiStepRefinementMapper(
+                model_name=mapper_config['model'],
+                predicate_space=predicate_space,
+                df=df,
+                max_refinement_iterations=mapper_config.get('max_refinement_iterations', 2),
+                prompt_file=mapper_config.get('prompt_file', 'multi_step_refinement')
+            )
+        elif implementation == 'llm':
+            return LLMMapper(
+                model_name=mapper_config['model'],
+                prompt_name=mapper_config['prompt_key'],
+                allowed_predicates=predicate_space['predicates'],
+                chunk_size=mapper_config.get('batch_size', 10)
+            )
+        else:
+            raise ValueError(f"Unknown mapper implementation: {implementation}")
+
+    def _create_sentence_direct_pipeline(self, variant: Dict, predicate_space: Dict, df):
         """Create SENTENCE_DIRECT pipeline."""
-        mapper_config = variant['mapper']
-        mapper = LLMMapper(
-            model_name=mapper_config['model'],
-            prompt_name=mapper_config['prompt_key'],
-            allowed_predicates=predicate_space['predicates'],
-            chunk_size=mapper_config.get('batch_size', 10)
-        )
+        mapper = self._create_mapper(variant['mapper'], predicate_space, df)
         return NormaPipeline(mode=ProcessingMode.SENTENCE_DIRECT, mapper=mapper)
     
-    def _create_sentence_filtered_pipeline(self, variant: Dict, predicate_space: Dict):
+    def _create_sentence_filtered_pipeline(self, variant: Dict, predicate_space: Dict, df):
         """Create SENTENCE_FILTERED pipeline."""
         classifier_config = variant['classifier']
-        mapper_config = variant['mapper']
         
         # Load prompt template for classifier
         classifier_prompt = self.prompt_loader.load(
@@ -329,12 +346,7 @@ class MapperExperiment(BaseExperiment):
             prompt_template=classifier_prompt
         )
         
-        mapper = LLMMapper(
-            model_name=mapper_config['model'],
-            prompt_name=mapper_config['prompt_key'],
-            allowed_predicates=predicate_space['predicates'],
-            chunk_size=mapper_config.get('batch_size', 10)
-        )
+        mapper = self._create_mapper(variant['mapper'], predicate_space, df)
         
         return NormaPipeline(
             mode=ProcessingMode.SENTENCE_FILTERED,
@@ -356,6 +368,10 @@ class MapperExperiment(BaseExperiment):
         )
         
         return NormaPipeline(mode=ProcessingMode.DOCUMENT, document_mapper=document_mapper)
+
+    # =========================================================================
+    # Helpers
+    # =========================================================================
     
     def _build_context(self, df, dataset_name: str, num_rows: int = 3):
         """Build table context."""
@@ -367,7 +383,6 @@ class MapperExperiment(BaseExperiment):
         """Save detailed per-sentence evaluation results."""
         import pandas as pd
         
-        # Convert to records for DataFrame
         records = []
         for r in sentence_results:
             record = {
@@ -397,11 +412,10 @@ class MapperExperiment(BaseExperiment):
             
             records.append(record)
         
-        # Save to CSV
-        df = pd.DataFrame(records)
+        df_out = pd.DataFrame(records)
         filename = f"{dataset_name}_{variant_name.replace(' ', '_')}_detailed_results.csv"
         filepath = self.metrics_dir / filename
-        df.to_csv(filepath, index=False)
+        df_out.to_csv(filepath, index=False)
         print(f"  Saved detailed results to: {filepath}")
     
     def _prepare_sentence_metrics(self, metrics, sentence_results):

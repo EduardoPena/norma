@@ -1,68 +1,4 @@
-# Multi-Step Refinement Prompts - Less Restrictive Version
-# Emphasizes flexibility and trying to map constraints even when uncertain
-
-# Step 1: Check if sentence is mappable to a denial constraint
-check_mappability: |
-  Determine if this sentence can be mapped to a denial constraint.
-
-  Sentence: "{sentence}"
-
-  DENIAL CONSTRAINT REMINDER:
-  A denial constraint is a list of predicates that CANNOT all be true simultaneously.
-  If they ARE all true, that indicates a data quality violation.
-
-  WHAT IS MAPPABLE (Be flexible and inclusive):
-  
-  ✓ Data quality rules about field values, relationships, or conditions
-  ✓ "Must be X", "Cannot be Y", "Should have Z", "If A then B"
-  ✓ Uniqueness, required fields, value ranges, dependencies
-  ✓ Temporal constraints (gaps, durations, ordering)
-  ✓ Conditional rules ("If X then Y must...")
-  ✓ Comparative rules between rows or within a row
-  ✓ ANY rule that can be checked by looking at data values
-  
-  WHEN TO TRY MAPPING (default to YES):
-  - If the sentence describes what data MUST or MUST NOT be
-  - If it sets boundaries or limits on values
-  - If it describes relationships between fields
-  - If it's about timing, frequency, or ordering
-  - If you're uncertain → TRY IT (better to attempt than reject)
-  
-  ONLY REJECT IF:
-  - Pure procedural description (no checkable condition)
-  - External actions outside the database ("post a sign", "contact supervisor")
-  - Vague policy statements with no specific data requirement
-  - Headings, titles, or navigation text
-  
-  EXAMPLES:
-
-  "At least one inspection per year" → MAPPABLE
-  (Can check time gaps between inspections)
-  
-  "Score 0-13 must be grade A" → MAPPABLE
-  (Clear field value constraint)
-  
-  "May be closed if scores 28+ on three consecutive inspections" → MAPPABLE  
-  (Conditional rule - if condition met, action should follow)
-  
-  "Operators may attend an informal meeting" → NOT MAPPABLE
-  (Optional procedural action, no data requirement)
-  
-  "Grade card must be posted on front window" → NOT MAPPABLE
-  (Physical action, not about database values)
-
-  IMPORTANT: When uncertain, say IS MAPPABLE and provide reasoning.
-  Let later steps determine if predicates actually exist.
-
-  Respond with JSON:
-  {{
-    "is_mappable": true/false,
-    "reasoning": "why this is or isn't mappable",
-    "mentioned_concepts": ["concept1", "concept2"],
-    "constraint_category": "uniqueness|required|bound|dependency|temporal|conditional|comparative|other"
-  }}
-
-# Step 2: Understand schema and identify relevant columns
+# understand_schema: Schema-grounded gate
 understand_schema: |
   Identify ALL columns relevant to this constraint.
 
@@ -72,39 +8,44 @@ understand_schema: |
 
   {column_profiles_desc}
 
+  Columns that have predicates defined (a constraint can ONLY use these):
+  {predicate_columns}
+
   TASK: Find ALL columns mentioned or implied by the sentence.
+  REJECT (set is_valid=false) if NO concept in the sentence maps to any column in the predicate list above.
 
   COLUMN MATCHING (Cast a wide net):
   - Look for exact matches first
   - Consider synonyms and related concepts
   - Check derived/computed columns (gaps, durations, counts, flags)
   - Look for columns that might not match literally but represent the concept
+  - If a column is central to the constraint, flag it in your reasoning and note whether the sentence implies an IS NOT NULL guard is needed.
   
   COMMON PATTERNS:
-  - "per year" / "annually" → look for date columns, year columns, gap columns
-  - "at least one" / "minimum" → look for count columns or gap columns  
-  - "consecutive" → look for ordering columns, sequence columns
-  - "immediately" / "must be posted" → look for date comparison columns
-  - "unique" → the column being discussed
-  - "score X results in grade Y" → score column, grade column
+  - "per time_period" / "within N units" → look for date columns, gap columns, duration columns
+  - "at least one" / "minimum N" → look for count columns or gap columns  
+  - "consecutive" / "sequential" → look for ordering columns, sequence columns, flags
+  - "immediately" / "within same period" → look for date comparison columns, timestamp fields
+  - "unique" / "same X must have same Y" → the columns being discussed
+  - "value range X-Y results in status Z" → value column, status/category column
 
-  EXAMPLES:
+  EXAMPLES (Generic structure):
 
-  Sentence: "At least one inspection per year"
-  Columns: [inspection_date, inspection_year, days_to_next_inspection]
-  Analysis: "per year" relates to time gaps; days_to_next_inspection is relevant
+  Sentence: "Entity must occur at least once per time period"
+  Columns: [event_date, period_id, time_gap_days]
+  Analysis: "per time period" relates to temporal gaps; time_gap_days or similar derived columns are relevant
 
-  Sentence: "Score 0-13 results in grade A"  
-  Columns: [score, grade]
-  Analysis: Direct mentions of both columns
+  Sentence: "If metric between X and Y, category must be Z"
+  Columns: [metric_value, category_field]
+  Analysis: Direct mentions of value and category columns
 
-  Sentence: "Must be posted immediately"
-  Columns: [grade_date, inspection_date]
-  Analysis: "immediately" means dates should match
+  Sentence: "Action must occur within N time units"
+  Columns: [action_date, reference_date, time_difference]
+  Analysis: "within N units" means dates/times should be close; look for date fields or derived gaps
 
-  Sentence: "If scores 28+ on three consecutive inspections"
-  Columns: [score, inspection_order, consecutive_high_scores]
-  Analysis: "consecutive" relates to ordering; consecutive_high_scores is a derived flag
+  Sentence: "If condition A holds for N consecutive records"
+  Columns: [field_value, sequence_number, consecutive_flag]
+  Analysis: "consecutive" relates to ordering; sequence numbers or derived flags tracking consecutive occurrences
 
   BE INCLUSIVE: If unsure whether a column is relevant, include it.
   If key concepts have no matching columns, report them as missing but still set is_valid=true
@@ -113,21 +54,25 @@ understand_schema: |
   Respond with JSON:
   {{
     "is_valid": true/false,
-    "relevant_columns": ["col1", "col2"],
+    "direct_columns": ["columns explicitly named or described in the sentence"],
+    "implied_columns": ["columns needed to scope the constraint but not named"],
+    "relevant_columns": ["all of the above combined — no duplicates"],
     "reasoning": "why these columns are relevant",
     "missing_concepts": ["concept with no column match"],
     "reason": "why invalid (only if is_valid=false)"
   }}
 
-  Set is_valid=false ONLY if absolutely NO relevant columns found.
+  Set is_valid=false ONLY if NO sentence concept maps to any column in the predicate list above.
 
-# Step 3: Select predicates from allowed set
+# select_predicates: Pick structural predicate templates
 select_predicates: |
   Select predicates needed to express this constraint.
 
   Sentence: "{sentence}"
 
   Relevant columns: {relevant_columns}
+
+  {column_profiles_desc}
 
   Available predicates (ONLY use from this list):
   {predicates_desc}
@@ -137,34 +82,40 @@ select_predicates: |
   STRATEGIES BY CONSTRAINT TYPE:
 
   1) SINGLE-ROW BOUND: "Value must be X" or "Gap must not exceed Y"
-     Example: "At least one inspection per year"
+     Example: "Event must occur at least once per period"
      Strategy: Find bound predicate on gap/duration column
-     → ["t1.days_to_next_inspection > 365"]
+     → ["t1.time_gap_days > 365"]
   
   2) FUNCTIONAL DEPENDENCY: "X determines Y" or "Same X → same Y"
-     Example: "ID uniquely identifies name"
+     Example: "Identifier uniquely determines name"
      Strategy: Same X but different Y is violation
-     → ["t1.id = t2.id", "t1.name != t2.name"]
+     → ["t1.identifier = t2.identifier", "t1.name != t2.name"]
   
   3) VALUE MAPPING: "If value in range A then field must be B"
-     Example: "Score 0-13 results in grade A"
+     Example: "Metric 0-100 results in category low"
      Strategy: Value in range BUT field is wrong
-     → ["t1.score >= 0", "t1.score <= 13", "t1.grade != 'A'"]
+     → ["t1.metric >= $int", "t1.metric <= $int", "t1.category != $string"]
   
   4) CONDITIONAL RULE: "If condition A then requirement B"
-     Example: "If reinspection with grade A, post immediately"
+     Example: "If type is X and status is Y, field must be Z"
      Strategy: Condition true BUT requirement not met
-     → ["t1.inspection_type LIKE '%Re-inspection%'", "t1.grade = 'A'", "t1.grade_date != t1.inspection_date"]
+     → ["t1.type = $string", "t1.status = $string", "t1.field != $string"]
 
   5) TEMPORAL/ORDERING: About time gaps, sequences, ordering
-     Example: "Grade must be posted immediately"
-     Strategy: Two dates that should match but don't
-     → ["t1.grade_date != t1.inspection_date"]
+     Example: "Action must occur within N time units"
+     Strategy: Use derived gap column against a threshold
+     → ["t1.gap_column > $float"]
 
   6) COMPARATIVE: Comparing values within or across rows
-     Example: "A grades inspected less often than B/C"
-     Strategy: A-grade row has shorter gap than B/C row
-     → ["t1.grade = 'A'", "t2.grade IN ('B','C')", "t1.days_to_next < t2.days_to_next"]
+     Example: "Within same group, higher priority should have lower value"
+     Strategy: Same group but priority/value relationship violated
+     → ["t1.group_id = t2.group_id", "t1.priority > t2.priority", "t1.value >= t2.value"]
+
+  NULL GUARDS:
+  - If a column has nulls (shown in profiles) and you use it in a comparison,
+    also select t1.col IS NOT NULL — null rows silently satisfy comparisons and
+    produce false violations or hide real ones.
+  - Example: days_to_next_inspection has nulls → add t1.days_to_next_inspection IS NOT NULL
 
   KEY PRINCIPLES:
   - Start with available predicates - don't invent new ones
@@ -173,9 +124,8 @@ select_predicates: |
   - For derived columns (days_to_*, consecutive_*, etc.) - USE THEM!
   - Inequality predicates are your friend (!=, <, >)
   - When uncertain, try a combination and explain reasoning
-
-  IMPORTANT: If predicates exist for the relevant columns, try to use them!
-  Don't reject just because it seems complex - attempt a mapping.
+  - $string, $int, $float, $pattern are placeholders — constants substituted in next step
+  - Same template can appear twice with different constants e.g. ["t1.col >= $int", "t1.col <= $int"]
 
   Respond with JSON:
   {{
@@ -190,7 +140,7 @@ select_predicates: |
 
   If you genuinely cannot find predicates, set is_valid=false and explain in "reason".
 
-# Step 4: Construct the denial constraint
+# construct_constraint: Substitute constants and assemble
 construct_constraint: |
   Construct a denial constraint from selected predicates.
 
@@ -198,51 +148,110 @@ construct_constraint: |
 
   Relevant columns: {relevant_columns}
 
+  {column_profiles_desc}
+
   Selected predicates: {selected_predicates}
 
-  DENIAL CONSTRAINT FORMAT:
-  A JSON array of predicate strings: ["pred1", "pred2", ...]
-  These predicates CANNOT all be true together - if they are, it's a violation.
+  WHAT IS A DENIAL CONSTRAINT:
+  A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+  If they ARE all true for a tuple or pair of tuples, that indicates a data quality violation.
+  Think of it as: "no record (or pair of records) should satisfy ALL of these conditions at once."
+
+  Example 1 — single row:
+  Rule: "A score of 0-13 results in a grade of A"
+  Violation: score is in [0,13] BUT grade is not A
+  → ["t1.score >= 0", "t1.score <= 13", "t1.grade != 'A'"]
+
+  Example 2 — cross row, same entity over time:
+  Rule: "A restaurant closed after 3 consecutive high scores cannot reopen without re-inspection"
+  Violation: consecutive_high_scores >= 3 AND action is not closure
+  → ["t1.consecutive_high_scores >= 3", "t1.action != 'Closed'"]
+
+  Example 3 — cross row, functional dependency:
+  Rule: "Same identifier must have same name"
+  Violation: two rows have same id but different name
+  → ["t1.id = t2.id", "t1.name != t2.name"]
+
+  Example 4 — cross row, comparative:
+  Rule: "Within same group, higher priority should have lower rank value"
+  Violation: same group, t1 has higher priority but also higher rank value
+  → ["t1.group = t2.group", "t1.priority > t2.priority", "t1.rank >= t2.rank"]
+
+  Example 5 — temporal:
+  Rule: "Every establishment must be inspected at least once per year"
+  Violation: days to next inspection exceeds 365 AND the column is not null
+  → ["t1.days_to_next_inspection IS NOT NULL", "t1.days_to_next_inspection > 365"]
+
+  SUBSTITUTION:
+  Replace placeholders with constants from the sentence:
+  - $string  → 'VALUE' using EXACT casing from column profile samples
+  - $int     → integer number, e.g. 28 (never write 28.0 for an integer)
+  - $float   → decimal number, e.g. 3.14
+  - $pattern → LIKE pattern, e.g. '%keyword%' using casing from sample values
+  - $values  → IN list, e.g. ('A', 'B')
+  Non-template predicates (anchors, comparisons, null checks) stay as-is.
 
   CONSTRUCTION PATTERNS:
 
   1) SINGLE-ROW BOUND: One or more predicates on t1 only
-     Example: "Gap must not exceed 365 days"
-     → ["t1.days_to_next_inspection > 365"]
-     Meaning: If gap exceeds 365, that's a violation
+     Example: "Time gap must not exceed N days"
+     → ["t1.time_gap_days > 365"]
+     Meaning: If gap exceeds limit, that's a violation
 
   2) VALUE RANGE MAPPING: Range check + wrong outcome
-     Example: "Score 0-13 must be grade A"
-     → ["t1.score >= 0", "t1.score <= 13", "t1.grade != 'A'"]
-     Meaning: If in range [0-13] BUT not grade A, violation
+     Example: "Metric 0-100 must have category low"
+     → ["t1.metric >= 0", "t1.metric <= 100", "t1.category != 'low'"]
+     Meaning: If in range [0-100] BUT not category low, violation
 
   3) FUNCTIONAL DEPENDENCY: Same key, different value
-     → ["t1.id = t2.id", "t1.name != t2.name"]
-     Meaning: Two rows same ID but different name, violation
+     → ["t1.identifier = t2.identifier", "t1.attribute != t2.attribute"]
+     Meaning: Two rows same ID but different attribute, violation
 
   4) CONDITIONAL RULE: Condition + violated requirement
-     Example: "If A then must B"
-     → ["t1.type = 'A'", "t1.field != 'B'"]
+     Example: "If type A then status must be B"
+     → ["t1.type = 'A'", "t1.status != 'B'"]
      Meaning: If condition holds BUT requirement not met, violation
 
-  5) TEMPORAL MISMATCH: Dates that should match but don't
-     Example: "Must be posted immediately"
-     → ["t1.grade_date != t1.inspection_date"]
-     Meaning: If dates differ, violation (not immediate)
+  5) REQUIRED FIELD: Field is null
+     → ["t1.required_field IS NULL"]
 
-  6) REQUIRED FIELD: Field is null
-     → ["t1.field IS NULL"]
+  6) COMPARATIVE: Cross-row comparison
+     Example: "Within group, higher priority should have lower value"
+     → ["t1.group = t2.group", "t1.priority > t2.priority", "t1.value >= t2.value"]
+     Meaning: Same group but priority/value relationship violated
 
-  7) COMPARATIVE: Cross-row comparison
-     Example: "A should have larger gap than B"
-     → ["t1.type = 'A'", "t2.type = 'B'", "t1.gap < t2.gap"]
-     Meaning: A-type with smaller gap than B-type, violation
+  NULL GUARDS:
+  If a column has nulls (shown in profiles) and is used in a comparison,
+  include t1.col IS NOT NULL in the constraint — otherwise null rows silently
+  satisfy predicates and hide real violations or produce false ones.
+  Example: "t1.days_to_next_inspection IS NOT NULL" before "t1.days_to_next_inspection > 365"
+
+  SEMANTIC EQUIVALENCE — what matters is the violation, not exact predicates:
+  Two constraints are equivalent if they detect the same violations, even with
+  different peripheral columns. What cannot vary is the core violation predicate
+  and the anchor that identifies which entities are compared.
+
+  Core (must be correct):
+  - The violation predicate (the condition that must not exist)
+  - The anchor that scopes which tuples are being compared
+
+  Peripheral (may vary without changing correctness):
+  - Extra partition or scope columns added or omitted
+  - Alternative identifiers for the same entity
+
+  EXAMPLE — same rule, both correct:
+  Core only:    ["t1.entity_id = t2.entity_id", "t1.attribute != t2.attribute"]
+  With scope:   ["t1.entity_id = t2.entity_id", "t1.year = t2.year", "t1.attribute != t2.attribute"]
+
+  NOT equivalent — wrong violation direction:
+  ["t1.entity_id = t2.entity_id", "t1.attribute = t2.attribute"]
+  ← this finds matching values, the opposite of what was intended
 
   IMPORTANT NOTES:
   - Single-row: use only t1 predicates
   - Cross-row: use both t1 and t2 predicates
   - List predicates as plain strings, not wrapped in logic operators
-  - Each predicate is independent - system combines them with AND
+  - Each predicate is independent — system combines them with AND
   - Think: "What combination of values would indicate a violation?"
 
   Respond with JSON:
@@ -256,7 +265,7 @@ construct_constraint: |
 
   If construction genuinely impossible with available predicates, return null.
 
-# Step 6: Refine constraint based on validation errors
+# refine_constraint: Fix based on SQL or semantic errors
 refine_constraint: |
   Refine this constraint based on validation errors.
 
@@ -269,6 +278,8 @@ refine_constraint: |
 
   Available columns: {available_columns}
   Available predicates: {available_predicates}
+
+  {column_profiles_desc}
 
   COMMON ISSUES AND FIXES:
 
@@ -299,6 +310,15 @@ refine_constraint: |
      - Verify range boundaries (< vs <=)
      - Consider if AND vs OR logic is implied
 
+  7) STRING CASE MISMATCH
+     Symptom: zero violations when some are expected
+     Fix: Use EXACT casing from column profiles sample values
+     Example: samples show 'Re-inspection' → use 'Re-inspection' not 'RE-INSPECTION'
+
+  8) MISSING NULL GUARD
+     Symptom: zero violations or unexpected results on nullable columns
+     Fix: Add t1.col IS NOT NULL for any nullable column used in a comparison
+
   REFINEMENT STRATEGIES:
   - Look at similar predicates in available list
   - Check column name spelling carefully  
@@ -316,7 +336,7 @@ refine_constraint: |
 
   If no refinement possible, return the same constraint.
 
-# Simplified version for DirectRefinementMapper  
+# generate_initial: DirectRefinementMapper
 generate_initial: |
   Generate a denial constraint for this sentence.
 
@@ -332,11 +352,11 @@ generate_initial: |
   
   1) Bound/Range: "X must be at least N" or "X between A and B"
      → Single-row constraint on value range
-     Example: "Gap must not exceed 365" → ["t1.gap > 365"]
+     Example: "Time gap must not exceed 365" → ["t1.time_gap > 365"]
   
   2) Value mapping: "If X in range then Y must be Z"
      → Range check + required outcome
-     Example: "Score 0-13 → grade A" → ["t1.score >= 0", "t1.score <= 13", "t1.grade != 'A'"]
+     Example: "Metric 0-100 → category low" → ["t1.metric >= 0", "t1.metric <= 100", "t1.category != 'low'"]
   
   3) Functional dependency: "X uniquely identifies Y"
      → Cross-row: same X but different Y
@@ -344,15 +364,15 @@ generate_initial: |
   
   4) Uniqueness: "X is unique"
      → Cross-row: duplicate X values
-     Example: "Email unique" → ["t1.email = t2.email"]
+     Example: "Code must be unique" → ["t1.code = t2.code"]
   
   5) Required: "X is required" or "X cannot be null"
      → Single-row: X is null
-     Example: "Name required" → ["t1.name IS NULL"]
+     Example: "Status required" → ["t1.status IS NULL"]
 
-  6) Temporal: "Must happen immediately" or "within N days"
-     → Date comparison or gap check
-     Example: "Posted immediately" → ["t1.grade_date != t1.inspection_date"]
+  6) Temporal: "Must happen within N days"
+     → Gap check on derived column
+     Example: "Action within N days" → ["t1.days_to_action > N"]
 
   7) Conditional: "If A then B must..."
      → Condition true BUT requirement not met
@@ -373,7 +393,7 @@ generate_initial: |
 
   Return null if this is not a checkable data constraint.
 
-# Simplified refinement
+# refine_simple: DirectRefinementMapper refinement
 refine_simple: |
   Fix this constraint based on the validation error.
 
@@ -390,6 +410,7 @@ refine_simple: |
   - Wrong operator: check =, !=, <, >, <=, >=, LIKE, IS NULL
   - Too many violations: add specificity
   - Zero violations: logic might be inverted
+  - String casing: use exact casing from predicate list values
 
   Respond with JSON:
   {{
