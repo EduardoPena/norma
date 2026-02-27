@@ -73,7 +73,6 @@ understand_schema: |
     "is_valid": true/false,
     "direct_columns": ["columns explicitly named or described in the sentence"],
     "implied_columns": ["columns needed to scope the constraint but not named"],
-    "relevant_columns": ["all of the above combined — no duplicates"],
     "reasoning": "why these columns are relevant",
     "missing_concepts": ["concept with no column match"],
     "reason": "why invalid (only if is_valid=false)"
@@ -182,7 +181,82 @@ select_predicates: |
 
   If you genuinely cannot find predicates, set is_valid=false and explain in "reason".
 
+# rule_gate: Semantic gate — is this sentence a verifiable denial constraint?
+rule_gate: |
+  Decide if this sentence expresses a data quality rule that can be formalized
+  as a denial constraint (DC) given the matched columns and predicates.
 
+  Sentence: "{sentence}"
+  Matched columns: {relevant_columns}
+  Selected predicates: {selected_predicates}
+  Pattern: {constraint_pattern}
+
+  {column_profiles_desc}
+
+  A DENIAL CONSTRAINT is a set of predicates that CANNOT all be true simultaneously.
+  To qualify, the sentence must assert a SPECIFIC, FALSIFIABLE condition over column
+  values — a concrete violation scenario expressible from the data alone, without
+  external judgment or physical observation.
+
+  CRITICAL: Surface verbs are not the signal.
+  - "Will be provided for each entity" → may mean a required field → could be valid
+  - "May result in X if condition Y holds" with a concrete threshold → could be valid
+  - "May prompt an action" without a concrete threshold → not falsifiable → reject
+  Focus on whether a SPECIFIC VIOLATION SCENARIO exists, not on how the sentence sounds.
+
+  REJECT if any applies:
+  - Describes a process, procedure, or sequence of human actions
+  - Permission or possibility without a concrete, checkable threshold
+  - Explains or defines how something works without asserting a condition
+  - Physical or spatial condition not verifiable from column values
+  - Vague quantifier with no concrete value 
+  - Column match is opportunistic — the sentence has no real data quality claim
+    on those columns even though keywords matched
+  - Violation requires information absent from the schema
+
+  ACCEPT if the sentence fits one of these patterns:
+  - Value range → required outcome (value mapping)
+  - Field must always be present, unconditionally (required field)
+  - Field required only under a specific condition (conditional required)
+  - Frequency or deadline with a concrete threshold (temporal)
+  - Same key must determine same value (functional dependency)
+  - Entity cannot appear more than once in a context (uniqueness)
+  - If condition A then must not have condition B (conditional rule)
+  - Ordering or ranking relationship within a group (comparative)
+
+  EXAMPLES:
+  "Metric in range A-B results in category Z"
+  → is_dc: true — value mapping, concrete violation: metric in range AND category wrong
+
+  "Users may view their record history"
+  → is_dc: false — permission, no falsifiable data condition
+
+  "The system will provide a minimum score for each entity"
+  → is_dc: true — required field, violation: min_score IS NULL
+
+  "The frequency of evaluations depends on performance level"
+  → is_dc: false — policy description, no concrete threshold to check
+
+  "Repeated issues may prompt an administrative action"
+  → is_dc: false — vague quantifier + discretionary, not falsifiable
+
+  "If entity has type A, attribute X must be recorded"
+  → is_dc: true — conditional required, violation: type=A AND attribute_x IS NULL
+
+  "The card must be posted within 5 feet of the entrance"
+  → is_dc: false — physical condition, not verifiable from column values
+
+  "Two entities with the same identifier must have the same value for attribute Y"
+  → is_dc: true — functional dependency, violation: same id, different value
+
+  Respond with JSON:
+  {{
+    "is_dc": true/false,
+    "reason": "one sentence describing the concrete violation scenario, or why none exists",
+    "confidence": "high|medium|low"
+  }}
+
+  
 # construct_constraint: Substitute constants and assemble
 construct_constraint: |
   Construct a denial constraint from selected predicates.

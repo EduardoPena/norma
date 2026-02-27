@@ -2,21 +2,24 @@
 """
 Multi-Step Constraint Refinement Mapper
 
-Inspired by "The Power of Constraints in Natural Language to SQL Translation" (VLDB 2025)
+
 This mapper uses a multi-step refinement process:
 1. Schema Understanding: Identify relevant columns and verify they exist
 2. Predicate Selection: Choose predicates from allowed set and validate
-3. Constraint Construction: Build initial denial constraint
-4. Verification: Test on database sample (with satisfiability + plausibility gates)
-5. Refinement: Adjust based on validation results
+3. Rule Gate: Verify the sentence is actually a mappable denial constraint
+4. Constraint Construction: Build initial denial constraint
+5. Verification: Test on database sample (with satisfiability + plausibility gates)
+6. Refinement: Adjust based on validation results
 
 At any point, can decide the sentence is NOT a constraint.
 
-Gates implemented in Step 5:
+Gates implemented:
+  Rule Gate (Step 3.5) — Semantic gate: verifies the sentence expresses a real,
+       falsifiable data quality rule before paying the cost of construction.
   G1 — Satisfiability: any literal constant (=, !=, LIKE, NOT LIKE, IN, NOT IN)
-       is checked against the actual data. If 0 rows contain that value the
-       predicate is "dead" (invented) and the constraint is discarded immediately
-       without attempting refinement.
+       is checked against the actual data using LIMIT 1 for speed. If no rows
+       contain that value the predicate is "dead" (invented) and the constraint
+       is discarded immediately without attempting refinement.
   G2 — Violation plausibility (cross-row): if violations exceed
        violation_ratio_threshold × total_pairs the constraint is too loose /
        logically inverted and is sent for refinement.
@@ -58,19 +61,97 @@ from src.dbms.sql_translator import SQLTranslator
 # Shared Utilities
 # ============================================================================
 
+# def extract_json(text: str) -> str:
+#     """Extract JSON from LLM response (handles markdown code blocks)."""
+#     pattern = r'```(?:json)?\s*(\{.*?\})\s*```'
+#     match = re.search(pattern, text, re.DOTALL)
+#     if match:
+#         return match.group(1)
+
+#     pattern = r'\{.*\}'
+#     match = re.search(pattern, text, re.DOTALL)
+#     if match:
+#         return match.group(0)
+
+#     return text
+
+
+import re
+
+def _escape_control_chars_in_strings(s: str) -> str:
+    result = []
+    in_string = False
+    escape = False
+
+    for ch in s:
+        if in_string:
+            if escape:
+                result.append(ch)
+                escape = False
+            elif ch == '\\':
+                result.append(ch)
+                escape = True
+            elif ch == '"':
+                result.append(ch)
+                in_string = False
+            elif ch == '\n':
+                result.append('\\n')
+            elif ch == '\r':
+                result.append('\\r')
+            elif ch == '\t':
+                result.append('\\t')
+            else:
+                result.append(ch)
+        else:
+            result.append(ch)
+            if ch == '"':
+                in_string = True
+
+    return ''.join(result)
+
+def _extract_first_balanced_json_object(text: str) -> str:
+    start = text.find('{')
+    if start == -1:
+        return text
+
+    depth = 0
+    in_string = False
+    escape = False
+
+    for i in range(start, len(text)):
+        ch = text[i]
+
+        if in_string:
+            if escape:
+                escape = False
+            elif ch == '\\':
+                escape = True
+            elif ch == '"':
+                in_string = False
+            continue
+
+        if ch == '"':
+            in_string = True
+        elif ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0:
+                return text[start:i + 1]
+
+    return text[start:]
+
 def extract_json(text: str) -> str:
-    """Extract JSON from LLM response (handles markdown code blocks)."""
-    pattern = r'```(?:json)?\s*(\{.*?\})\s*```'
-    match = re.search(pattern, text, re.DOTALL)
+    """Extract and lightly repair JSON from an LLM response."""
+    fence_pattern = r'```(?:json)?\s*(\{.*?\})\s*```'
+    match = re.search(fence_pattern, text, re.DOTALL)
     if match:
-        return match.group(1)
+        raw = match.group(1)
+    else:
+        raw = _extract_first_balanced_json_object(text)
 
-    pattern = r'\{.*\}'
-    match = re.search(pattern, text, re.DOTALL)
-    if match:
-        return match.group(0)
-
-    return text
+    repaired = _escape_control_chars_in_strings(raw)
+    return repaired
 
 
 def token_similarity(s1: str, s2: str) -> float:
@@ -101,6 +182,7 @@ class MultiStepRefinementMapper(BaseMapper):
     Key features:
     - Multi-step refinement with validation at each stage
     - Schema expansion and verification
+    - Semantic rule gate after predicate selection (Step 3.5)
     - Constraint verification on actual data
     - Context enrichment with data profiling
     - Iterative refinement based on violations
@@ -108,11 +190,11 @@ class MultiStepRefinementMapper(BaseMapper):
     """
 
     def __init__(self,
-                 model_name: str = "gpt-5-mini",
+                 model_name: str = "gpt-4o-mini",
                  predicate_space: Optional[Dict[str, Any]] = None,
                  df: Optional[pd.DataFrame] = None,
                  max_refinement_iterations: int = 2,
-                 violation_ratio_threshold: float = 0.5,
+                 violation_ratio_threshold: float = 0.2,
                  prompt_file: str = 'multi_step_refinement_less_restrict',
                  chunk_size: Optional[int] = None):
         super().__init__(chunk_size=chunk_size)
@@ -268,6 +350,12 @@ class MultiStepRefinementMapper(BaseMapper):
             print(f"-> Predicate selection failed: {predicate_selection['reason']}")
             return None
 
+        # Step 3.5: Rule Gate — semantic check before paying construction cost
+        rule_gate = self._step3_5_rule_gate(sentence, schema_analysis, predicate_selection)
+        if not rule_gate.get('is_dc', True):
+            print(f"-> Rule gate: NOT a verifiable DC — skipping construction")
+            return None
+
         # Step 4: Initial Construction
         initial_constraint = self._step4_construct_constraint(
             sentence, schema_analysis, predicate_selection
@@ -329,6 +417,16 @@ class MultiStepRefinementMapper(BaseMapper):
         )
 
         response = self.llm.complete(prompt)
+
+        
+
+        if self.llm.model_name.startswith('mistral-'):  
+            # Remove ```json and ``` from response if present
+            response = re.sub(r'```json\s*', '', response)
+            response = re.sub(r'```\s*', '', response)
+
+        print(f"-> Step 2 response: {response}...")
+
         try:
             parsed = json.loads(extract_json(response))
 
@@ -403,6 +501,13 @@ class MultiStepRefinementMapper(BaseMapper):
         )
 
         response = self.llm.complete(prompt)
+
+
+        if self.llm.model_name.startswith('mistral-'):  
+            # Remove ```json and ``` from response if present
+            response = re.sub(r'```json\s*', '', response)
+            response = re.sub(r'```\s*', '', response)
+
         try:
             parsed = json.loads(extract_json(response))
 
@@ -421,6 +526,61 @@ class MultiStepRefinementMapper(BaseMapper):
             return parsed
         except Exception as e:
             return {'is_valid': False, 'reason': f'Parse error: {e}', 'selected_predicates': []}
+
+    # ========================================================================
+    # Step 3.5 — Rule Gate
+    # ========================================================================
+
+    def _step3_5_rule_gate(self,
+                            sentence: str,
+                            schema_analysis: Dict[str, Any],
+                            predicate_selection: Dict[str, Any]) -> Dict[str, Any]:
+        """Step 3.5: Semantic gate — verify this is actually a mappable DC.
+
+        Placed after predicate selection (Step 3) so the gate has maximum context:
+        matched columns, selected predicate templates, and constraint pattern type.
+        Runs BEFORE construction (Step 4) to avoid wasting an LLM call on non-rules.
+
+        Defaults to PASS (is_dc=True) on parse failure to avoid false negatives.
+        """
+        relevant_columns = schema_analysis.get('relevant_columns', [])
+        selected_predicates = predicate_selection.get('selected_predicates', [])
+        constraint_pattern = predicate_selection.get('constraint_pattern', 'unknown')
+        profiles_desc = self._format_column_profiles_for(relevant_columns)
+
+        prompt_template = self.prompt_loader.load(self.prompt_file, 'rule_gate')
+        prompt = prompt_template.format(
+            sentence=sentence,
+            relevant_columns=', '.join(relevant_columns),
+            selected_predicates=', '.join(selected_predicates),
+            constraint_pattern=constraint_pattern,
+            column_profiles_desc=profiles_desc,
+        )
+
+        response = self.llm.complete(prompt)
+
+        if self.llm.model_name.startswith('mistral-'):  
+            # Remove ```json and ``` from response if present
+            response = re.sub(r'```json\s*', '', response)
+            response = re.sub(r'```\s*', '', response)
+
+        try:
+            parsed = json.loads(extract_json(response))
+            is_dc = parsed.get('is_dc', True)  # default permissive on parse failure
+
+            if is_dc:
+                print(f"-> Step 3.5 [GATE]: PASS — {parsed.get('reason', '')} "
+                      f"(confidence={parsed.get('confidence', '?')})")
+            else:
+                print(f"-> Step 3.5 [GATE]: REJECT — {parsed.get('reason', 'unknown reason')} "
+                      f"(confidence={parsed.get('confidence', '?')})")
+
+            return parsed
+
+        except Exception as e:
+            # Parse failure → default to PASS to avoid dropping valid rules
+            print(f"-> Step 3.5 parsing error: {e} — defaulting to PASS")
+            return {'is_dc': True, 'confidence': 'low'}
 
     # ========================================================================
     # Step 4 — Constraint Construction
@@ -447,6 +607,12 @@ class MultiStepRefinementMapper(BaseMapper):
         )
 
         response = self.llm.complete(prompt)
+
+        if self.llm.model_name.startswith('mistral-'):  
+            # Remove ```json and ``` from response if present
+            response = re.sub(r'```json\s*', '', response)
+            response = re.sub(r'```\s*', '', response)
+
         try:
             parsed = json.loads(extract_json(response))
             constraint = parsed.get('constraint')
@@ -520,11 +686,42 @@ class MultiStepRefinementMapper(BaseMapper):
 
         is_single_row = not any('t2.' in p for p in constraint)
 
-        # ── G2: Violation ratio (cross-row only) ──────────────────────────
-        if not is_single_row and self.df is not None:
-            total_pairs = len(self.df) * (len(self.df) - 1) // 2
-            if total_pairs > 0 and violation_count > total_pairs * self.violation_ratio_threshold:
-                print(f"-> Step 5 [G2]: Too many violations ({violation_count}/{total_pairs} pairs) "
+        # ── G2: Violation ratio  ──────────────────────────
+        # if not is_single_row and self.df is not None:
+        #     total_pairs = len(self.df) * (len(self.df) - 1) // 2
+        #     if total_pairs > 0 and violation_count > total_pairs * self.violation_ratio_threshold:
+        #         print(f"-> Step 5 [G2]: Too many violations ({violation_count}/{total_pairs} pairs) "
+        #               f"— constraint too loose or logically inverted")
+        #         return {
+        #             'is_valid': False,
+        #             'message': (
+        #                 f"Too many violations ({violation_count} of {total_pairs} pairs), "
+        #                 f"constraint may be too loose or logically inverted"
+        #             ),
+        #             'violation_count': violation_count,
+        #             'constraint': constraint,
+        #         }
+
+        # ── G2: Violation count thresholds ────────────────────────────────
+        # Single-row constraints: flag if > 1000 violations
+        # Cross-row (pair) constraints: flag if > 10000 violations
+        if is_single_row:
+            if violation_count > 1000:
+                print(f"-> Step 5 [G2]: Too many single-row violations ({violation_count}) "
+                      f"— constraint too loose or logically inverted")
+                return {
+                    'is_valid': False,
+                    'message': (
+                        f"Too many violations ({violation_count} single-row matches), "
+                        f"constraint may be too loose or logically inverted"
+                    ),
+                    'violation_count': violation_count,
+                    'constraint': constraint,
+                }
+        else:
+            if violation_count > 10000:
+                total_pairs = len(self.df) * (len(self.df) - 1) // 2 if self.df is not None else '?'
+                print(f"-> Step 5 [G2]: Too many pair violations ({violation_count}/{total_pairs}) "
                       f"— constraint too loose or logically inverted")
                 return {
                     'is_valid': False,
@@ -536,21 +733,21 @@ class MultiStepRefinementMapper(BaseMapper):
                     'constraint': constraint,
                 }
 
-        # ── G3: Zero-violation inversion probe (cross-row only) ───────────
-        if not is_single_row and violation_count == 0:
-            corrected, inverted_constraint = self._probe_inverted_logic(constraint)
-            if corrected:
-                inv_count = self.sql_translator.execute_violation(inverted_constraint)['row_count']
-                print(f"-> Step 5 [G3]: Logic was inverted — corrected constraint has "
-                      f"{inv_count} violations")
-                return {
-                    'is_valid': True,
-                    'message': f"Logic inverted and auto-corrected; {inv_count} violations",
-                    'violation_count': inv_count,
-                    'constraint': inverted_constraint,   # return the corrected version
-                }
-            # Zero violations but inversion also finds nothing → possibly valid (no data violation)
-            print(f"-> Step 5: 0 violations (inversion also found 0 — rule may be satisfied)")
+        # # ── G3: Zero-violation inversion probe (cross-row only) ───────────
+        # if not is_single_row and violation_count == 0:
+        #     corrected, inverted_constraint = self._probe_inverted_logic(constraint)
+        #     if corrected:
+        #         inv_count = self.sql_translator.execute_violation(inverted_constraint)['row_count']
+        #         print(f"-> Step 5 [G3]: Logic was inverted — corrected constraint has "
+        #               f"{inv_count} violations")
+        #         return {
+        #             'is_valid': True,
+        #             'message': f"Logic inverted and auto-corrected; {inv_count} violations",
+        #             'violation_count': inv_count,
+        #             'constraint': inverted_constraint,   # return the corrected version
+        #         }
+        #     # Zero violations but inversion also finds nothing → possibly valid (no data violation)
+        #     print(f"-> Step 5: 0 violations (inversion also found 0 — rule may be satisfied)")
 
         return {
             'is_valid': True,
@@ -564,66 +761,89 @@ class MultiStepRefinementMapper(BaseMapper):
     # ========================================================================
 
     def _check_predicate_satisfiability(self, constraint: List[str]) -> List[str]:
-        """G1 — For every predicate that contains a literal constant, verify that
-        at least one row in the table contains that value.
+        """G1 — For every predicate with a literal constant, verify at least one
+        row in the table satisfies it.
 
-        Works for ALL comparison operators (=, !=, LIKE, NOT LIKE, IN, NOT IN)
-        because the check is always:  does the VALUE exist in the column?
-        If the value does not exist, the predicate is "dead" regardless of the
-        operator — a non-existent value will make '= X' always false AND
-        '!= X' always vacuously true (which is also wrong semantically).
+        Uses LIMIT 1 for early-exit existence checks (no full scan needed).
 
-        Cross-row predicates (t2.*) and NULL checks are skipped.
+        Operator handling:
+          =, !=        → existence check with = (does the value exist at all?)
+          LIKE         → existence check with the LIKE pattern itself
+          NOT LIKE     → existence check with the equivalent LIKE pattern
+          IN, NOT IN   → existence check with IN (does any listed value exist?)
+
+        The operator direction is irrelevant for existence — a value not present
+        in the column makes both '= X' (always false) and '!= X' (vacuously true,
+        semantically wrong) dead predicates.
+
+        Skips: cross-row predicates (t2.*), IS NULL / IS NOT NULL, numeric bounds
+               (>, <, >=, <= against numbers — these are structural, not domain checks).
         """
         if self.db_executor is None:
             return []
 
         dead = []
 
-        # Pattern 1: t1.col OP 'literal'  where OP is any comparison operator
+        # Matches: t1.col OP 'literal'
+        # Handles: =, !=, LIKE, NOT LIKE  (in order of specificity)
         single_literal = re.compile(
-            r"t1\.(\w+)\s*(?:=|!=|LIKE|NOT\s+LIKE)\s*'([^']+)'",
+            r"t1\.(\w+)\s*(?:NOT\s+LIKE|LIKE|!=|=)\s*'([^']+)'",
             re.IGNORECASE,
         )
-        # Pattern 2: t1.col [NOT] IN ('a', 'b', ...)
+        # Matches: t1.col [NOT] IN ('a', 'b', ...)
         in_literal = re.compile(
             r"t1\.(\w+)\s+(?:NOT\s+)?IN\s*\(([^)]+)\)",
             re.IGNORECASE,
         )
 
         for pred in constraint:
+            # Skip cross-row predicates — no literal constant to domain-check
             if 't2.' in pred:
                 continue
+            # Skip null checks — structural, not domain-based
             if re.search(r'\bIS\s+(NOT\s+)?NULL\b', pred, re.IGNORECASE):
                 continue
+            # Skip numeric bounds (>, <, >=, <= against a bare number, no quotes)
+            if re.search(r't1\.\w+\s*(?:>=|<=|>|<)\s*[\d.]+', pred) and "'" not in pred:
+                continue
 
-            # ── Single literal (=, !=, LIKE, NOT LIKE) ───────────────────
+            # ── Case 1: single string literal ─────────────────────────────
             m = single_literal.search(pred)
             if m:
                 col, value = m.group(1), m.group(2)
-                # Always check existence with =; operator direction is irrelevant
-                sql = f"SELECT COUNT(*) FROM data_table WHERE {col} = '{value}'"
+                is_like = bool(re.search(r'\bLIKE\b', pred, re.IGNORECASE))
+
+                if is_like:
+                    # Use the pattern directly — LIMIT 1 for early exit
+                    sql = (f"SELECT 1 FROM data_table "
+                           f"WHERE \"{col}\" LIKE '{value}' LIMIT 1")
+                else:
+                    # Equality existence check regardless of original operator
+                    sql = (f"SELECT 1 FROM data_table "
+                           f"WHERE \"{col}\" = '{value}' LIMIT 1")
+
                 try:
                     res = self.db_executor.execute(sql)
-                    count = res[0][0] if res else 0
-                    if count == 0:
-                        print(f"   [G1] Dead predicate — value '{value}' not found in '{col}': {pred}")
+                    if not res:
+                        print(f"   [G1] Dead predicate — "
+                              f"value '{value}' not found in '{col}': {pred}")
                         dead.append(pred)
                 except Exception:
-                    pass  # SQL error ≠ invented value; do not discard
+                    pass  # SQL error ≠ invented value — do not discard on error
                 continue
 
-            # ── IN / NOT IN ───────────────────────────────────────────────
+            # ── Case 2: IN / NOT IN ────────────────────────────────────────
             m = in_literal.search(pred)
             if m:
                 col, values_str = m.group(1), m.group(2)
-                # Check if ANY of the listed values exists in the column
-                sql = f"SELECT COUNT(*) FROM data_table WHERE {col} IN ({values_str})"
+                # Any listed value existing is sufficient — LIMIT 1 for early exit
+                sql = (f"SELECT 1 FROM data_table "
+                       f"WHERE \"{col}\" IN ({values_str}) LIMIT 1")
                 try:
                     res = self.db_executor.execute(sql)
-                    count = res[0][0] if res else 0
-                    if count == 0:
-                        print(f"   [G1] Dead predicate — none of ({values_str}) found in '{col}': {pred}")
+                    if not res:
+                        print(f"   [G1] Dead predicate — "
+                              f"none of ({values_str}) found in '{col}': {pred}")
                         dead.append(pred)
                 except Exception:
                     pass
@@ -703,6 +923,13 @@ class MultiStepRefinementMapper(BaseMapper):
         )
 
         response = self.llm.complete(prompt)
+
+        if self.llm.model_name.startswith('mistral-'):  
+            # Remove ```json and ``` from response if present
+            response = re.sub(r'```json\s*', '', response)
+            response = re.sub(r'```\s*', '', response)
+
+
         try:
             parsed = json.loads(extract_json(response))
             refined = parsed.get('refined_constraint', constraint)
@@ -851,6 +1078,13 @@ class DirectRefinementMapper(BaseMapper):
         )
 
         response = self.llm.complete(prompt)
+
+        if self.llm.model_name.startswith('mistral-'):  
+            # Remove ```json and ``` from response if present
+            response = re.sub(r'```json\s*', '', response)
+            response = re.sub(r'```\s*', '', response)
+
+
         try:
             parsed = json.loads(extract_json(response))
             return parsed.get('constraint')
@@ -863,7 +1097,6 @@ class DirectRefinementMapper(BaseMapper):
         if not self.sql_translator:
             return {'is_valid': True}
 
-        # G1: satisfiability check (reuse MultiStepRefinementMapper logic)
         dead = self._check_predicate_satisfiability(constraint)
         if dead:
             print(f"-> [G1] Dead predicates: {dead}")
@@ -884,14 +1117,18 @@ class DirectRefinementMapper(BaseMapper):
             return {'is_valid': False, 'error': str(e)}
 
     def _check_predicate_satisfiability(self, constraint: List[str]) -> List[str]:
-        """G1 — identical logic to MultiStepRefinementMapper (see docstring there)."""
+        """G1 — existence check with LIMIT 1 for speed.
+
+        Identical logic to MultiStepRefinementMapper._check_predicate_satisfiability.
+        See that method's docstring for full operator-handling rationale.
+        """
         if self.db_executor is None:
             return []
 
         dead = []
 
         single_literal = re.compile(
-            r"t1\.(\w+)\s*(?:=|!=|LIKE|NOT\s+LIKE)\s*'([^']+)'",
+            r"t1\.(\w+)\s*(?:NOT\s+LIKE|LIKE|!=|=)\s*'([^']+)'",
             re.IGNORECASE,
         )
         in_literal = re.compile(
@@ -904,15 +1141,20 @@ class DirectRefinementMapper(BaseMapper):
                 continue
             if re.search(r'\bIS\s+(NOT\s+)?NULL\b', pred, re.IGNORECASE):
                 continue
+            if re.search(r't1\.\w+\s*(?:>=|<=|>|<)\s*[\d.]+', pred) and "'" not in pred:
+                continue
 
             m = single_literal.search(pred)
             if m:
                 col, value = m.group(1), m.group(2)
-                sql = f"SELECT COUNT(*) FROM data_table WHERE {col} = '{value}'"
+                is_like = bool(re.search(r'\bLIKE\b', pred, re.IGNORECASE))
+                if is_like:
+                    sql = f"SELECT 1 FROM data_table WHERE \"{col}\" LIKE '{value}' LIMIT 1"
+                else:
+                    sql = f"SELECT 1 FROM data_table WHERE \"{col}\" = '{value}' LIMIT 1"
                 try:
                     res = self.db_executor.execute(sql)
-                    count = res[0][0] if res else 0
-                    if count == 0:
+                    if not res:
                         dead.append(pred)
                 except Exception:
                     pass
@@ -921,11 +1163,10 @@ class DirectRefinementMapper(BaseMapper):
             m = in_literal.search(pred)
             if m:
                 col, values_str = m.group(1), m.group(2)
-                sql = f"SELECT COUNT(*) FROM data_table WHERE {col} IN ({values_str})"
+                sql = f"SELECT 1 FROM data_table WHERE \"{col}\" IN ({values_str}) LIMIT 1"
                 try:
                     res = self.db_executor.execute(sql)
-                    count = res[0][0] if res else 0
-                    if count == 0:
+                    if not res:
                         dead.append(pred)
                 except Exception:
                     pass
@@ -947,6 +1188,12 @@ class DirectRefinementMapper(BaseMapper):
         )
 
         response = self.llm.complete(prompt)
+
+        if self.llm.model_name.startswith('mistral-'):  
+            # Remove ```json and ``` from response if present
+            response = re.sub(r'```json\s*', '', response)
+            response = re.sub(r'```\s*', '', response)
+
         try:
             parsed = json.loads(extract_json(response))
             return parsed.get('refined', constraint)
