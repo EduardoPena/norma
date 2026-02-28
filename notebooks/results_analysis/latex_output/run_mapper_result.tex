@@ -2,34 +2,26 @@
 \begin{table*}[t]
   \centering
   \small
-  \setlength{\tabcolsep}{3.5pt}
-  \begin{tabular}{l@{\hspace{0.7em}}rrr@{\hspace{0.7em}}rrr@{\hspace{1.6em}}@{\hspace{0.7em}}rrr@{\hspace{0.7em}}rrr}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lcccccc@{\hspace{1.2em}}cccccc@{\hspace{1.0em}}r}
     \toprule
-    & \multicolumn{6}{c}{\textit{All sentences}} & \multicolumn{6}{c}{\textit{GT sentences only}} \\
+    & \multicolumn{6}{c}{\textit{All sentences}} & \multicolumn{6}{c}{\textit{GT sentences only}} & \\
     \cmidrule(lr){2-7}\cmidrule(lr){8-13}
-    \textbf{Method} & \multicolumn{3}{c}{Rule Detection} & \multicolumn{3}{c}{Viol.\ Discovery (Aggr.)} & \multicolumn{3}{c}{Constraint Extraction} & \multicolumn{3}{c}{Viol.\ Discovery (Pair.)} \\
+    \textbf{Method} & \multicolumn{3}{c}{Rule Detection} & \multicolumn{3}{c}{Viol.\ Discovery (Aggr.)} & \multicolumn{3}{c}{Constraint Extraction} & \multicolumn{3}{c}{Viol.\ Discovery (Pair.)} & \textbf{Time} \\
     \cmidrule(lr){2-4}  \cmidrule(lr){5-7}  \cmidrule(lr){8-10}  \cmidrule(lr){11-13}
-    & P & R & F$_1$ & P & R & F$_1$ & P & R & F$_1$ & P & R & F$_1$ \\
+    & P & R & F$_1$ & P & R & F$_1$ & P & R & F$_1$ & P & R & F$_1$ & (s) \\
     \midrule
-    \multicolumn{13}{l}{\textit{Person}} \\
-    ~~LLM (GPT-5-mini) & \textbf{1.00} & \textbf{0.75} & \textbf{0.86} & \textbf{1.00} & \textbf{0.67} & \textbf{0.80} & \textbf{1.00} & \textbf{0.75} & \textbf{0.86} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} \\
-    ~~MultiStep (GPT-5-mini) & \textbf{1.00} & \textbf{0.75} & \textbf{0.86} & \textbf{1.00} & \textbf{0.67} & \textbf{0.80} & 0.67 & 0.50 & 0.57 & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} \\
+    \multicolumn{14}{l}{\textit{SISU}} \\
+    ~~Direct (GPT-5) & \textbf{0.94} & \textbf{1.00} & \textbf{0.97} & 0.02 & 0.93 & 0.03 & 0.47 & \textbf{0.47} & 0.47 & 0.59 & 0.75 & 0.59 & 311s \\
+    ~~MultiStep (GPT-5) & \textbf{0.94} & \textbf{1.00} & \textbf{0.97} & 1.00 & 0.84 & 0.91 & 0.47 & \textbf{0.47} & 0.47 & \textbf{0.82} & \textbf{0.80} & \textbf{0.81} & 4708s \\
+    ~~Filtered+MultiStep (GPT-5) & 0.75 & 0.88 & 0.81 & \textbf{1.00} & 0.97 & \textbf{0.98} & \textbf{0.53} & \textbf{0.47} & \textbf{0.50} & 0.65 & 0.65 & 0.65 & 3818s \\
+    ~~Document (GPT-5) & n/a & n/a & n/a & 0.02 & \textbf{0.99} & 0.03 & n/a & n/a & n/a & n/a & n/a & n/a & 133s \\
     \midrule
-    \multicolumn{13}{l}{\textit{Restaurant}} \\
-    ~~LLM (GPT-5-mini) & 0.71 & \textbf{0.62} & 0.67 & \textbf{1.00} & 0.01 & 0.03 & 0.60 & 0.38 & 0.46 & \textbf{0.50} & \textbf{0.50} & \textbf{0.50} \\
-    ~~MultiStep (GPT-5-mini) & 0.62 & \textbf{0.62} & 0.62 & 0.45 & 0.17 & 0.24 & \textbf{0.80} & \textbf{0.50} & \textbf{0.62} & \textbf{0.50} & \textbf{0.50} & \textbf{0.50} \\
-    ~~LLM GPT-5 (with_examples_and_table) & \textbf{0.83} & \textbf{0.62} & \textbf{0.71} & 0.56 & 0.19 & 0.28 & 0.60 & 0.38 & 0.46 & \textbf{0.50} & \textbf{0.50} & \textbf{0.50} \\
-    ~~MultiStep GPT-5 (less_restrictive) & 0.62 & \textbf{0.62} & 0.62 & 0.83 & \textbf{1.00} & \textbf{0.90} & \textbf{0.80} & \textbf{0.50} & \textbf{0.62} & \textbf{0.50} & \textbf{0.50} & \textbf{0.50} \\
-    \midrule
-    \multicolumn{13}{l}{\textit{Hospital}} \\
-    ~~LLM (GPT-5-mini) & \textbf{0.56} & \textbf{1.00} & \textbf{0.71} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} \\
-    ~~MultiStep (GPT-5-mini) & 0.32 & \textbf{1.00} & 0.48 & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} \\
-    \midrule
-    \multicolumn{13}{l}{\textit{SISU}} \\
-    ~~LLM (GPT-5-mini) & \textbf{1.00} & 0.65 & 0.79 & 0.06 & 0.85 & 0.12 & 0.55 & 0.35 & 0.43 & 0.41 & 0.46 & 0.41 \\
-    ~~MultiStep (GPT-5-mini) & 0.68 & 0.88 & 0.77 & 0.01 & \textbf{1.00} & 0.01 & \textbf{0.73} & \textbf{0.65} & \textbf{0.69} & \textbf{0.82} & \textbf{0.80} & \textbf{0.81} \\
-    ~~LLM GPT-5 (with_examples_and_table) & 0.94 & \textbf{1.00} & \textbf{0.97} & 0.11 & 0.91 & 0.19 & 0.47 & 0.47 & 0.47 & 0.65 & 0.76 & 0.65 \\
-    ~~MultiStep GPT-5 (less_restrictive) & 0.85 & \textbf{1.00} & 0.92 & \textbf{0.73} & 0.84 & \textbf{0.78} & 0.47 & 0.47 & 0.47 & 0.65 & 0.74 & 0.65 \\
+    \multicolumn{14}{l}{\textit{Restaurant}} \\
+    ~~Direct (GPT-5) & 0.80 & 0.50 & 0.62 & 0.78 & \textbf{1.00} & 0.88 & 0.75 & 0.38 & 0.50 & 0.38 & 0.38 & 0.38 & 203s \\
+    ~~MultiStep (GPT-5) & 0.62 & \textbf{0.62} & 0.62 & 0.83 & 1.00 & \textbf{0.90} & \textbf{0.80} & \textbf{0.50} & \textbf{0.62} & \textbf{0.50} & \textbf{0.50} & \textbf{0.50} & 2271s \\
+    ~~Filtered+MultiStep (GPT-5) & \textbf{0.83} & \textbf{0.62} & \textbf{0.71} & 0.83 & 1.00 & \textbf{0.90} & \textbf{0.80} & \textbf{0.50} & \textbf{0.62} & \textbf{0.50} & \textbf{0.50} & \textbf{0.50} & 882s \\
+    ~~Document (GPT-5) & n/a & n/a & n/a & \textbf{1.00} & 0.01 & 0.02 & n/a & n/a & n/a & n/a & n/a & n/a & 149s \\
     \bottomrule
   \end{tabular}
   \caption{%
@@ -47,6 +39,8 @@
     \textbf{Violation Discovery (Pair.)} measures, per GT sentence, whether
     the predicted constraint identifies the same data violations as the gold constraint
     (average precision, recall, F\textsubscript{1} across sentences).
+    \textbf{Time} reports total pipeline runtime in seconds.
+    n/a indicates the metric is not applicable for this variant.
     Best result per metric group and dataset in \textbf{bold}.%
   }
   \label{tab:main_results}

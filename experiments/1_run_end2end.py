@@ -8,15 +8,25 @@ Feeds ALL sentences to the mapper and evaluates three aspects:
    Metrics (over all sentences): precision, recall, F1, accuracy, confusion matrix
    Ground truth positive = sentence in sentence2dcs_map with non-empty constraints
 
-2. MAPPING QUALITY — how well are constraints translated?
-   - Pairwise syntactic quality      (GT sentences only)
-   - Pairwise violation discovery    (GT sentences only)
+2. MAPPING QUALITY — how well are the correctly identified constraints translated?
+   - Pairwise syntactic quality      (GT sentences only - that method predicted as constraints)
+   - Pairwise violation discovery    (GT sentences only - that method predicted as constraints)
    - Aggregate violation discovery   (ALL sentences: all predicted vs all GT constraints)
 
 Supported mapper implementations (set via 'implementation' in YAML config):
    - llm                : Standard LLMMapper
    - multi_step_refinement : MultiStepRefinementMapper
    - external           : Plug in any external tool (e.g. Text2SQL) via TODO stub below
+
+Supported modes:
+   - SENTENCE_DIRECT   : Map all sentences directly (no classifier).
+                         Full metrics: classification + pairwise + aggregate violation.
+   - SENTENCE_FILTERED : Classify first, then map only rule sentences.
+                         Full metrics: classification + pairwise + aggregate violation.
+                         Classification is evaluated over ALL sentences (same as DIRECT).
+   - DOCUMENT          : Process entire document in one call.
+                         Only aggregate violation is computable (no sentence alignment).
+                         All other metric fields are N/A.
 
 Usage:
     python run_mapper_eval_full.py configs/mappers/sentence_level.yaml
@@ -30,6 +40,7 @@ Example YAML variant for external tool:
 """
 
 import sys
+import time
 import argparse
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -39,10 +50,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from experiments.shared.experiment_base import BaseExperiment
 from src.pipelines.norma_pipeline import NormaPipeline, ProcessingMode
+from src.classifiers.llm import LLMRuleClassifier
 from src.mappers.llm import LLMMapper
+from src.mappers.llm_document_mapper import LLMDocumentMapper
 from src.mappers.multi_step_refinement import MultiStepRefinementMapper
 from src.evaluation.mapping import MappingEvaluator
 from src.evaluation.classification import ClassificationEvaluator
+from src.llm.helper import PromptLoader
+
+_NA = 'N/A'
 
 
 # =============================================================================
@@ -88,10 +104,14 @@ class MapperEvalFullExperiment(BaseExperiment):
     Full mapper evaluation: classification + mapping quality + violation discovery.
     Supports llm, multi_step_refinement, and external tool backends.
 
-    Evaluation scope:
-      - Classification metrics       → ALL sentences
-      - Pairwise mapping metrics     → GT constraint sentences only
-      - Aggregate violation metrics  → ALL sentences (all predicted vs all GT constraints)
+    Evaluation scope per mode:
+      SENTENCE_DIRECT / SENTENCE_FILTERED:
+        - Classification metrics       → ALL sentences
+        - Pairwise mapping metrics     → GT constraint sentences only
+        - Aggregate violation metrics  → ALL sentences (all predicted vs all GT constraints)
+      DOCUMENT:
+        - Aggregate violation metrics  → all predicted rules vs all GT constraints
+        - All other metrics            → N/A (no sentence-level alignment available)
     """
 
     def __init__(self, config_file: str):
@@ -101,6 +121,7 @@ class MapperEvalFullExperiment(BaseExperiment):
                 f"Expected experiment_type='mapper', "
                 f"got '{self.config['experiment_type']}'"
             )
+        self.prompt_loader = PromptLoader()
 
     def run(self):
         print("\n" + "=" * 80)
@@ -109,9 +130,13 @@ class MapperEvalFullExperiment(BaseExperiment):
         print(f"\nResults directory: {self.results_dir}")
         print(f"Timestamp: {self.timestamp}")
         print("\nEvaluation scope:")
-        print("  Classification metrics     → ALL sentences")
-        print("  Aggregate violation        → ALL sentences (all predicted vs all GT)")
-        print("  Pairwise mapping metrics   → GT constraint sentences only")
+        print("  SENTENCE_DIRECT / FILTERED:")
+        print("    Classification metrics     → ALL sentences")
+        print("    Aggregate violation        → ALL sentences (all predicted vs all GT)")
+        print("    Pairwise mapping metrics   → GT constraint sentences only")
+        print("  DOCUMENT:")
+        print("    Aggregate violation        → all predicted rules vs all GT constraints")
+        print("    All other metrics          → N/A")
         print("=" * 80 + "\n")
 
         self.save_config_yaml()
@@ -166,17 +191,9 @@ class MapperEvalFullExperiment(BaseExperiment):
             name = variant['name']
             mode = variant.get('mode', 'SENTENCE_DIRECT')
 
-            if mode != 'SENTENCE_DIRECT':
-                print(f"\n[{i}/{len(self.config['variants'])}] Skipping variant: {name}")
-                print(f"  Error: Mode '{mode}' not supported. Only SENTENCE_DIRECT is supported.")
-                failed_count += 1
-                self.append_result(self._build_failure_dict(
-                    dataset_name, variant, f"Mode '{mode}' not supported", num_total, num_gt
-                ))
-                continue
-
             print(f"\n[{i}/{len(self.config['variants'])}] Variant: {name}")
-            print(f"  Implementation: {variant['mapper'].get('implementation', 'llm')}")
+            print(f"  Mode:           {mode}")
+            print(f"  Implementation: {variant['mapper'].get('implementation', 'llm') if 'mapper' in variant else variant.get('document_mapper', {}).get('implementation', 'llm_document')}")
 
             try:
                 result = self.run_variant(
@@ -208,7 +225,7 @@ class MapperEvalFullExperiment(BaseExperiment):
         return failed_count
 
     # =========================================================================
-    # Core variant runner
+    # Core variant router
     # =========================================================================
 
     def run_variant(
@@ -222,6 +239,46 @@ class MapperEvalFullExperiment(BaseExperiment):
         dataset_name: str,
     ) -> Dict:
         mode = variant.get('mode', 'SENTENCE_DIRECT')
+
+        if mode in ('SENTENCE_DIRECT', 'SENTENCE_FILTERED'):
+            return self._run_sentence_variant(
+                name=name,
+                variant=variant,
+                mode=mode,
+                all_sentences=all_sentences,
+                gt_sentence2dcs_map=gt_sentence2dcs_map,
+                predicate_space=predicate_space,
+                df=df,
+                dataset_name=dataset_name,
+            )
+        elif mode == 'DOCUMENT':
+            return self._run_document_variant(
+                name=name,
+                variant=variant,
+                all_sentences=all_sentences,
+                gt_sentence2dcs_map=gt_sentence2dcs_map,
+                predicate_space=predicate_space,
+                df=df,
+                dataset_name=dataset_name,
+            )
+        else:
+            raise ValueError(f"Unsupported mode: '{mode}'. Use SENTENCE_DIRECT, SENTENCE_FILTERED, or DOCUMENT.")
+
+    # =========================================================================
+    # SENTENCE_DIRECT and SENTENCE_FILTERED (identical post-pipeline metrics)
+    # =========================================================================
+
+    def _run_sentence_variant(
+        self,
+        name: str,
+        variant: Dict,
+        mode: str,
+        all_sentences: List[str],
+        gt_sentence2dcs_map: Dict,
+        predicate_space: Dict,
+        df,
+        dataset_name: str,
+    ) -> Dict:
         use_context = variant.get('use_context', False)
         num_rows_context = variant.get('num_rows_context', 3)
         implementation = variant['mapper'].get('implementation', 'llm')
@@ -229,21 +286,23 @@ class MapperEvalFullExperiment(BaseExperiment):
         context = {}
         if use_context:
             print(f"  Building context (num_rows={num_rows_context})...")
-            context = self._build_context(df, dataset_name, num_rows=num_rows_context)
+            context = self._build_context(df, num_rows=num_rows_context)
 
         # ------------------------------------------------------------------
-        # Run mapper on ALL sentences
+        # Run pipeline on ALL sentences
         # ------------------------------------------------------------------
-        print(f"  Processing all {len(all_sentences)} sentences...")
+        print(f"  Processing all {len(all_sentences)} sentences (mode={mode})...")
 
+        t0 = time.perf_counter()
         if implementation == 'external':
             pipeline_results = self._run_external_tool(
                 all_sentences, context, variant['mapper']
             )
         else:
-            pipeline = self._create_pipeline(variant, predicate_space, df)
+            pipeline = self._create_sentence_pipeline(mode, variant, predicate_space, df)
             pipeline_results = pipeline.process(all_sentences, context=context)
-            # pipeline.process returns List[Tuple[sentence, is_rule, predicates]]
+            # Returns List[Tuple[sentence, is_rule, predicates]]
+        runtime_s = time.perf_counter() - t0
 
         # ------------------------------------------------------------------
         # 1. Classification evaluation — ALL sentences
@@ -285,7 +344,7 @@ class MapperEvalFullExperiment(BaseExperiment):
         map_metrics, sentence_results = map_evaluator.evaluate(predictions)
 
         # ------------------------------------------------------------------
-        # 3. Aggregate violation — ALL sentences (FIX)
+        # 3. Aggregate violation — ALL sentences
         #    Pool constraints predicted from ALL sentences (not just GT),
         #    execute against the full table, compare to all gold violations.
         # ------------------------------------------------------------------
@@ -296,9 +355,6 @@ class MapperEvalFullExperiment(BaseExperiment):
             if preds is not None and len(preds) > 0:
                 all_pred_violations.update(map_evaluator._execute_rule(preds))
 
-        # Gold violations: union across all GT constraints (reuse from map_metrics
-        # if available, otherwise recompute — they are identical since gold never
-        # changes regardless of which sentences are fed to the mapper)
         all_gold_violations: set = set()
         for rule in gt_sentence2dcs_map.values():
             all_gold_violations.update(map_evaluator._execute_rule(rule))
@@ -311,7 +367,6 @@ class MapperEvalFullExperiment(BaseExperiment):
         agg_vr = total_ov / total_gv if total_gv else 0.0
         agg_vf = 2 * agg_vp * agg_vr / (agg_vp + agg_vr) if (agg_vp + agg_vr) else 0.0
 
-        # Patch map_metrics with the corrected all-sentence aggregate values
         map_metrics.aggregate_violation_precision = agg_vp
         map_metrics.aggregate_violation_recall    = agg_vr
         map_metrics.aggregate_violation_f1        = agg_vf
@@ -349,6 +404,9 @@ class MapperEvalFullExperiment(BaseExperiment):
         # ------------------------------------------------------------------
         # Print metrics
         # ------------------------------------------------------------------
+        print(f"\n  ── RUNTIME " + "─" * 59)
+        print(f"     Pipeline runtime: {runtime_s:.2f}s")
+
         print(f"\n  ── CLASSIFICATION (all {len(all_sentences)} sentences) " + "─" * 30)
         print(f"     Accuracy:  {clf_metrics.accuracy:.3f}")
         print(f"     Precision: {clf_metrics.precision:.3f}")
@@ -393,8 +451,110 @@ class MapperEvalFullExperiment(BaseExperiment):
         return {
             'type': 'sentence',
             'mode': mode,
+            'implementation': variant['mapper'].get('implementation', 'llm'),
             'clf_metrics': clf_metrics,
             'map_metrics': map_metrics,
+            'runtime_s': runtime_s,
+        }
+
+    # =========================================================================
+    # DOCUMENT mode
+    # =========================================================================
+
+    def _run_document_variant(
+        self,
+        name: str,
+        variant: Dict,
+        all_sentences: List[str],
+        gt_sentence2dcs_map: Dict,
+        predicate_space: Dict,
+        df,
+        dataset_name: str,
+    ) -> Dict:
+        use_context = variant.get('use_context', False)
+        num_rows_context = variant.get('num_rows_context', 3)
+
+        context = {}
+        if use_context:
+            print(f"  Building context (num_rows={num_rows_context})...")
+            context = self._build_context(df, num_rows=num_rows_context)
+
+        # Document mapper needs predicates in context
+        predicates_list_str = "\n".join(predicate_space['predicates'])
+        context['predicates_list'] = predicates_list_str
+
+        print(f"  Processing document ({len(all_sentences)} sentences in one call)...")
+        pipeline = self._create_document_pipeline(variant, predicate_space, context)
+
+        t0 = time.perf_counter()
+        predicted_rules = pipeline.process(all_sentences, context=context)
+        runtime_s = time.perf_counter() - t0
+        # Returns List[List[str]] — a flat list of predicted constraint predicate lists
+
+        # ------------------------------------------------------------------
+        # Aggregate violation — no sentence alignment, just pool everything
+        # ------------------------------------------------------------------
+        print(f"  Evaluating aggregate violation (document mode)...")
+
+        map_evaluator = MappingEvaluator(ground_truth=gt_sentence2dcs_map, df=df)
+
+        all_pred_violations: set = set()
+        for preds in predicted_rules:
+            if preds:
+                all_pred_violations.update(map_evaluator._execute_rule(preds))
+
+        all_gold_violations: set = set()
+        for rule in gt_sentence2dcs_map.values():
+            all_gold_violations.update(map_evaluator._execute_rule(rule))
+
+        map_evaluator.close()
+
+        overlap = all_gold_violations & all_pred_violations
+        total_gv = len(all_gold_violations)
+        total_pv = len(all_pred_violations)
+        total_ov = len(overlap)
+        agg_vp = total_ov / total_pv if total_pv else 0.0
+        agg_vr = total_ov / total_gv if total_gv else 0.0
+        agg_vf = 2 * agg_vp * agg_vr / (agg_vp + agg_vr) if (agg_vp + agg_vr) else 0.0
+
+        # ------------------------------------------------------------------
+        # Save outputs
+        # ------------------------------------------------------------------
+        print(f"  Saving outputs...")
+        self.save_outputs(
+            outputs=[{'rule': str(rule)} for rule in predicted_rules],
+            dataset_name=dataset_name,
+            variant_name=name,
+            output_type="document_mapper",
+        )
+
+        # ------------------------------------------------------------------
+        # Print metrics
+        # ------------------------------------------------------------------
+        print(f"\n  ── RUNTIME " + "─" * 59)
+        print(f"     Pipeline runtime: {runtime_s:.2f}s")
+
+        print(f"\n  ── AGGREGATE VIOLATION DISCOVERY (document mode) " + "─" * 22)
+        print(f"     Precision: {agg_vp:.3f}")
+        print(f"     Recall:    {agg_vr:.3f}")
+        print(f"     F1:        {agg_vf:.3f}  [PRIMARY]")
+        print(f"     Gold violations:      {total_gv}")
+        print(f"     Predicted violations: {total_pv}")
+        print(f"     Overlap violations:   {total_ov}")
+        print(f"     Predicted rules:      {len(predicted_rules)}")
+        print(f"\n  ── ALL OTHER METRICS: N/A (no sentence-level alignment in DOCUMENT mode) ──")
+
+        return {
+            'type': 'document',
+            'mode': 'DOCUMENT',
+            'aggregate_violation_precision': agg_vp,
+            'aggregate_violation_recall':    agg_vr,
+            'aggregate_violation_f1':        agg_vf,
+            'total_gold_violations':         total_gv,
+            'total_pred_violations':         total_pv,
+            'total_overlap_violations':      total_ov,
+            'num_predicted_rules':           len(predicted_rules),
+            'runtime_s':                     runtime_s,
         }
 
     # =========================================================================
@@ -423,10 +583,11 @@ class MapperEvalFullExperiment(BaseExperiment):
         return results
 
     # =========================================================================
-    # Pipeline factory
+    # Pipeline factories
     # =========================================================================
 
-    def _create_pipeline(self, variant: Dict, predicate_space: Dict, df):
+    def _create_sentence_pipeline(self, mode: str, variant: Dict, predicate_space: Dict, df):
+        """Create SENTENCE_DIRECT or SENTENCE_FILTERED pipeline."""
         mapper_config = variant['mapper']
         implementation = mapper_config.get('implementation', 'llm')
 
@@ -448,9 +609,33 @@ class MapperEvalFullExperiment(BaseExperiment):
         else:
             raise ValueError(f"Unknown mapper implementation: {implementation}")
 
-        return NormaPipeline(mode=ProcessingMode.SENTENCE_DIRECT, mapper=mapper)
+        if mode == 'SENTENCE_FILTERED':
+            classifier_config = variant['classifier']
+            classifier_prompt = self.prompt_loader.load(
+                "classification", classifier_config['prompt_key']
+            )
+            classifier = LLMRuleClassifier(
+                model_name=classifier_config['model'],
+                prompt_template=classifier_prompt,
+            )
+            return NormaPipeline(
+                mode=ProcessingMode.SENTENCE_FILTERED,
+                classifier=classifier,
+                mapper=mapper,
+            )
+        else:
+            return NormaPipeline(mode=ProcessingMode.SENTENCE_DIRECT, mapper=mapper)
 
-    def _build_context(self, df, dataset_name: str, num_rows: int = 3):
+    def _create_document_pipeline(self, variant: Dict, predicate_space: Dict, context: Dict):
+        """Create DOCUMENT pipeline."""
+        doc_mapper_config = variant['document_mapper']
+        document_mapper = LLMDocumentMapper(
+            model_name=doc_mapper_config['model'],
+            prompt_name=doc_mapper_config['prompt_key'],
+        )
+        return NormaPipeline(mode=ProcessingMode.DOCUMENT, document_mapper=document_mapper)
+
+    def _build_context(self, df, num_rows: int = 3):
         from src.utils.table_context import TableContextBuilder
         return TableContextBuilder(sample_strategy="head", num_rows=num_rows).build(df)
 
@@ -540,7 +725,7 @@ class MapperEvalFullExperiment(BaseExperiment):
         return [v.strip().strip("'") for v in val.split(',')]
 
     # =========================================================================
-    # Detailed CSV output
+    # Detailed CSV output (sentence modes only)
     # =========================================================================
 
     def _save_detailed_sentence_results(
@@ -604,60 +789,107 @@ class MapperEvalFullExperiment(BaseExperiment):
     def _build_result_dict(
         self, dataset_name: str, variant: Dict, result: Dict, num_total: int, num_gt: int
     ) -> Dict:
-        clf = result['clf_metrics']
-        m = result['map_metrics']
-        return {
+        mode = result['mode']
+        base = {
             'dataset': dataset_name,
             'variant_name': variant['name'],
-            'implementation': variant['mapper'].get('implementation', 'llm'),
-            'mode': variant.get('mode', 'SENTENCE_DIRECT'),
+            'implementation': (
+                variant.get('mapper', variant.get('document_mapper', {})).get('implementation', _NA)
+            ),
+            'mode': mode,
             'num_sentences_total': num_total,
             'num_sentences_gt': num_gt,
             'status': 'success',
-            # Classification — all sentences
-            'clf_accuracy': clf.accuracy,
-            'clf_precision': clf.precision,
-            'clf_recall': clf.recall,
-            'clf_f1': clf.f1_score,
-            'clf_tp': clf.true_positives,
-            'clf_fp': clf.false_positives,
-            'clf_fn': clf.false_negatives,
-            'clf_tn': clf.true_negatives,
-            # Aggregate violation — all sentences (fixed)
-            'aggregate_violation_precision': m.aggregate_violation_precision,
-            'aggregate_violation_recall': m.aggregate_violation_recall,
-            'aggregate_violation_f1': m.aggregate_violation_f1,
-            'total_gold_violations': m.total_gold_violations,
-            'total_pred_violations': m.total_pred_violations,
-            'total_overlap_violations': m.total_overlap_violations,
-            # Constraint exact match — GT sentences only
-            'constraint_exact_precision': m.constraint_exact_precision,
-            'constraint_exact_recall': m.constraint_exact_recall,
-            'constraint_exact_f1': m.constraint_exact_f1,
-            'constraint_exact_tp': m.constraint_exact_tp,
-            'constraint_exact_fp': m.constraint_exact_fp,
-            'constraint_exact_fn': m.constraint_exact_fn,
-            'num_gold_constraints': m.num_gold_constraints,
-            'num_pred_constraints': m.num_pred_constraints,
-            # Pairwise syntactic — GT sentences only
-            'pairwise_syntactic_exact_match': m.pairwise_strict_accuracy,
-            'pairwise_syntactic_exact_match_count': m.pairwise_strict_correct,
-            'pairwise_syntactic_total': m.pairwise_strict_total,
-            'pairwise_syntactic_predicate_jaccard': m.pairwise_avg_predicate_jaccard,
-            'pairwise_syntactic_predicate_jaccard_std': m.pairwise_std_predicate_jaccard,
-            # Pairwise violation — GT sentences only
-            'pairwise_violation_exact_match': m.pairwise_execution_accuracy,
-            'pairwise_violation_exact_match_count': m.pairwise_execution_correct,
-            'pairwise_violation_total': m.pairwise_execution_total,
-            'pairwise_violation_precision': m.pairwise_avg_execution_precision,
-            'pairwise_violation_precision_std': m.pairwise_std_execution_precision,
-            'pairwise_violation_recall': m.pairwise_avg_execution_recall,
-            'pairwise_violation_recall_std': m.pairwise_std_execution_recall,
-            'pairwise_violation_f1': m.pairwise_avg_execution_f1,
-            'pairwise_violation_f1_std': m.pairwise_std_execution_f1,
-            'pairwise_violation_jaccard': m.pairwise_avg_execution_jaccard,
-            'pairwise_violation_jaccard_std': m.pairwise_std_execution_jaccard,
+            'runtime_s': result.get('runtime_s', _NA),
         }
+
+        if result['type'] == 'document':
+            # Only aggregate violation is available
+            base.update({
+                # Classification — N/A
+                'clf_accuracy': _NA, 'clf_precision': _NA, 'clf_recall': _NA,
+                'clf_f1': _NA,
+                'clf_tp': _NA, 'clf_fp': _NA, 'clf_fn': _NA, 'clf_tn': _NA,
+                # Aggregate violation — available
+                'aggregate_violation_precision': result['aggregate_violation_precision'],
+                'aggregate_violation_recall':    result['aggregate_violation_recall'],
+                'aggregate_violation_f1':        result['aggregate_violation_f1'],
+                'total_gold_violations':         result['total_gold_violations'],
+                'total_pred_violations':         result['total_pred_violations'],
+                'total_overlap_violations':      result['total_overlap_violations'],
+                'num_predicted_rules':           result['num_predicted_rules'],
+                # Constraint exact match — N/A
+                'constraint_exact_precision': _NA, 'constraint_exact_recall': _NA,
+                'constraint_exact_f1': _NA,
+                'constraint_exact_tp': _NA, 'constraint_exact_fp': _NA,
+                'constraint_exact_fn': _NA,
+                'num_gold_constraints': _NA, 'num_pred_constraints': _NA,
+                # Pairwise syntactic — N/A
+                'pairwise_syntactic_exact_match': _NA,
+                'pairwise_syntactic_exact_match_count': _NA,
+                'pairwise_syntactic_total': _NA,
+                'pairwise_syntactic_predicate_jaccard': _NA,
+                'pairwise_syntactic_predicate_jaccard_std': _NA,
+                # Pairwise violation — N/A
+                'pairwise_violation_exact_match': _NA,
+                'pairwise_violation_exact_match_count': _NA,
+                'pairwise_violation_total': _NA,
+                'pairwise_violation_precision': _NA, 'pairwise_violation_precision_std': _NA,
+                'pairwise_violation_recall': _NA, 'pairwise_violation_recall_std': _NA,
+                'pairwise_violation_f1': _NA, 'pairwise_violation_f1_std': _NA,
+                'pairwise_violation_jaccard': _NA, 'pairwise_violation_jaccard_std': _NA,
+            })
+        else:
+            # Sentence mode (DIRECT or FILTERED) — all metrics available
+            clf = result['clf_metrics']
+            m   = result['map_metrics']
+            base.update({
+                # Classification
+                'clf_accuracy': clf.accuracy,
+                'clf_precision': clf.precision,
+                'clf_recall': clf.recall,
+                'clf_f1': clf.f1_score,
+                'clf_tp': clf.true_positives,
+                'clf_fp': clf.false_positives,
+                'clf_fn': clf.false_negatives,
+                'clf_tn': clf.true_negatives,
+                # Aggregate violation
+                'aggregate_violation_precision': m.aggregate_violation_precision,
+                'aggregate_violation_recall':    m.aggregate_violation_recall,
+                'aggregate_violation_f1':        m.aggregate_violation_f1,
+                'total_gold_violations':         m.total_gold_violations,
+                'total_pred_violations':         m.total_pred_violations,
+                'total_overlap_violations':      m.total_overlap_violations,
+                # Constraint exact match
+                'constraint_exact_precision': m.constraint_exact_precision,
+                'constraint_exact_recall':    m.constraint_exact_recall,
+                'constraint_exact_f1':        m.constraint_exact_f1,
+                'constraint_exact_tp':        m.constraint_exact_tp,
+                'constraint_exact_fp':        m.constraint_exact_fp,
+                'constraint_exact_fn':        m.constraint_exact_fn,
+                'num_gold_constraints':       m.num_gold_constraints,
+                'num_pred_constraints':       m.num_pred_constraints,
+                # Pairwise syntactic
+                'pairwise_syntactic_exact_match':           m.pairwise_strict_accuracy,
+                'pairwise_syntactic_exact_match_count':     m.pairwise_strict_correct,
+                'pairwise_syntactic_total':                 m.pairwise_strict_total,
+                'pairwise_syntactic_predicate_jaccard':     m.pairwise_avg_predicate_jaccard,
+                'pairwise_syntactic_predicate_jaccard_std': m.pairwise_std_predicate_jaccard,
+                # Pairwise violation
+                'pairwise_violation_exact_match':       m.pairwise_execution_accuracy,
+                'pairwise_violation_exact_match_count': m.pairwise_execution_correct,
+                'pairwise_violation_total':             m.pairwise_execution_total,
+                'pairwise_violation_precision':         m.pairwise_avg_execution_precision,
+                'pairwise_violation_precision_std':     m.pairwise_std_execution_precision,
+                'pairwise_violation_recall':            m.pairwise_avg_execution_recall,
+                'pairwise_violation_recall_std':        m.pairwise_std_execution_recall,
+                'pairwise_violation_f1':                m.pairwise_avg_execution_f1,
+                'pairwise_violation_f1_std':            m.pairwise_std_execution_f1,
+                'pairwise_violation_jaccard':           m.pairwise_avg_execution_jaccard,
+                'pairwise_violation_jaccard_std':       m.pairwise_std_execution_jaccard,
+            })
+
+        return base
 
     def _build_failure_dict(
         self, dataset_name: str, variant: Dict, error: str, num_total: int, num_gt: int
@@ -665,17 +897,20 @@ class MapperEvalFullExperiment(BaseExperiment):
         return {
             'dataset': dataset_name,
             'variant_name': variant['name'],
-            'implementation': variant['mapper'].get('implementation', 'llm'),
+            'implementation': (
+                variant.get('mapper', variant.get('document_mapper', {})).get('implementation', _NA)
+            ),
             'mode': variant.get('mode', 'SENTENCE_DIRECT'),
             'num_sentences_total': num_total,
             'num_sentences_gt': num_gt,
             'status': 'failed',
             'error': error,
-            'clf_f1': 'N/A',
-            'aggregate_violation_f1': 'N/A',
-            'constraint_exact_f1': 'N/A',
-            'pairwise_syntactic_exact_match': 'N/A',
-            'pairwise_violation_f1': 'N/A',
+            'runtime_s': _NA,
+            'clf_f1': _NA,
+            'aggregate_violation_f1': _NA,
+            'constraint_exact_f1': _NA,
+            'pairwise_syntactic_exact_match': _NA,
+            'pairwise_violation_f1': _NA,
         }
 
     # =========================================================================
@@ -683,41 +918,95 @@ class MapperEvalFullExperiment(BaseExperiment):
     # =========================================================================
 
     def _print_comparison_table(self, results: Dict):
-        print("\n" + "=" * 110)
-        print("COMPARISON TABLE")
-        print("  Left  (all sentences):      Clf F1 | Agg Viol F1")
-        print("  Right (GT sentences only):  Const F1 | Syn Exact | Viol F1")
-        print("=" * 110)
-        hdr = (
-            f"{'Variant':<38} {'Impl':<10} "
-            f"{'[ALL] Clf F1':<14} {'[ALL] AggViol F1':<18} "
-            f"{'[GT] Const F1':<15} {'[GT] Syn Exact':<16} {'[GT] Viol F1':<12}"
-        )
-        print(hdr)
-        print("-" * 110)
+        sentence_results = {k: v for k, v in results.items() if v['type'] == 'sentence'}
+        document_results = {k: v for k, v in results.items() if v['type'] == 'document'}
 
-        for name, result in results.items():
-            clf = result['clf_metrics']
-            m = result['map_metrics']
-            impl = result.get('implementation', '')
-            print(
-                f"{name:<38} {impl:<10} "
-                f"{clf.f1_score:<14.3f} {m.aggregate_violation_f1:<18.3f} "
-                f"{m.constraint_exact_f1:<15.3f} {m.pairwise_strict_accuracy:<16.3f} "
-                f"{m.pairwise_avg_execution_f1:<12.3f}"
+        print("\n" + "=" * 120)
+        print("COMPARISON TABLE")
+        print("=" * 120)
+
+        # ---- Sentence modes (DIRECT + FILTERED) ----
+        if sentence_results:
+            print("\nSentence Modes (DIRECT / FILTERED):")
+            print("  Left  (all sentences):      Clf F1 | Agg Viol F1")
+            print("  Right (GT sentences only):  Const F1 | Syn Exact | Viol F1")
+            hdr = (
+                f"  {'Variant':<38} {'Mode':<12} {'Impl':<10} "
+                f"{'[ALL] Clf F1':<14} {'[ALL] AggViol F1':<18} "
+                f"{'[GT] Const F1':<15} {'[GT] Syn Exact':<16} {'[GT] Viol F1':<12} {'Runtime(s)':<10}"
+            )
+            print(hdr)
+            print("  " + "-" * 128)
+
+            for name, result in sentence_results.items():
+                clf = result['clf_metrics']
+                m   = result['map_metrics']
+                print(
+                    f"  {name:<38} {result['mode']:<12} "
+                    f"{result.get('implementation', ''):<10} "
+                    f"{clf.f1_score:<14.3f} {m.aggregate_violation_f1:<18.3f} "
+                    f"{m.constraint_exact_f1:<15.3f} {m.pairwise_strict_accuracy:<16.3f} "
+                    f"{m.pairwise_avg_execution_f1:<12.3f} {result.get('runtime_s', _NA)!s:<10}"
+                )
+
+            print()
+            best_clf     = max(sentence_results.items(), key=lambda x: x[1]['clf_metrics'].f1_score)
+            best_agg     = max(sentence_results.items(), key=lambda x: x[1]['map_metrics'].aggregate_violation_f1)
+            best_const   = max(sentence_results.items(), key=lambda x: x[1]['map_metrics'].constraint_exact_f1)
+            best_viol_pw = max(sentence_results.items(), key=lambda x: x[1]['map_metrics'].pairwise_avg_execution_f1)
+            fastest      = min(
+                ((k, v) for k, v in sentence_results.items() if isinstance(v.get('runtime_s'), float)),
+                key=lambda x: x[1]['runtime_s'],
+                default=None,
             )
 
-        print()
-        best_clf     = max(results.items(), key=lambda x: x[1]['clf_metrics'].f1_score)
-        best_agg     = max(results.items(), key=lambda x: x[1]['map_metrics'].aggregate_violation_f1)
-        best_const   = max(results.items(), key=lambda x: x[1]['map_metrics'].constraint_exact_f1)
-        best_viol_pw = max(results.items(), key=lambda x: x[1]['map_metrics'].pairwise_avg_execution_f1)
+            print(f"  Best Classification F1 [ALL]:        {best_clf[0][:50]} ({best_clf[1]['clf_metrics'].f1_score:.3f})")
+            print(f"  Best Aggregate Violation F1 [ALL]:   {best_agg[0][:50]} ({best_agg[1]['map_metrics'].aggregate_violation_f1:.3f})")
+            print(f"  Best Constraint Exact F1 [GT]:       {best_const[0][:50]} ({best_const[1]['map_metrics'].constraint_exact_f1:.3f})")
+            print(f"  Best Violation F1 Pairwise [GT]:     {best_viol_pw[0][:50]} ({best_viol_pw[1]['map_metrics'].pairwise_avg_execution_f1:.3f})")
+            if fastest:
+                print(f"  Fastest Runtime:                     {fastest[0][:50]} ({fastest[1]['runtime_s']:.2f}s)")
 
-        print(f"  Best Classification F1 [ALL]:        {best_clf[0][:50]} ({best_clf[1]['clf_metrics'].f1_score:.3f})")
-        print(f"  Best Aggregate Violation F1 [ALL]:   {best_agg[0][:50]} ({best_agg[1]['map_metrics'].aggregate_violation_f1:.3f})")
-        print(f"  Best Constraint Exact F1 [GT]:       {best_const[0][:50]} ({best_const[1]['map_metrics'].constraint_exact_f1:.3f})")
-        print(f"  Best Violation F1 Pairwise [GT]:     {best_viol_pw[0][:50]} ({best_viol_pw[1]['map_metrics'].pairwise_avg_execution_f1:.3f})")
-        print("=" * 110)
+        # ---- Document mode ----
+        if document_results:
+            print("\nDocument Mode (DOCUMENT):")
+            print("  Note: Only aggregate violation is computable — all other metrics are N/A.")
+            hdr = (
+                f"  {'Variant':<38} {'Impl':<10} "
+                f"{'[DOC] AggViol P':<16} {'[DOC] AggViol R':<16} {'[DOC] AggViol F1':<18} "
+                f"{'Gold Viol':<10} {'Pred Viol':<10} {'Overlap':<10} {'Pred Rules':<10} {'Runtime(s)':<10}"
+            )
+            print(hdr)
+            print("  " + "-" * 128)
+
+            variant_by_name = {v['name']: v for v in self.config['variants']}
+            for name, result in document_results.items():
+                impl = variant_by_name.get(name, {}).get('document_mapper', {}).get('implementation', _NA)
+                print(
+                    f"  {name:<38} "
+                    f"{impl:<10} "
+                    f"{result['aggregate_violation_precision']:<16.3f} "
+                    f"{result['aggregate_violation_recall']:<16.3f} "
+                    f"{result['aggregate_violation_f1']:<18.3f} "
+                    f"{result['total_gold_violations']:<10} "
+                    f"{result['total_pred_violations']:<10} "
+                    f"{result['total_overlap_violations']:<10} "
+                    f"{result['num_predicted_rules']:<10} "
+                    f"{result.get('runtime_s', _NA)!s:<10}"
+                )
+
+            if len(document_results) > 1:
+                best_doc = max(document_results.items(), key=lambda x: x[1]['aggregate_violation_f1'])
+                fastest_doc = min(
+                    ((k, v) for k, v in document_results.items() if isinstance(v.get('runtime_s'), float)),
+                    key=lambda x: x[1]['runtime_s'],
+                    default=None,
+                )
+                print(f"\n  Best Aggregate Violation F1 [DOC]: {best_doc[0][:50]} ({best_doc[1]['aggregate_violation_f1']:.3f})")
+                if fastest_doc:
+                    print(f"  Fastest Runtime [DOC]:             {fastest_doc[0][:50]} ({fastest_doc[1]['runtime_s']:.2f}s)")
+
+        print("=" * 120)
 
 
 # =============================================================================
@@ -731,6 +1020,7 @@ def main():
         epilog="""
 Examples:
   python run_mapper_eval_full.py configs/mappers/sentence_level.yaml
+  python run_mapper_eval_full.py configs/mappers/document_level.yaml
         """
     )
     parser.add_argument('config_file', help='Path to YAML config file')

@@ -1,0 +1,319 @@
+experiment_name: "Full Mapper Evaluation - Classification + Mapping Quality + Violations"
+experiment_type: "mapper"
+results_dir: "results/full_mapper_eval"
+
+datasets:
+  - person
+
+
+# =============================================================================
+# HOW TO USE
+# =============================================================================
+# Uncomment the variants you want to run.
+# Each variant belongs to one of three modes:
+#
+#   SENTENCE_DIRECT   — feed all sentences to the mapper directly (no classifier).
+#                       Computes: classification + pairwise + aggregate violation.
+#
+#   SENTENCE_FILTERED — classify first, then map only sentences predicted as rules.
+#                       Computes: classification + pairwise + aggregate violation.
+#                       Requires a 'classifier' block in the variant.
+#
+#   DOCUMENT          — send the whole document to the mapper in one call.
+#                       Computes: aggregate violation only (all others N/A).
+#                       Requires a 'document_mapper' block instead of 'mapper'.
+#
+# Quick test: one active variant per mode is uncommented below.
+# =============================================================================
+
+
+variants:
+
+  # ===========================================================================
+  # MODE: SENTENCE_DIRECT
+  # Mapper receives every sentence; no classifier step.
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # Mistral-small
+  # ---------------------------------------------------------------------------
+  # - name: "DIRECT | mistral-small | zero_shot"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: false
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "mistral-small-2506"
+  #     prompt_key: "zero_shot"
+  #     batch_size: 10
+
+  # - name: "DIRECT | mistral-small | zero_shot_with_table"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: true
+  #   num_rows_context: 3
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "mistral-small-2506"
+  #     prompt_key: "zero_shot_with_table"
+  #     batch_size: 10
+
+  # - name: "DIRECT | mistral-small | with_examples"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: false
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "mistral-small-2506"
+  #     prompt_key: "with_examples"
+  #     batch_size: 10
+
+  # - name: "DIRECT | mistral-small | with_examples_and_table"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: true
+  #   num_rows_context: 3
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "mistral-small-2506"
+  #     prompt_key: "with_examples_and_table"
+  #     batch_size: 10
+
+  # - name: "DIRECT | mistral-small | multi_step"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: false
+  #   mapper:
+  #     implementation: "multi_step_refinement"
+  #     model: "mistral-small-2506"
+  #     max_refinement_iterations: 2
+  #     prompt_file: "multi_step_refinement_less_restrict"
+
+  # ---------------------------------------------------------------------------
+  # Mistral-large
+  # ---------------------------------------------------------------------------
+  # - name: "DIRECT | mistral-large | zero_shot"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: false
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "mistral-large-2512"
+  #     prompt_key: "zero_shot"
+  #     batch_size: 5
+
+  # - name: "DIRECT | mistral-large | with_examples_and_table"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: true
+  #   num_rows_context: 3
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "mistral-large-2512"
+  #     prompt_key: "with_examples_and_table"
+  #     batch_size: 5
+
+  # - name: "DIRECT | mistral-large | multi_step"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: false
+  #   mapper:
+  #     implementation: "multi_step_refinement"
+  #     model: "mistral-large-2512"
+  #     max_refinement_iterations: 2
+  #     prompt_file: "multi_step_refinement_less_restrict"
+
+  # ---------------------------------------------------------------------------
+  # GPT-5-mini
+  # ---------------------------------------------------------------------------
+  # - name: "DIRECT | gpt-5-mini | zero_shot"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: false
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "gpt-5-mini"
+  #     prompt_key: "zero_shot"
+  #     batch_size: 10
+
+  - name: "DIRECT | gpt-5-mini | with_examples_and_table"
+    mode: "SENTENCE_DIRECT"
+    use_context: true
+    num_rows_context: 3
+    mapper:
+      implementation: "llm"
+      model: "gpt-5-mini"
+      prompt_key: "with_examples_and_table"
+      batch_size: 10
+
+  - name: "DIRECT | gpt-5-mini | multi_step"
+    mode: "SENTENCE_DIRECT"
+    use_context: false
+    mapper:
+      implementation: "multi_step_refinement"
+      model: "gpt-5-mini"
+      max_refinement_iterations: 2
+      prompt_file: "multi_step_refinement_less_restrict"
+
+  # ---------------------------------------------------------------------------
+  # GPT-5
+  # ---------------------------------------------------------------------------
+  # - name: "DIRECT | gpt-5 | zero_shot"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: false
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "gpt-5"
+  #     prompt_key: "zero_shot"
+  #     batch_size: 10
+
+  # - name: "DIRECT | gpt-5 | with_examples_and_table"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: true
+  #   num_rows_context: 3
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "gpt-5"
+  #     prompt_key: "with_examples_and_table"
+  #     batch_size: 10
+
+  # - name: "DIRECT | gpt-5 | multi_step"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: false
+  #   mapper:
+  #     implementation: "multi_step_refinement"
+  #     model: "gpt-5"
+  #     max_refinement_iterations: 2
+  #     prompt_file: "multi_step_refinement_less_restrict"
+
+
+  # ===========================================================================
+  # MODE: SENTENCE_FILTERED
+  # Classifier runs first; only predicted-rule sentences go to the mapper.
+  # Evaluation still covers ALL sentences (classifier decisions included).
+  # Requires both 'classifier' and 'mapper' blocks.
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # Classifier: mistral-small  |  Mapper: mistral-small
+  # ---------------------------------------------------------------------------
+  # - name: "FILTERED | ms-clf | ms-llm | with_examples"
+  #   mode: "SENTENCE_FILTERED"
+  #   use_context: false
+  #   classifier:
+  #     implementation: "llm"
+  #     model: "mistral-small-2506"
+  #     prompt_key: "with_examples"
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "mistral-small-2506"
+  #     prompt_key: "with_examples"
+  #     batch_size: 10
+
+  # - name: "FILTERED | ms-clf | ms-multi_step"
+  #   mode: "SENTENCE_FILTERED"
+  #   use_context: false
+  #   classifier:
+  #     implementation: "llm"
+  #     model: "mistral-small-2506"
+  #     prompt_key: "with_examples"
+  #   mapper:
+  #     implementation: "multi_step_refinement"
+  #     model: "mistral-small-2506"
+  #     max_refinement_iterations: 2
+  #     prompt_file: "multi_step_refinement_less_restrict"
+
+  # ---------------------------------------------------------------------------
+  # Classifier: mistral-small  |  Mapper: GPT-5  (cheap clf, strong mapper)
+  # ---------------------------------------------------------------------------
+  # - name: "FILTERED | ms-clf | gpt-5-llm | with_examples_and_table"
+  #   mode: "SENTENCE_FILTERED"
+  #   use_context: true
+  #   num_rows_context: 3
+  #   classifier:
+  #     implementation: "llm"
+  #     model: "mistral-small-2506"
+  #     prompt_key: "with_examples"
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "gpt-5"
+  #     prompt_key: "with_examples_and_table"
+  #     batch_size: 10
+
+  - name: "FILTERED | ms-clf | gpt-5-multi_step"
+    mode: "SENTENCE_FILTERED"
+    use_context: false
+    classifier:
+      implementation: "llm"
+      model: "gpt-5-mini"
+      prompt_key: "few_shot"
+    mapper:
+      implementation: "multi_step_refinement"
+      model: "gpt-5-mini"
+      max_refinement_iterations: 2
+      prompt_file: "multi_step_refinement_less_restrict"
+
+  # ---------------------------------------------------------------------------
+  # Classifier: mistral-large  |  Mapper: GPT-5
+  # ---------------------------------------------------------------------------
+  # - name: "FILTERED | ml-clf | gpt-5-llm | with_examples_and_table"
+  #   mode: "SENTENCE_FILTERED"
+  #   use_context: true
+  #   num_rows_context: 3
+  #   classifier:
+  #     implementation: "llm"
+  #     model: "mistral-large-2512"
+  #     prompt_key: "with_examples"
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "gpt-5"
+  #     prompt_key: "with_examples_and_table"
+  #     batch_size: 10
+
+  # - name: "FILTERED | ml-clf | gpt-5-multi_step"
+  #   mode: "SENTENCE_FILTERED"
+  #   use_context: false
+  #   classifier:
+  #     implementation: "llm"
+  #     model: "mistral-large-2512"
+  #     prompt_key: "with_examples"
+  #   mapper:
+  #     implementation: "multi_step_refinement"
+  #     model: "gpt-5"
+  #     max_refinement_iterations: 2
+  #     prompt_file: "multi_step_refinement_less_restrict"
+
+
+  # ===========================================================================
+  # MODE: DOCUMENT
+  # Entire document (all sentences) sent in a single API call.
+  # Only aggregate violation metrics are computed; all others are N/A.
+  # Requires a 'document_mapper' block (no 'mapper' or 'classifier').
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # GPT-5-mini
+  # ---------------------------------------------------------------------------
+  - name: "DOCUMENT | gpt-5-mini | basic_with_examples"
+    mode: "DOCUMENT"
+    use_context: true
+    num_rows_context: 3
+    document_mapper:
+      implementation: "llm_document"
+      model: "gpt-5-mini"
+      prompt_key: "basic_with_examples"
+
+  # ---------------------------------------------------------------------------
+  # GPT-5
+  # ---------------------------------------------------------------------------
+  # - name: "DOCUMENT | gpt-5 | basic_with_examples"
+  #   mode: "DOCUMENT"
+  #   use_context: true
+  #   num_rows_context: 3
+  #   document_mapper:
+  #     implementation: "llm_document"
+  #     model: "gpt-5"
+  #     prompt_key: "basic_with_examples"
+
+  # ---------------------------------------------------------------------------
+  # Mistral-large
+  # ---------------------------------------------------------------------------
+  # - name: "DOCUMENT | mistral-large | basic_with_examples"
+  #   mode: "DOCUMENT"
+  #   use_context: true
+  #   num_rows_context: 3
+  #   document_mapper:
+  #     implementation: "llm_document"
+  #     model: "mistral-large-2512"
+  #     prompt_key: "basic_with_examples"

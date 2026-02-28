@@ -379,17 +379,21 @@ class MultiStepRefinementMapper(BaseMapper):
             if verification['is_valid']:
                 # G3 may have swapped the constraint to its corrected form
                 return verification.get('constraint', constraint)
+           
+           
+            else:
+                return None  # For now, we skip refinement and just return None on invalid constraints
+            
+            # print(f"-> Refining - {verification['message']}")
+            # refined = self._step6_refine_constraint(
+            #     constraint, sentence, verification, schema_analysis, predicate_selection
+            # )
 
-            print(f"-> Refining - {verification['message']}")
-            refined = self._step6_refine_constraint(
-                constraint, sentence, verification, schema_analysis, predicate_selection
-            )
+            # if refined == constraint:
+            #     print("-> No refinement possible")
+            #     return constraint
 
-            if refined == constraint:
-                print("-> No refinement possible")
-                return constraint
-
-            constraint = refined
+            # constraint = refined
 
         print(f"-> Max iterations reached")
         return constraint
@@ -706,7 +710,8 @@ class MultiStepRefinementMapper(BaseMapper):
         # Single-row constraints: flag if > 1000 violations
         # Cross-row (pair) constraints: flag if > 10000 violations
         if is_single_row:
-            if violation_count > 1000:
+            # if violation_count > 1000:
+            if violation_count > 55000:
                 print(f"-> Step 5 [G2]: Too many single-row violations ({violation_count}) "
                       f"— constraint too loose or logically inverted")
                 return {
