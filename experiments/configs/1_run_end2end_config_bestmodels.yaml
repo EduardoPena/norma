@@ -1,0 +1,78 @@
+experiment_name: "Best Models Evaluation - Classification + Mapping Quality + Violations"
+experiment_type: "mapper"
+results_dir: "results/end2end_bestmodels"
+
+datasets:
+  - sisu
+
+variants:
+
+  # ===========================================================================
+  # MODE: SENTENCE_DIRECT
+  # Mapper receives every sentence; no classifier step.
+  # ===========================================================================
+
+  # - name: "DIRECT | gpt-5 | with_examples_and_table"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: true
+  #   num_rows_context: 3
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "gpt-5"
+  #     prompt_key: "with_examples_and_table"
+  #     batch_size: 10
+
+  # - name: "DIRECT | gpt-5 | multi_step"
+  #   mode: "SENTENCE_DIRECT"
+  #   use_context: false
+  #   mapper:
+  #     implementation: "multi_step_refinement"
+  #     model: "gpt-5"
+  #     max_refinement_iterations: 2
+  #     prompt_file: "multi_step_refinement_less_restrict"
+
+  # # ===========================================================================
+  # # MODE: SENTENCE_FILTERED
+  # # Classifier runs first; only predicted-rule sentences go to the mapper.
+  # # ===========================================================================
+
+  # - name: "FILTERED | gpt-5-mini-clf | gpt-5-llm | with_examples"
+  #   mode: "SENTENCE_FILTERED"
+  #   use_context: false
+  #   classifier:
+  #     implementation: "llm"
+  #     model: "gpt-5-mini"
+  #     prompt_key: "with_examples"
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "gpt-5"
+  #     prompt_key: "with_examples"
+  #     batch_size: 10
+
+  - name: "FILTERED | gpt-5-mini-clf | gpt-5-multi_step"
+    mode: "SENTENCE_FILTERED"
+    use_context: false
+    classifier:
+      implementation: "llm"
+      model: "gpt-5-mini"
+      prompt_key: "with_examples"
+    mapper:
+      implementation: "multi_step_refinement"
+      model: "gpt-5"
+      max_refinement_iterations: 2
+      prompt_file: "multi_step_refinement_less_restrict"
+
+  # ===========================================================================
+  # MODE: DOCUMENT
+  # Entire document sent in a single API call.
+  # Only aggregate violation metrics are computed; all others are N/A.
+  # ===========================================================================
+
+  # - name: "DOCUMENT | gpt-5 | basic_with_examples"
+  #   mode: "DOCUMENT"
+  #   use_context: true
+  #   num_rows_context: 3
+  #   document_mapper:
+  #     implementation: "llm_document"
+  #     model: "gpt-5"
+  #     prompt_key: "basic_with_examples"

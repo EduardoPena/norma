@@ -13,6 +13,8 @@ class DBExecutor:
         self.tid_column = tid_column
         self.conn = duckdb.connect(":memory:")
 
+        self.conn.execute("SET memory_limit='10GB'")
+
         if tid_column not in df.columns:
             df = df.copy()
             df[tid_column] = range(1, len(df) + 1)

@@ -1,0 +1,120 @@
+experiment_name: "GT-Only Mapper Evaluation - Pure Mapping Quality"
+experiment_type: "mapper_gt_only"
+results_dir: "results/mapper_gt_only"
+
+# Scope: only GT constraint sentences (rules != null) are fed to the mapper.
+# No classifier step. This measures pure mapping quality as an upper bound.
+#
+# Metrics (all over GT sentences only):
+#   Syntactic:   exact match, predicate Jaccard (mean ± std)
+#   Pairwise:    violation exact match, P/R/F1/Jaccard (mean ± std)
+#   Aggregate:   pooled violation P/R/F1, gold/pred/overlap counts
+#
+# Two mapper types:
+#   llm                 → always with_examples_and_table, use_context: true
+#   multi_step_refinement → always use_context: false
+
+datasets:
+  - sisu
+
+
+variants:
+
+  # ===========================================================================
+  # LLM mapper — with_examples_and_table — use_context: true
+  # ===========================================================================
+
+  - name: "LLM | mistral-small | with_examples_and_table"
+    use_context: true
+    num_rows_context: 3
+    mapper:
+      implementation: "llm"
+      model: "mistral-small-2506"
+      prompt_key: "with_examples_and_table"
+      batch_size: 10
+
+  # - name: "LLM | mistral-large | with_examples_and_table"
+  #   use_context: true
+  #   num_rows_context: 3
+  #   mapper:
+  #     implementation: "llm"
+  #     model: "mistral-large-2512"
+  #     prompt_key: "with_examples_and_table"
+  #     batch_size: 10
+
+  - name: "LLM | gpt-5-mini | with_examples_and_table"
+    use_context: true
+    num_rows_context: 3
+    mapper:
+      implementation: "llm"
+      model: "gpt-5-mini"
+      prompt_key: "with_examples_and_table"
+      batch_size: 10
+
+  - name: "LLM | gpt-5 | with_examples_and_table"
+    use_context: true
+    num_rows_context: 3
+    mapper:
+      implementation: "llm"
+      model: "gpt-5"
+      prompt_key: "with_examples_and_table"
+      batch_size: 10
+
+
+  # ===========================================================================
+  # Multi-step refinement mapper — use_context: false
+  # ===========================================================================
+
+  - name: "MultiStep | mistral-small | multi_step_refinement_less_restrict"
+    use_context: false
+    mapper:
+      implementation: "multi_step_refinement"
+      model: "mistral-small-2506"
+      max_refinement_iterations: 2
+      prompt_file: "multi_step_refinement_less_restrict"
+
+  - name: "MultiStep | mistral-large | multi_step_refinement_less_restrict"
+    use_context: false
+    mapper:
+      implementation: "multi_step_refinement"
+      model: "mistral-large-2512"
+      max_refinement_iterations: 2
+      prompt_file: "multi_step_refinement_less_restrict"
+
+  - name: "MultiStep | gpt-5-mini | multi_step_refinement_less_restrict"
+    use_context: false
+    mapper:
+      implementation: "multi_step_refinement"
+      model: "gpt-5-mini"
+      max_refinement_iterations: 2
+      prompt_file: "multi_step_refinement_less_restrict"
+
+  - name: "MultiStep | gpt-5 | multi_step_refinement_less_restrict"
+    use_context: false
+    mapper:
+      implementation: "multi_step_refinement"
+      model: "gpt-5"
+      max_refinement_iterations: 2
+      prompt_file: "multi_step_refinement_less_restrict"
+
+  # ===========================================================================
+  # LLAMA mappers
+  # ===========================================================================
+
+  - name: "LLM | llama-3.3-70b | with_examples_and_table"
+    use_context: true
+    num_rows_context: 3
+    mapper:
+        implementation: "llm"
+        model: "llama-3.3-70b-versatile"
+        prompt_key: "with_examples_and_table"
+        batch_size: 10
+
+
+  - name: "MultiStep | llama-3.3-70b | multi_step_refinement_less_restrict"
+    use_context: false
+    mapper:
+      implementation: "multi_step_refinement"
+      model: "llama-3.3-70b-versatile"
+      max_refinement_iterations: 2
+      prompt_file: "multi_step_refinement_less_restrict"
