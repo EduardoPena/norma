@@ -1,4 +1,5 @@
 """Evaluator for rule mapping (sentence-level and document-level)"""
+
 from typing import List, Tuple, Dict, Set, Optional, Any
 from dataclasses import dataclass
 import re
@@ -10,10 +11,10 @@ from src.predicates import Predicate
 from src.dbms.db_interface import DBExecutor
 from src.dbms.sql_translator import SQLTranslator
 
-
 # ---------------------------------------------------------------------------
 # Predicate normalisation
 # ---------------------------------------------------------------------------
+
 
 def _normalize_number(s: str) -> str:
     """'0.0' -> '0', '28.0' -> '28', '13.5' stays '13.5'"""
@@ -36,7 +37,7 @@ def _normalize_value(val: str) -> str:
     """
     val = val.strip()
     # Collapse internal whitespace
-    val = re.sub(r'\s+', ' ', val)
+    val = re.sub(r"\s+", " ", val)
 
     # Quoted string  -> normalise to single-quoted, content unchanged
     for quote in ('"', "'"):
@@ -45,10 +46,10 @@ def _normalize_value(val: str) -> str:
             return f"'{inner}'"
 
     # Parenthesised list  e.g. ('B', 'C')  or  ("B", "C")
-    if val.startswith('(') and val.endswith(')'):
+    if val.startswith("(") and val.endswith(")"):
         inner = val[1:-1]
-        items = [_normalize_value(t.strip()) for t in inner.split(',')]
-        return '(' + ', '.join(items) + ')'
+        items = [_normalize_value(t.strip()) for t in inner.split(",")]
+        return "(" + ", ".join(items) + ")"
 
     # Bare numeric
     num = _normalize_number(val)
@@ -57,20 +58,21 @@ def _normalize_value(val: str) -> str:
 
     # Bare keyword
     upper = val.upper()
-    if upper in ('NULL', 'TRUE', 'FALSE', 'NOT NULL'):
+    if upper in ("NULL", "TRUE", "FALSE", "NOT NULL"):
         return upper
 
     return val
 
 
 _OP_ALIASES: Dict[str, str] = {
-    '==':     '=',
-    '!<':     '>=',
-    '!>':     '<=',
-    '<>':     '!=',
-    'IS NOT NULL': 'IS NOT NULL',   # keep as-is (already canonical)
-    'IS NULL':     'IS NULL',
+    "==": "=",
+    "!<": ">=",
+    "!>": "<=",
+    "<>": "!=",
+    "IS NOT NULL": "IS NOT NULL",  # keep as-is (already canonical)
+    "IS NULL": "IS NULL",
 }
+
 
 def _normalize_op(op: str) -> str:
     op = op.strip().upper()
@@ -97,28 +99,31 @@ def normalize_predicate(pred_str: str) -> str:
 
     # Try to split on known multi-word operators first (longest match first)
     multi_word_ops = [
-        'IS NOT NULL', 'IS NULL',
-        'NOT LIKE', 'NOT IN',
-        'LIKE', 'IN',
+        "IS NOT NULL",
+        "IS NULL",
+        "NOT LIKE",
+        "NOT IN",
+        "LIKE",
+        "IN",
     ]
     upper = pred_str.upper()
     for mop in multi_word_ops:
-        idx = upper.find(' ' + mop + ' ')
+        idx = upper.find(" " + mop + " ")
         if idx != -1:
             left = pred_str[:idx].strip()
-            right = pred_str[idx + 1 + len(mop):].strip()
+            right = pred_str[idx + 1 + len(mop) :].strip()
             return f"{left} {mop} {_normalize_value(right)}"
         # Trailing form  e.g.  "t1.col IS NULL"  (no RHS)
-        if upper.endswith(' ' + mop):
-            left = pred_str[:-(len(mop) + 1)].strip()
+        if upper.endswith(" " + mop):
+            left = pred_str[: -(len(mop) + 1)].strip()
             return f"{left} {mop}"
 
     # Split on two-char then one-char symbolic operators
-    for op in ('>=', '<=', '!=', '<>', '!<', '!>', '==', '=', '>', '<'):
+    for op in (">=", "<=", "!=", "<>", "!<", "!>", "==", "=", ">", "<"):
         idx = pred_str.find(op)
         if idx != -1:
-            left  = pred_str[:idx].strip()
-            right = pred_str[idx + len(op):].strip()
+            left = pred_str[:idx].strip()
+            right = pred_str[idx + len(op) :].strip()
             canon_op = _normalize_op(op)
             return f"{left} {canon_op} {_normalize_value(right)}"
 
@@ -137,9 +142,11 @@ def normalize_constraint(rule: List[str]) -> frozenset:
 # Dataclasses (unchanged interface)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SentenceMappingResult:
     """Result for a single sentence mapping (pairwise evaluation)"""
+
     sentence: str
     gold_is_rule: bool
     pred_is_rule: bool
@@ -162,6 +169,7 @@ class SentenceMappingResult:
 @dataclass
 class MappingMetrics:
     """Aggregate mapping metrics"""
+
     constraint_exact_precision: float
     constraint_exact_recall: float
     constraint_exact_f1: float
@@ -198,49 +206,54 @@ class MappingMetrics:
 
     def to_dict(self) -> Dict:
         result = {
-            'constraint_exact_precision': self.constraint_exact_precision,
-            'constraint_exact_recall':    self.constraint_exact_recall,
-            'constraint_exact_f1':        self.constraint_exact_f1,
-            'constraint_exact_tp':        self.constraint_exact_tp,
-            'constraint_exact_fp':        self.constraint_exact_fp,
-            'constraint_exact_fn':        self.constraint_exact_fn,
-            'num_pred_constraints':       self.num_pred_constraints,
-            'num_gold_constraints':       self.num_gold_constraints,
+            "constraint_exact_precision": self.constraint_exact_precision,
+            "constraint_exact_recall": self.constraint_exact_recall,
+            "constraint_exact_f1": self.constraint_exact_f1,
+            "constraint_exact_tp": self.constraint_exact_tp,
+            "constraint_exact_fp": self.constraint_exact_fp,
+            "constraint_exact_fn": self.constraint_exact_fn,
+            "num_pred_constraints": self.num_pred_constraints,
+            "num_gold_constraints": self.num_gold_constraints,
         }
         if self.pairwise_strict_accuracy is not None:
-            result.update({
-                'pairwise_strict_accuracy':          self.pairwise_strict_accuracy,
-                'pairwise_strict_correct':           self.pairwise_strict_correct,
-                'pairwise_strict_total':             self.pairwise_strict_total,
-                'pairwise_avg_predicate_jaccard':    self.pairwise_avg_predicate_jaccard,
-                'pairwise_std_predicate_jaccard':    self.pairwise_std_predicate_jaccard,
-                'pairwise_execution_accuracy':       self.pairwise_execution_accuracy,
-                'pairwise_execution_correct':        self.pairwise_execution_correct,
-                'pairwise_execution_total':          self.pairwise_execution_total,
-                'pairwise_avg_execution_jaccard':    self.pairwise_avg_execution_jaccard,
-                'pairwise_std_execution_jaccard':    self.pairwise_std_execution_jaccard,
-                'pairwise_avg_execution_precision':  self.pairwise_avg_execution_precision,
-                'pairwise_std_execution_precision':  self.pairwise_std_execution_precision,
-                'pairwise_avg_execution_recall':     self.pairwise_avg_execution_recall,
-                'pairwise_std_execution_recall':     self.pairwise_std_execution_recall,
-                'pairwise_avg_execution_f1':         self.pairwise_avg_execution_f1,
-                'pairwise_std_execution_f1':         self.pairwise_std_execution_f1,
-            })
+            result.update(
+                {
+                    "pairwise_strict_accuracy": self.pairwise_strict_accuracy,
+                    "pairwise_strict_correct": self.pairwise_strict_correct,
+                    "pairwise_strict_total": self.pairwise_strict_total,
+                    "pairwise_avg_predicate_jaccard": self.pairwise_avg_predicate_jaccard,
+                    "pairwise_std_predicate_jaccard": self.pairwise_std_predicate_jaccard,
+                    "pairwise_execution_accuracy": self.pairwise_execution_accuracy,
+                    "pairwise_execution_correct": self.pairwise_execution_correct,
+                    "pairwise_execution_total": self.pairwise_execution_total,
+                    "pairwise_avg_execution_jaccard": self.pairwise_avg_execution_jaccard,
+                    "pairwise_std_execution_jaccard": self.pairwise_std_execution_jaccard,
+                    "pairwise_avg_execution_precision": self.pairwise_avg_execution_precision,
+                    "pairwise_std_execution_precision": self.pairwise_std_execution_precision,
+                    "pairwise_avg_execution_recall": self.pairwise_avg_execution_recall,
+                    "pairwise_std_execution_recall": self.pairwise_std_execution_recall,
+                    "pairwise_avg_execution_f1": self.pairwise_avg_execution_f1,
+                    "pairwise_std_execution_f1": self.pairwise_std_execution_f1,
+                }
+            )
         if self.aggregate_violation_precision is not None:
-            result.update({
-                'aggregate_violation_precision': self.aggregate_violation_precision,
-                'aggregate_violation_recall':    self.aggregate_violation_recall,
-                'aggregate_violation_f1':        self.aggregate_violation_f1,
-                'total_gold_violations':         self.total_gold_violations,
-                'total_pred_violations':         self.total_pred_violations,
-                'total_overlap_violations':      self.total_overlap_violations,
-            })
+            result.update(
+                {
+                    "aggregate_violation_precision": self.aggregate_violation_precision,
+                    "aggregate_violation_recall": self.aggregate_violation_recall,
+                    "aggregate_violation_f1": self.aggregate_violation_f1,
+                    "total_gold_violations": self.total_gold_violations,
+                    "total_pred_violations": self.total_pred_violations,
+                    "total_overlap_violations": self.total_overlap_violations,
+                }
+            )
         return result
 
 
 # ---------------------------------------------------------------------------
 # Evaluator
 # ---------------------------------------------------------------------------
+
 
 class MappingEvaluator:
     """
@@ -258,13 +271,16 @@ class MappingEvaluator:
        Union all violations; compute P/R/F1 on violation row IDs.
     """
 
-    def __init__(self,
-                 ground_truth: Dict[str, List[str]],
-                 df: Optional[pd.DataFrame] = None):
+    def __init__(
+        self,
+        ground_truth: Dict[str, List[str]],
+        df: Optional[pd.DataFrame] = None,
+        csv_path: Optional[str] = None,
+    ):
         self.ground_truth = ground_truth
         self.df = df
-        if df is not None:
-            self.db = DBExecutor(df)
+        if df is not None or csv_path is not None:
+            self.db = DBExecutor(df=df, csv_path=csv_path)
             self.translator = SQLTranslator(self.db)
         else:
             self.db = None
@@ -274,9 +290,9 @@ class MappingEvaluator:
     # Public API
     # ------------------------------------------------------------------
 
-    def evaluate_constraint_exact_match(self,
-                                        predicted_rules: List[List[str]],
-                                        gold_rules: List[List[str]]) -> Dict[str, Any]:
+    def evaluate_constraint_exact_match(
+        self, predicted_rules: List[List[str]], gold_rules: List[List[str]]
+    ) -> Dict[str, Any]:
         """
         Set-membership exact match after predicate normalisation.
         Returns tp, fp, fn, precision, recall, f1, num_pred, num_gold.
@@ -290,42 +306,55 @@ class MappingEvaluator:
         fp = len(pred_set - gold_set)
         fn = len(gold_set - pred_set)
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-        recall    = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = (2 * precision * recall / (precision + recall)
-              if (precision + recall) > 0 else 0.0)
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = (
+            2 * precision * recall / (precision + recall)
+            if (precision + recall) > 0
+            else 0.0
+        )
 
         return {
-            'tp': tp, 'fp': fp, 'fn': fn,
-            'precision': precision, 'recall': recall, 'f1': f1,
-            'num_pred': len(pred_set), 'num_gold': len(gold_set),
+            "tp": tp,
+            "fp": fp,
+            "fn": fn,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "num_pred": len(pred_set),
+            "num_gold": len(gold_set),
         }
 
-    def evaluate(self,
-                 predictions: List[Tuple[str, Optional[List[str]]]]
-                 ) -> Tuple[MappingMetrics, List[SentenceMappingResult]]:
+    def evaluate(
+        self, predictions: List[Tuple[str, Optional[List[str]]]]
+    ) -> Tuple[MappingMetrics, List[SentenceMappingResult]]:
         """Sentence-level evaluation."""
         if not predictions:
             raise ValueError("No predictions to evaluate")
 
         # Build aligned lists (same sentence order) for exact-match set eval
         pred_rules = [r for _, r in predictions if r]
-        gold_rules = [self.ground_truth[s] for s, _ in predictions
-                      if self.ground_truth.get(s)]
+        gold_rules = [
+            self.ground_truth[s] for s, _ in predictions if self.ground_truth.get(s)
+        ]
 
-        exact_match_result = self.evaluate_constraint_exact_match(pred_rules, gold_rules)
+        exact_match_result = self.evaluate_constraint_exact_match(
+            pred_rules, gold_rules
+        )
 
         sentence_results = [self._evaluate_single(s, r) for s, r in predictions]
         metrics = self._compute_metrics(sentence_results, exact_match_result)
         return metrics, sentence_results
 
-    def evaluate_document_level(self,
-                                predicted_rules: List[List[str]],
-                                gold_rules: List[List[str]]) -> Dict[str, Any]:
+    def evaluate_document_level(
+        self, predicted_rules: List[List[str]], gold_rules: List[List[str]]
+    ) -> Dict[str, Any]:
         """Document-level evaluation (requires a dataframe for execution)."""
         if self.db is None:
             raise ValueError("Database required for document-level evaluation")
 
-        print(f"\nEvaluating {len(predicted_rules)} predicted vs {len(gold_rules)} gold constraints")
+        print(
+            f"\nEvaluating {len(predicted_rules)} predicted vs {len(gold_rules)} gold constraints"
+        )
 
         print("Computing exact match constraint metrics...")
         em = self.evaluate_constraint_exact_match(predicted_rules, gold_rules)
@@ -333,27 +362,27 @@ class MappingEvaluator:
 
         gold_union = self._execute_rules_union(gold_rules, label="gold")
         pred_union = self._execute_rules_union(predicted_rules, label="predicted")
-        overlap    = gold_union & pred_union
+        overlap = gold_union & pred_union
 
         vp = len(overlap) / len(pred_union) if pred_union else 0.0
         vr = len(overlap) / len(gold_union) if gold_union else 0.0
         vf = 2 * vp * vr / (vp + vr) if (vp + vr) > 0 else 0.0
 
         return {
-            'constraint_exact_precision': em['precision'],
-            'constraint_exact_recall':    em['recall'],
-            'constraint_exact_f1':        em['f1'],
-            'constraint_exact_tp':        em['tp'],
-            'constraint_exact_fp':        em['fp'],
-            'constraint_exact_fn':        em['fn'],
-            'num_pred_constraints':       em['num_pred'],
-            'num_gold_constraints':       em['num_gold'],
-            'aggregate_violation_precision': vp,
-            'aggregate_violation_recall':    vr,
-            'aggregate_violation_f1':        vf,
-            'total_gold_violations':         len(gold_union),
-            'total_pred_violations':         len(pred_union),
-            'total_overlap_violations':      len(overlap),
+            "constraint_exact_precision": em["precision"],
+            "constraint_exact_recall": em["recall"],
+            "constraint_exact_f1": em["f1"],
+            "constraint_exact_tp": em["tp"],
+            "constraint_exact_fp": em["fp"],
+            "constraint_exact_fn": em["fn"],
+            "num_pred_constraints": em["num_pred"],
+            "num_gold_constraints": em["num_gold"],
+            "aggregate_violation_precision": vp,
+            "aggregate_violation_recall": vr,
+            "aggregate_violation_f1": vf,
+            "total_gold_violations": len(gold_union),
+            "total_pred_violations": len(pred_union),
+            "total_overlap_violations": len(overlap),
         }
 
     def close(self):
@@ -364,10 +393,10 @@ class MappingEvaluator:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _evaluate_single(self,
-                         sentence: str,
-                         pred_rule: Optional[List[str]]) -> SentenceMappingResult:
-        gold_rule    = self.ground_truth.get(sentence)
+    def _evaluate_single(
+        self, sentence: str, pred_rule: Optional[List[str]]
+    ) -> SentenceMappingResult:
+        gold_rule = self.ground_truth.get(sentence)
         gold_is_rule = bool(gold_rule)
         pred_is_rule = bool(pred_rule)
 
@@ -381,9 +410,11 @@ class MappingEvaluator:
 
         # Syntactic metrics – compare normalised predicate sets
         gold_norm = {normalize_predicate(p) for p in gold_rule}
-        pred_norm = {normalize_predicate(p) for p in pred_rule} if pred_is_rule else set()
+        pred_norm = (
+            {normalize_predicate(p) for p in pred_rule} if pred_is_rule else set()
+        )
 
-        strict_correct    = (gold_norm == pred_norm) if pred_is_rule else False
+        strict_correct = (gold_norm == pred_norm) if pred_is_rule else False
         predicate_jaccard = self._jaccard(gold_norm, pred_norm)
 
         # Execution metrics
@@ -394,9 +425,12 @@ class MappingEvaluator:
             gold_violations = self._execute_rule(gold_rule)
             pred_violations = self._execute_rule(pred_rule) if pred_is_rule else set()
 
-            exec_exact    = (gold_violations == pred_violations)
-            exec_jaccard  = self._jaccard(gold_violations, pred_violations)
-            exec_precision, exec_recall, exec_f1 = self._prf(gold_violations, pred_violations)
+            if gold_violations or pred_violations:
+                exec_exact = gold_violations == pred_violations
+                exec_jaccard = self._jaccard(gold_violations, pred_violations)
+                exec_precision, exec_recall, exec_f1 = self._prf(
+                    gold_violations, pred_violations
+                )
 
         return SentenceMappingResult(
             sentence=sentence,
@@ -415,17 +449,19 @@ class MappingEvaluator:
             pred_violations=pred_violations,
         )
 
-    def _compute_metrics(self,
-                         results: List[SentenceMappingResult],
-                         exact_match_result: Dict[str, Any]) -> MappingMetrics:
+    def _compute_metrics(
+        self, results: List[SentenceMappingResult], exact_match_result: Dict[str, Any]
+    ) -> MappingMetrics:
         gold_results = [r for r in results if r.gold_is_rule]
 
         # Pairwise syntactic
         strict_correct = sum(1 for r in gold_results if r.strict_correct)
-        strict_total   = len(gold_results)
+        strict_total = len(gold_results)
         strict_accuracy = strict_correct / strict_total if strict_total else 0.0
 
-        jaccard_scores   = [r.predicate_jaccard for r in gold_results if r.predicate_jaccard is not None]
+        jaccard_scores = [
+            r.predicate_jaccard for r in gold_results if r.predicate_jaccard is not None
+        ]
         avg_jaccard, std_jaccard = self._mean_std(jaccard_scores)
 
         # Execution (only if db available)
@@ -434,33 +470,63 @@ class MappingEvaluator:
         agg_vp = agg_vr = agg_vf = total_gv = total_pv = total_ov = None
 
         if self.db is not None:
-            exec_correct  = sum(1 for r in gold_results if r.execution_exact)
-            exec_total    = sum(1 for r in gold_results if r.execution_exact is not None)
+            exec_correct = sum(1 for r in gold_results if r.execution_exact)
+            exec_total = sum(1 for r in gold_results if r.execution_exact is not None)
             exec_accuracy = exec_correct / exec_total if exec_total else 0.0
 
-            avg_ej, std_ej = self._mean_std([r.execution_jaccard   for r in gold_results if r.execution_jaccard   is not None])
-            avg_ep, std_ep = self._mean_std([r.execution_precision  for r in gold_results if r.execution_precision is not None])
-            avg_er, std_er = self._mean_std([r.execution_recall     for r in gold_results if r.execution_recall    is not None])
-            avg_ef, std_ef = self._mean_std([r.execution_f1         for r in gold_results if r.execution_f1        is not None])
+            avg_ej, std_ej = self._mean_std(
+                [
+                    r.execution_jaccard
+                    for r in gold_results
+                    if r.execution_jaccard is not None
+                ]
+            )
+            avg_ep, std_ep = self._mean_std(
+                [
+                    r.execution_precision
+                    for r in gold_results
+                    if r.execution_precision is not None
+                ]
+            )
+            avg_er, std_er = self._mean_std(
+                [
+                    r.execution_recall
+                    for r in gold_results
+                    if r.execution_recall is not None
+                ]
+            )
+            avg_ef, std_ef = self._mean_std(
+                [r.execution_f1 for r in gold_results if r.execution_f1 is not None]
+            )
 
             # Aggregate violation union
-            gold_union = set().union(*(r.gold_violations for r in gold_results if r.gold_violations))
-            pred_union = set().union(*(r.pred_violations for r in gold_results if r.pred_violations))
-            overlap    = gold_union & pred_union
-            total_gv, total_pv, total_ov = len(gold_union), len(pred_union), len(overlap)
+            gold_union = set().union(
+                *(r.gold_violations for r in gold_results if r.gold_violations)
+            )
+            pred_union = set().union(
+                *(r.pred_violations for r in gold_results if r.pred_violations)
+            )
+            overlap = gold_union & pred_union
+            total_gv, total_pv, total_ov = (
+                len(gold_union),
+                len(pred_union),
+                len(overlap),
+            )
             agg_vp = total_ov / total_pv if total_pv else 0.0
             agg_vr = total_ov / total_gv if total_gv else 0.0
-            agg_vf = 2 * agg_vp * agg_vr / (agg_vp + agg_vr) if (agg_vp + agg_vr) else 0.0
+            agg_vf = (
+                2 * agg_vp * agg_vr / (agg_vp + agg_vr) if (agg_vp + agg_vr) else 0.0
+            )
 
         return MappingMetrics(
-            constraint_exact_precision=exact_match_result['precision'],
-            constraint_exact_recall=exact_match_result['recall'],
-            constraint_exact_f1=exact_match_result['f1'],
-            constraint_exact_tp=exact_match_result['tp'],
-            constraint_exact_fp=exact_match_result['fp'],
-            constraint_exact_fn=exact_match_result['fn'],
-            num_pred_constraints=exact_match_result['num_pred'],
-            num_gold_constraints=exact_match_result['num_gold'],
+            constraint_exact_precision=exact_match_result["precision"],
+            constraint_exact_recall=exact_match_result["recall"],
+            constraint_exact_f1=exact_match_result["f1"],
+            constraint_exact_tp=exact_match_result["tp"],
+            constraint_exact_fp=exact_match_result["fp"],
+            constraint_exact_fn=exact_match_result["fn"],
+            num_pred_constraints=exact_match_result["num_pred"],
+            num_gold_constraints=exact_match_result["num_gold"],
             pairwise_strict_accuracy=strict_accuracy,
             pairwise_strict_correct=strict_correct,
             pairwise_strict_total=strict_total,
@@ -503,11 +569,11 @@ class MappingEvaluator:
             return set()
         try:
             result = self.translator.execute_violation(rule)
-            if not result['success']:
+            if not result["success"]:
                 print(f"Warning: Rule execution failed: {result.get('error')}")
                 return set()
             violation_ids: Set[int] = set()
-            for row in result.get('rows', []):
+            for row in result.get("rows", []):
                 for tid in row:
                     violation_ids.add(tid)
             return violation_ids
@@ -534,9 +600,9 @@ class MappingEvaluator:
         tp = len(gold & pred)
         fp = len(pred - gold)
         fn = len(gold - pred)
-        p  = tp / (tp + fp) if (tp + fp) else 0.0
-        r  = tp / (tp + fn) if (tp + fn) else 0.0
-        f  = 2 * p * r / (p + r) if (p + r) else 0.0
+        p = tp / (tp + fp) if (tp + fp) else 0.0
+        r = tp / (tp + fn) if (tp + fn) else 0.0
+        f = 2 * p * r / (p + r) if (p + r) else 0.0
         return p, r, f
 
     @staticmethod
@@ -561,18 +627,19 @@ class MappingEvaluator:
         if not set1 or not set2:
             return 0.0
         list1, list2 = list(set1), list(set2)
-        sim = np.array([[self._predicate_similarity(p1, p2)
-                         for p2 in list2] for p1 in list1])
+        sim = np.array(
+            [[self._predicate_similarity(p1, p2) for p2 in list2] for p1 in list1]
+        )
         rows, cols = linear_sum_assignment(-sim)
         soft_inter = sum(sim[r, c] for r, c in zip(rows, cols))
         soft_union = len(set1) + len(set2) - soft_inter
         return soft_inter / soft_union if soft_union else 0.0
 
     def _predicate_similarity(self, p1: Predicate, p2: Predicate) -> float:
-        left_sim  = 1.0 if p1.left == p2.left else 0.0
-        op_sim    = self._operator_similarity(p1.op, p2.op)
-        r1_is_col = '.' in p1.right
-        r2_is_col = '.' in p2.right
+        left_sim = 1.0 if p1.left == p2.left else 0.0
+        op_sim = self._operator_similarity(p1.op, p2.op)
+        r1_is_col = "." in p1.right
+        r2_is_col = "." in p2.right
         if r1_is_col and r2_is_col:
             right_sim = 1.0 if p1.right == p2.right else 0.3
         elif r1_is_col or r2_is_col:
@@ -589,17 +656,17 @@ class MappingEvaluator:
         if op1 == op2:
             return 1.0
         groups = [
-            {'>=', '>'},
-            {'<=', '<'},
-            {'!='},
-            {'LIKE', 'NOT LIKE'},
-            {'IN', 'NOT IN'},
-            {'IS NULL', 'IS NOT NULL'},
+            {">=", ">"},
+            {"<=", "<"},
+            {"!="},
+            {"LIKE", "NOT LIKE"},
+            {"IN", "NOT IN"},
+            {"IS NULL", "IS NOT NULL"},
         ]
         for g in groups:
             if op1 in g and op2 in g:
-                return 0.5 if ('NOT' in op1) != ('NOT' in op2) else 0.7
-        if {op1, op2} <= {'<', '<=', '>', '>=', '=', '!='}:
+                return 0.5 if ("NOT" in op1) != ("NOT" in op2) else 0.7
+        if {op1, op2} <= {"<", "<=", ">", ">=", "=", "!="}:
             return 0.3
         return 0.0
 

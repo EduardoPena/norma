@@ -138,6 +138,13 @@ select_predicates: |
      Strategy: Condition true BUT requirement not met
      → ["t1.type = $string", "t1.status = $string", "t1.field != $string"]
 
+  6b) STATUS / CATEGORY DEFINITION: "A record is status Z if threshold condition holds"
+     Example: "A loan is high-cost if rate spread exceeds 6.5 and lien is first"
+     Strategy: Threshold condition true BUT status/category is wrong
+     → ["t1.rate_spread > $float", "t1.lien_status = $int", "t1.status != $string"]
+     Use != on the outcome/status column, not IS NULL, unless the sentence explicitly
+     says the status field itself must be recorded.
+
   7) TEMPORAL/ORDERING: About time gaps, sequences, ordering
      The sentence sets a frequency or deadline — the violation is always when the
      gap EXCEEDS the limit, not when it is within it.
@@ -162,6 +169,11 @@ select_predicates: |
   - Single-row constraints use only t1 (no t2 needed)
   - Cross-row constraints use both t1 and t2
   - For derived columns (days_to_*, consecutive_*, etc.) — USE THEM!
+   - Preserve threshold direction exactly. "exceeds", "more than", "greater than",
+      "at least" point to > or >= on the triggering condition, not the opposite.
+   - Preserve threshold units exactly. "6.5 percentage points" means 6.5, not 0.065.
+      Only use fractional conversion when the sentence explicitly says a percentage of
+      another field, e.g. "5 percent of the loan amount" → 0.05 * loan_amount.
   - Choose operators that match what the sentence detects: inequality (!=, <, >, <=, >=)
     for mismatches and threshold breaches, equality (=) for duplicates and scope anchors,
     IS NULL for missing required values only when the sentence explicitly mandates presence
@@ -295,6 +307,14 @@ construct_constraint: |
   Violation: counter >= N AND status is not Z
   → ["t1.counter >= N", "t1.status != 'Z'"]
 
+   Example 4b — single row, status definition by threshold:
+   Rule: "A loan is a HOEPA loan if rate spread exceeds 6.5 for first-lien transactions"
+   Violation: threshold condition holds BUT status is not HOEPA
+   → ["t1.rate_spread > 6.5", "t1.lien_status = 1", "t1.hoepa_status_name != 'HOEPA loan'"]
+   Wrong: ["t1.hoepa_status IS NULL", "t1.lien_status = 1", "t1.rate_spread <= 0.065"]
+   because it flips the threshold direction, changes the units, and replaces a status mismatch
+   with a missing-value check that the sentence never asked for.
+
   Example 5 — cross row, functional dependency:
   Rule: "Same key must determine same attribute"
   Violation: two rows share the same key but have different attribute values
@@ -371,6 +391,12 @@ construct_constraint: |
   must be provided, or must be recorded. Never add IS NULL or IS NOT NULL for any
   other reason — not for scope columns, not for anchor columns, not based on
   column profiles showing nulls.
+
+   STATUS COLUMNS:
+   If the sentence defines when a record belongs to a category/status/classification,
+   prefer a mismatch predicate on that outcome column, such as status != 'EXPECTED'.
+   Do not replace that outcome check with IS NULL unless the sentence explicitly says
+   the status field must be recorded.
 
   Correct: "Field X must be provided" → ["t1.field_x IS NULL"]
   Correct: "Same course, same shift" → ["t1.course = t2.course", "t1.shift = t2.shift"]

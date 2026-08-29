@@ -44,7 +44,7 @@ from src.mappers.multi_step_refinement import MultiStepRefinementMapper
 from src.evaluation.mapping import MappingEvaluator
 from src.llm.helper import PromptLoader
 
-_NA = 'N/A'
+_NA = "N/A"
 
 
 class MapperGTOnlyExperiment(BaseExperiment):
@@ -59,7 +59,7 @@ class MapperGTOnlyExperiment(BaseExperiment):
 
     def __init__(self, config_file: str):
         super().__init__(config_file)
-        if self.config['experiment_type'] != 'mapper_gt_only':
+        if self.config["experiment_type"] != "mapper_gt_only":
             raise ValueError(
                 f"Expected experiment_type='mapper_gt_only', "
                 f"got '{self.config['experiment_type']}'"
@@ -87,19 +87,19 @@ class MapperGTOnlyExperiment(BaseExperiment):
         self.save_config_yaml()
         self.save_execution_config()
 
-        total = len(self.config['datasets']) * len(self.config['variants'])
+        total = len(self.config["datasets"]) * len(self.config["variants"])
         completed = 0
         failed = 0
 
-        for dataset_name in self.config['datasets']:
+        for dataset_name in self.config["datasets"]:
             try:
                 n_failed = self.run_dataset(dataset_name)
                 failed += n_failed
-                completed += len(self.config['variants']) - n_failed
+                completed += len(self.config["variants"]) - n_failed
             except Exception as e:
                 print(f"\nError processing dataset {dataset_name}: {e}")
                 traceback.print_exc()
-                failed += len(self.config['variants'])
+                failed += len(self.config["variants"])
 
         print(f"\n{'=' * 80}")
         print("EXPERIMENT COMPLETE")
@@ -120,28 +120,34 @@ class MapperGTOnlyExperiment(BaseExperiment):
 
         print(f"Loading {dataset_name}...")
         try:
-            df, sentences, sentence2dcs_map, predicate_space = self.load_dataset(dataset_name)
+            df, sentences, sentence2dcs_map, predicate_space = self.load_dataset(
+                dataset_name
+            )
         except Exception as e:
             print(f"Error: Failed to load dataset: {e}")
-            return len(self.config['variants'])
+            return len(self.config["variants"])
 
         # Keep only GT constraint sentences (rules != null / non-empty)
-        gt_sentences = [s for s in sentences if s in sentence2dcs_map and sentence2dcs_map[s]]
+        gt_sentences = [
+            s for s in sentences if s in sentence2dcs_map and sentence2dcs_map[s]
+        ]
         gt_sentence2dcs_map = {s: sentence2dcs_map[s] for s in gt_sentences}
 
         num_total = len(sentences)
         num_gt = len(gt_sentences)
 
         print(f"Total sentences in document: {num_total}")
-        print(f"GT constraint sentences:     {num_gt}  ← only these are fed to the mapper")
+        print(
+            f"GT constraint sentences:     {num_gt}  ← only these are fed to the mapper"
+        )
         print(f"Non-constraint sentences:    {num_total - num_gt}  ← skipped\n")
 
         results = {}
         failed_count = 0
 
-        for i, variant in enumerate(self.config['variants'], 1):
-            name = variant['name']
-            impl = variant['mapper'].get('implementation', 'llm')
+        for i, variant in enumerate(self.config["variants"], 1):
+            name = variant["name"]
+            impl = variant["mapper"].get("implementation", "llm")
 
             print(f"\n[{i}/{len(self.config['variants'])}] Variant: {name}")
             print(f"  Implementation: {impl}")
@@ -159,7 +165,9 @@ class MapperGTOnlyExperiment(BaseExperiment):
                 )
                 results[name] = result
                 self.append_result(
-                    self._build_result_dict(dataset_name, variant, result, num_total, num_gt)
+                    self._build_result_dict(
+                        dataset_name, variant, result, num_total, num_gt
+                    )
                 )
                 print(f"  Variant completed")
 
@@ -168,7 +176,9 @@ class MapperGTOnlyExperiment(BaseExperiment):
                 traceback.print_exc()
                 failed_count += 1
                 self.append_result(
-                    self._build_failure_dict(dataset_name, variant, str(e), num_total, num_gt)
+                    self._build_failure_dict(
+                        dataset_name, variant, str(e), num_total, num_gt
+                    )
                 )
 
         if results:
@@ -190,10 +200,10 @@ class MapperGTOnlyExperiment(BaseExperiment):
         df,
         dataset_name: str,
     ) -> Dict:
-        mapper_config = variant['mapper']
-        use_context = variant.get('use_context', False)
-        num_rows_context = variant.get('num_rows_context', 3)
-        implementation = mapper_config.get('implementation', 'llm')
+        mapper_config = variant["mapper"]
+        use_context = variant.get("use_context", False)
+        num_rows_context = variant.get("num_rows_context", 3)
+        implementation = mapper_config.get("implementation", "llm")
 
         # Build context if needed
         context = {}
@@ -216,10 +226,21 @@ class MapperGTOnlyExperiment(BaseExperiment):
         # predicate lists.
         raw_outputs = mapper.map(gt_sentences, context=context)
 
+        processing_errors = getattr(mapper, "processing_errors", [])
+        if processing_errors and all(pred is None for _, pred in raw_outputs):
+            raise RuntimeError(
+                "Mapper failed to produce any constraints; "
+                f"first processing error: {processing_errors[0]}"
+            )
+
         runtime_s = time.perf_counter() - t0
 
         # Normalize to List[Tuple[str, Optional[List[str]]]].
-        if raw_outputs and isinstance(raw_outputs[0], tuple) and len(raw_outputs[0]) == 2:
+        if (
+            raw_outputs
+            and isinstance(raw_outputs[0], tuple)
+            and len(raw_outputs[0]) == 2
+        ):
             predictions_raw: List[Tuple[str, Optional[List[str]]]] = raw_outputs
         else:
             predictions_raw = list(zip(gt_sentences, raw_outputs))
@@ -244,7 +265,11 @@ class MapperGTOnlyExperiment(BaseExperiment):
         # 1. Pairwise mapping quality — all GT sentences
         # ------------------------------------------------------------------
         print(f"  Evaluating pairwise quality ({len(gt_sentences)} GT sentences)...")
-        map_evaluator = MappingEvaluator(ground_truth=gt_sentence2dcs_map, df=df)
+        map_evaluator = MappingEvaluator(
+            ground_truth=gt_sentence2dcs_map,
+            df=df,
+            csv_path=self._get_primary_csv_path(predicate_space),
+        )
         map_metrics, sentence_results = map_evaluator.evaluate(predictions)
 
         # ------------------------------------------------------------------
@@ -270,11 +295,11 @@ class MapperGTOnlyExperiment(BaseExperiment):
         agg_vf = (2 * agg_vp * agg_vr / (agg_vp + agg_vr)) if (agg_vp + agg_vr) else 0.0
 
         map_metrics.aggregate_violation_precision = agg_vp
-        map_metrics.aggregate_violation_recall    = agg_vr
-        map_metrics.aggregate_violation_f1        = agg_vf
-        map_metrics.total_gold_violations         = total_gv
-        map_metrics.total_pred_violations         = total_pv
-        map_metrics.total_overlap_violations      = total_ov
+        map_metrics.aggregate_violation_recall = agg_vr
+        map_metrics.aggregate_violation_f1 = agg_vf
+        map_metrics.total_gold_violations = total_gv
+        map_metrics.total_pred_violations = total_pv
+        map_metrics.total_overlap_violations = total_ov
 
         map_evaluator.close()
 
@@ -285,10 +310,10 @@ class MapperGTOnlyExperiment(BaseExperiment):
         self.save_outputs(
             outputs=[
                 {
-                    'sentence': sent,
-                    'gold_constraint': str(gt_sentence2dcs_map[sent]),
-                    'pred_constraint': str(preds) if preds else None,
-                    'pred_is_non_null': preds is not None and len(preds) > 0,
+                    "sentence": sent,
+                    "gold_constraint": str(gt_sentence2dcs_map[sent]),
+                    "pred_constraint": str(preds) if preds else None,
+                    "pred_is_non_null": preds is not None and len(preds) > 0,
                 }
                 for sent, preds in predictions
             ],
@@ -309,7 +334,9 @@ class MapperGTOnlyExperiment(BaseExperiment):
         # Print metrics
         # ------------------------------------------------------------------
         print(f"\n  ── RUNTIME " + "─" * 59)
-        print(f"     Pipeline runtime: {runtime_s:.2f}s  ({len(gt_sentences)} GT sentences)")
+        print(
+            f"     Pipeline runtime: {runtime_s:.2f}s  ({len(gt_sentences)} GT sentences)"
+        )
 
         print(f"\n  ── AGGREGATE VIOLATION DISCOVERY (GT sentences pooled) " + "─" * 15)
         print(f"     Precision: {agg_vp:.3f}")
@@ -323,32 +350,60 @@ class MapperGTOnlyExperiment(BaseExperiment):
         print(f"     Precision: {map_metrics.constraint_exact_precision:.3f}")
         print(f"     Recall:    {map_metrics.constraint_exact_recall:.3f}")
         print(f"     F1:        {map_metrics.constraint_exact_f1:.3f}  [PRIMARY]")
-        print(f"     TP: {map_metrics.constraint_exact_tp}  FP: {map_metrics.constraint_exact_fp}  FN: {map_metrics.constraint_exact_fn}")
-        print(f"     Predicted: {map_metrics.num_pred_constraints}, Gold: {map_metrics.num_gold_constraints}")
+        print(
+            f"     TP: {map_metrics.constraint_exact_tp}  FP: {map_metrics.constraint_exact_fp}  FN: {map_metrics.constraint_exact_fn}"
+        )
+        print(
+            f"     Predicted: {map_metrics.num_pred_constraints}, Gold: {map_metrics.num_gold_constraints}"
+        )
 
-        print(f"\n  ── PAIRWISE SYNTACTIC QUALITY (n={map_metrics.pairwise_strict_total}) " + "─" * 30)
-        print(f"     Exact Match:       {map_metrics.pairwise_strict_accuracy:.3f} ({map_metrics.pairwise_strict_correct}/{map_metrics.pairwise_strict_total})")
-        print(f"     Predicate Jaccard: {map_metrics.pairwise_avg_predicate_jaccard:.3f} (±{map_metrics.pairwise_std_predicate_jaccard:.3f})")
+        print(
+            f"\n  ── PAIRWISE SYNTACTIC QUALITY (n={map_metrics.pairwise_strict_total}) "
+            + "─" * 30
+        )
+        print(
+            f"     Exact Match:       {map_metrics.pairwise_strict_accuracy:.3f} ({map_metrics.pairwise_strict_correct}/{map_metrics.pairwise_strict_total})"
+        )
+        print(
+            f"     Predicate Jaccard: {map_metrics.pairwise_avg_predicate_jaccard:.3f} (±{map_metrics.pairwise_std_predicate_jaccard:.3f})"
+        )
 
         print(f"\n  ── PAIRWISE VIOLATION DISCOVERY " + "─" * 39)
-        print(f"     Exact Match:       {map_metrics.pairwise_execution_accuracy:.3f} ({map_metrics.pairwise_execution_correct}/{map_metrics.pairwise_execution_total})")
-        print(f"     Precision:         {map_metrics.pairwise_avg_execution_precision:.3f} (±{map_metrics.pairwise_std_execution_precision:.3f})")
-        print(f"     Recall:            {map_metrics.pairwise_avg_execution_recall:.3f} (±{map_metrics.pairwise_std_execution_recall:.3f})")
-        print(f"     F1:                {map_metrics.pairwise_avg_execution_f1:.3f} (±{map_metrics.pairwise_std_execution_f1:.3f})")
-        print(f"     Violation Jaccard: {map_metrics.pairwise_avg_execution_jaccard:.3f} (±{map_metrics.pairwise_std_execution_jaccard:.3f})")
+        print(
+            f"     Exact Match:       {map_metrics.pairwise_execution_accuracy:.3f} ({map_metrics.pairwise_execution_correct}/{map_metrics.pairwise_execution_total})"
+        )
+        print(
+            f"     Precision:         {map_metrics.pairwise_avg_execution_precision:.3f} (±{map_metrics.pairwise_std_execution_precision:.3f})"
+        )
+        print(
+            f"     Recall:            {map_metrics.pairwise_avg_execution_recall:.3f} (±{map_metrics.pairwise_std_execution_recall:.3f})"
+        )
+        print(
+            f"     F1:                {map_metrics.pairwise_avg_execution_f1:.3f} (±{map_metrics.pairwise_std_execution_f1:.3f})"
+        )
+        print(
+            f"     Violation Jaccard: {map_metrics.pairwise_avg_execution_jaccard:.3f} (±{map_metrics.pairwise_std_execution_jaccard:.3f})"
+        )
 
-        gap = map_metrics.pairwise_execution_accuracy - map_metrics.pairwise_strict_accuracy
+        gap = (
+            map_metrics.pairwise_execution_accuracy
+            - map_metrics.pairwise_strict_accuracy
+        )
         print(f"\n  INSIGHT: Syntactic vs Violation Gap = {gap:.3f}")
         if gap > 0:
-            print(f"     {gap*100:.1f}% of constraints find correct violations despite syntactic differences")
+            print(
+                f"     {gap*100:.1f}% of constraints find correct violations despite syntactic differences"
+            )
         elif gap < 0:
-            print(f"     Warning: {abs(gap)*100:.1f}% of syntactically correct constraints fail on violations")
+            print(
+                f"     Warning: {abs(gap)*100:.1f}% of syntactically correct constraints fail on violations"
+            )
 
         return {
-            'map_metrics': map_metrics,
-            'runtime_s': runtime_s,
-            'implementation': implementation,
-            'model': mapper_config.get('model', _NA),
+            "map_metrics": map_metrics,
+            "runtime_s": runtime_s,
+            "implementation": implementation,
+            "model": mapper_config.get("model", _NA),
         }
 
     # =========================================================================
@@ -356,29 +411,42 @@ class MapperGTOnlyExperiment(BaseExperiment):
     # =========================================================================
 
     def _create_mapper(self, mapper_config: Dict, predicate_space: Dict, df):
-        implementation = mapper_config.get('implementation', 'llm')
+        implementation = mapper_config.get("implementation", "llm")
+        csv_path = self._get_primary_csv_path(predicate_space)
 
-        if implementation == 'llm':
+        if implementation == "llm":
             return LLMMapper(
-                model_name=mapper_config['model'],
-                prompt_name=mapper_config['prompt_key'],
-                allowed_predicates=predicate_space['predicates'],
-                chunk_size=mapper_config.get('batch_size', 10),
+                model_name=mapper_config["model"],
+                provider=mapper_config.get("provider"),
+                prompt_name=mapper_config["prompt_key"],
+                allowed_predicates=predicate_space["predicates"],
+                chunk_size=mapper_config.get("batch_size", 10),
             )
-        elif implementation == 'multi_step_refinement':
+        elif implementation == "multi_step_refinement":
             return MultiStepRefinementMapper(
-                model_name=mapper_config['model'],
+                model_name=mapper_config["model"],
+                provider=mapper_config.get("provider"),
                 predicate_space=predicate_space,
                 df=df,
-                max_refinement_iterations=mapper_config.get('max_refinement_iterations', 2),
-                prompt_file=mapper_config.get('prompt_file', 'multi_step_refinement'),
+                csv_path=csv_path,
+                max_refinement_iterations=mapper_config.get(
+                    "max_refinement_iterations", 2
+                ),
+                prompt_file=mapper_config.get("prompt_file", "multi_step_refinement"),
             )
         else:
             raise ValueError(f"Unknown mapper implementation: {implementation}")
 
     def _build_context(self, df, num_rows: int = 3):
         from src.utils.table_context import TableContextBuilder
+
         return TableContextBuilder(sample_strategy="head", num_rows=num_rows).build(df)
+
+    def _get_primary_csv_path(self, predicate_space: Dict) -> Optional[str]:
+        table_files = predicate_space.get("_table_files") or {}
+        if not table_files:
+            return None
+        return next(iter(table_files.values()))
 
     # =========================================================================
     # Semantic normalization (inherited pattern from run_mapper_eval_full.py)
@@ -396,8 +464,7 @@ class MapperGTOnlyExperiment(BaseExperiment):
                 continue
             gt_predicates = sentence2dcs_map[sentence]
             normalized = [
-                self._match_to_gt_predicate(p, gt_predicates)
-                for p in pred_constraint
+                self._match_to_gt_predicate(p, gt_predicates) for p in pred_constraint
             ]
             mapped.append((sentence, normalized))
         return mapped
@@ -415,40 +482,54 @@ class MapperGTOnlyExperiment(BaseExperiment):
         col2, op2, val2 = self._parse_predicate(p2)
         if col1 is None or col1 != col2:
             return False
-        if op1 in ('=', 'LIKE') and op2 in ('=', 'LIKE'):
+        if op1 in ("=", "LIKE") and op2 in ("=", "LIKE"):
             s1, s2 = self._extract_string(val1), self._extract_string(val2)
             if s1 and s2 and min(len(s1), len(s2)) >= 4:
                 return s1.lower() in s2.lower() or s2.lower() in s1.lower()
-        if op1 in ('!=', 'NOT LIKE') and op2 in ('!=', 'NOT LIKE'):
+        if op1 in ("!=", "NOT LIKE") and op2 in ("!=", "NOT LIKE"):
             s1, s2 = self._extract_string(val1), self._extract_string(val2)
             if s1 and s2 and min(len(s1), len(s2)) >= 4:
                 return s1.lower() in s2.lower() or s2.lower() in s1.lower()
-        if op1 == 'IN' and op2 == '=':
+        if op1 == "IN" and op2 == "=":
             vals = self._extract_in_values(val1)
             s2 = self._extract_string(val2)
             if len(vals) == 1 and s2:
                 return vals[0].lower() == s2.lower()
-        if op2 == 'IN' and op1 == '=':
+        if op2 == "IN" and op1 == "=":
             vals = self._extract_in_values(val2)
             s1 = self._extract_string(val1)
             if len(vals) == 1 and s1:
                 return vals[0].lower() == s1.lower()
-        if op1 in ('>', '>=') and op2 in ('>', '>='):
+        if op1 in (">", ">=") and op2 in (">", ">="):
             return val1 == val2
-        if op1 in ('<', '<=') and op2 in ('<', '<='):
+        if op1 in ("<", "<=") and op2 in ("<", "<="):
             return val1 == val2
         return False
 
-    def _parse_predicate(self, pred: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    def _parse_predicate(
+        self, pred: str
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         pred = pred.strip()
-        for op in ('NOT LIKE', 'NOT IN', 'IS NOT NULL', 'IS NULL',
-                   'LIKE', 'IN', '!=', '<=', '>=', '<', '>', '='):
+        for op in (
+            "NOT LIKE",
+            "NOT IN",
+            "IS NOT NULL",
+            "IS NULL",
+            "LIKE",
+            "IN",
+            "!=",
+            "<=",
+            ">=",
+            "<",
+            ">",
+            "=",
+        ):
             upper = pred.upper()
-            idx = upper.find(f' {op} ')
+            idx = upper.find(f" {op} ")
             if idx != -1:
-                return pred[:idx].strip(), op, pred[idx + len(op) + 2:].strip()
-            if upper.endswith(f' {op}'):
-                return pred[:-(len(op) + 1)].strip(), op, None
+                return pred[:idx].strip(), op, pred[idx + len(op) + 2 :].strip()
+            if upper.endswith(f" {op}"):
+                return pred[: -(len(op) + 1)].strip(), op, None
         return None, None, None
 
     def _extract_string(self, val: Optional[str]) -> Optional[str]:
@@ -456,14 +537,14 @@ class MapperGTOnlyExperiment(BaseExperiment):
             return None
         val = val.strip()
         if val.startswith("'") and val.endswith("'"):
-            return val[1:-1].replace('%', '').strip()
+            return val[1:-1].replace("%", "").strip()
         return None
 
     def _extract_in_values(self, val: Optional[str]) -> List[str]:
         if not val:
             return []
-        val = val.strip().strip('()')
-        return [v.strip().strip("'") for v in val.split(',')]
+        val = val.strip().strip("()")
+        return [v.strip().strip("'") for v in val.split(",")]
 
     # =========================================================================
     # Detailed CSV output
@@ -484,32 +565,41 @@ class MapperGTOnlyExperiment(BaseExperiment):
 
         for sent, preds in predictions:
             record = {
-                'sentence': sent,
-                'gold_constraint': str(gt_sentence2dcs_map.get(sent)),
-                'pred_constraint': str(preds) if preds else None,
-                'pred_is_non_null': preds is not None and len(preds) > 0,
+                "sentence": sent,
+                "gold_constraint": str(gt_sentence2dcs_map.get(sent)),
+                "pred_constraint": str(preds) if preds else None,
+                "pred_is_non_null": preds is not None and len(preds) > 0,
             }
 
             r = gt_by_sentence.get(sent)
             if r is not None:
-                record.update({
-                    'pairwise_syntactic_exact_match':       r.strict_correct,
-                    'pairwise_syntactic_predicate_jaccard': r.predicate_jaccard,
-                })
+                record.update(
+                    {
+                        "pairwise_syntactic_exact_match": r.strict_correct,
+                        "pairwise_syntactic_predicate_jaccard": r.predicate_jaccard,
+                    }
+                )
                 if r.execution_exact is not None:
-                    record.update({
-                        'pairwise_violation_exact_match':  r.execution_exact,
-                        'pairwise_violation_precision':    r.execution_precision,
-                        'pairwise_violation_recall':       r.execution_recall,
-                        'pairwise_violation_f1':           r.execution_f1,
-                        'pairwise_violation_jaccard':      r.execution_jaccard,
-                        'num_gold_violations':             len(r.gold_violations) if r.gold_violations else 0,
-                        'num_pred_violations':             len(r.pred_violations) if r.pred_violations else 0,
-                        'num_overlap_violations': (
-                            len(r.gold_violations & r.pred_violations)
-                            if r.gold_violations and r.pred_violations else 0
-                        ),
-                    })
+                    record.update(
+                        {
+                            "pairwise_violation_exact_match": r.execution_exact,
+                            "pairwise_violation_precision": r.execution_precision,
+                            "pairwise_violation_recall": r.execution_recall,
+                            "pairwise_violation_f1": r.execution_f1,
+                            "pairwise_violation_jaccard": r.execution_jaccard,
+                            "num_gold_violations": (
+                                len(r.gold_violations) if r.gold_violations else 0
+                            ),
+                            "num_pred_violations": (
+                                len(r.pred_violations) if r.pred_violations else 0
+                            ),
+                            "num_overlap_violations": (
+                                len(r.gold_violations & r.pred_violations)
+                                if r.gold_violations and r.pred_violations
+                                else 0
+                            ),
+                        }
+                    )
 
             records.append(record)
 
@@ -524,78 +614,83 @@ class MapperGTOnlyExperiment(BaseExperiment):
     # =========================================================================
 
     def _build_result_dict(
-        self, dataset_name: str, variant: Dict, result: Dict, num_total: int, num_gt: int
+        self,
+        dataset_name: str,
+        variant: Dict,
+        result: Dict,
+        num_total: int,
+        num_gt: int,
     ) -> Dict:
-        m = result['map_metrics']
+        m = result["map_metrics"]
         return {
-            'dataset':            dataset_name,
-            'variant_name':       variant['name'],
-            'implementation':     result['implementation'],
-            'model':              result['model'],
-            'prompt_key':         variant['mapper'].get('prompt_key', _NA),
-            'prompt_file':        variant['mapper'].get('prompt_file', _NA),
-            'use_context':        variant.get('use_context', False),
-            'num_rows_context':   variant.get('num_rows_context', _NA),
-            'num_sentences_total': num_total,
-            'num_sentences_gt':   num_gt,
-            'runtime_s':          result['runtime_s'],
-            'status':             'success',
+            "dataset": dataset_name,
+            "variant_name": variant["name"],
+            "implementation": result["implementation"],
+            "model": result["model"],
+            "prompt_key": variant["mapper"].get("prompt_key", _NA),
+            "prompt_file": variant["mapper"].get("prompt_file", _NA),
+            "use_context": variant.get("use_context", False),
+            "num_rows_context": variant.get("num_rows_context", _NA),
+            "num_sentences_total": num_total,
+            "num_sentences_gt": num_gt,
+            "runtime_s": result["runtime_s"],
+            "status": "success",
             # Aggregate violation
-            'agg_viol_precision':         m.aggregate_violation_precision,
-            'agg_viol_recall':            m.aggregate_violation_recall,
-            'agg_viol_f1':                m.aggregate_violation_f1,
-            'total_gold_violations':      m.total_gold_violations,
-            'total_pred_violations':      m.total_pred_violations,
-            'total_overlap_violations':   m.total_overlap_violations,
+            "agg_viol_precision": m.aggregate_violation_precision,
+            "agg_viol_recall": m.aggregate_violation_recall,
+            "agg_viol_f1": m.aggregate_violation_f1,
+            "total_gold_violations": m.total_gold_violations,
+            "total_pred_violations": m.total_pred_violations,
+            "total_overlap_violations": m.total_overlap_violations,
             # Constraint exact match
-            'constraint_exact_precision': m.constraint_exact_precision,
-            'constraint_exact_recall':    m.constraint_exact_recall,
-            'constraint_exact_f1':        m.constraint_exact_f1,
-            'constraint_exact_tp':        m.constraint_exact_tp,
-            'constraint_exact_fp':        m.constraint_exact_fp,
-            'constraint_exact_fn':        m.constraint_exact_fn,
-            'num_gold_constraints':       m.num_gold_constraints,
-            'num_pred_constraints':       m.num_pred_constraints,
+            "constraint_exact_precision": m.constraint_exact_precision,
+            "constraint_exact_recall": m.constraint_exact_recall,
+            "constraint_exact_f1": m.constraint_exact_f1,
+            "constraint_exact_tp": m.constraint_exact_tp,
+            "constraint_exact_fp": m.constraint_exact_fp,
+            "constraint_exact_fn": m.constraint_exact_fn,
+            "num_gold_constraints": m.num_gold_constraints,
+            "num_pred_constraints": m.num_pred_constraints,
             # Pairwise syntactic
-            'pairwise_syn_exact_match':   m.pairwise_strict_accuracy,
-            'pairwise_syn_exact_count':   m.pairwise_strict_correct,
-            'pairwise_syn_total':         m.pairwise_strict_total,
-            'pairwise_syn_jaccard_mean':  m.pairwise_avg_predicate_jaccard,
-            'pairwise_syn_jaccard_std':   m.pairwise_std_predicate_jaccard,
+            "pairwise_syn_exact_match": m.pairwise_strict_accuracy,
+            "pairwise_syn_exact_count": m.pairwise_strict_correct,
+            "pairwise_syn_total": m.pairwise_strict_total,
+            "pairwise_syn_jaccard_mean": m.pairwise_avg_predicate_jaccard,
+            "pairwise_syn_jaccard_std": m.pairwise_std_predicate_jaccard,
             # Pairwise violation
-            'pairwise_viol_exact_match':  m.pairwise_execution_accuracy,
-            'pairwise_viol_exact_count':  m.pairwise_execution_correct,
-            'pairwise_viol_total':        m.pairwise_execution_total,
-            'pairwise_viol_prec_mean':    m.pairwise_avg_execution_precision,
-            'pairwise_viol_prec_std':     m.pairwise_std_execution_precision,
-            'pairwise_viol_rec_mean':     m.pairwise_avg_execution_recall,
-            'pairwise_viol_rec_std':      m.pairwise_std_execution_recall,
-            'pairwise_viol_f1_mean':      m.pairwise_avg_execution_f1,
-            'pairwise_viol_f1_std':       m.pairwise_std_execution_f1,
-            'pairwise_viol_jac_mean':     m.pairwise_avg_execution_jaccard,
-            'pairwise_viol_jac_std':      m.pairwise_std_execution_jaccard,
+            "pairwise_viol_exact_match": m.pairwise_execution_accuracy,
+            "pairwise_viol_exact_count": m.pairwise_execution_correct,
+            "pairwise_viol_total": m.pairwise_execution_total,
+            "pairwise_viol_prec_mean": m.pairwise_avg_execution_precision,
+            "pairwise_viol_prec_std": m.pairwise_std_execution_precision,
+            "pairwise_viol_rec_mean": m.pairwise_avg_execution_recall,
+            "pairwise_viol_rec_std": m.pairwise_std_execution_recall,
+            "pairwise_viol_f1_mean": m.pairwise_avg_execution_f1,
+            "pairwise_viol_f1_std": m.pairwise_std_execution_f1,
+            "pairwise_viol_jac_mean": m.pairwise_avg_execution_jaccard,
+            "pairwise_viol_jac_std": m.pairwise_std_execution_jaccard,
         }
 
     def _build_failure_dict(
         self, dataset_name: str, variant: Dict, error: str, num_total: int, num_gt: int
     ) -> Dict:
         return {
-            'dataset':             dataset_name,
-            'variant_name':        variant['name'],
-            'implementation':      variant['mapper'].get('implementation', _NA),
-            'model':               variant['mapper'].get('model', _NA),
-            'prompt_key':          variant['mapper'].get('prompt_key', _NA),
-            'prompt_file':         variant['mapper'].get('prompt_file', _NA),
-            'use_context':         variant.get('use_context', False),
-            'num_sentences_total': num_total,
-            'num_sentences_gt':    num_gt,
-            'status':              'failed',
-            'error':               error,
-            'runtime_s':           _NA,
-            'agg_viol_f1':         _NA,
-            'constraint_exact_f1': _NA,
-            'pairwise_syn_exact_match':  _NA,
-            'pairwise_viol_f1_mean':     _NA,
+            "dataset": dataset_name,
+            "variant_name": variant["name"],
+            "implementation": variant["mapper"].get("implementation", _NA),
+            "model": variant["mapper"].get("model", _NA),
+            "prompt_key": variant["mapper"].get("prompt_key", _NA),
+            "prompt_file": variant["mapper"].get("prompt_file", _NA),
+            "use_context": variant.get("use_context", False),
+            "num_sentences_total": num_total,
+            "num_sentences_gt": num_gt,
+            "status": "failed",
+            "error": error,
+            "runtime_s": _NA,
+            "agg_viol_f1": _NA,
+            "constraint_exact_f1": _NA,
+            "pairwise_syn_exact_match": _NA,
+            "pairwise_viol_f1_mean": _NA,
         }
 
     # =========================================================================
@@ -622,7 +717,7 @@ class MapperGTOnlyExperiment(BaseExperiment):
         print("  " + "-" * 128)
 
         for name, r in results.items():
-            m = r['map_metrics']
+            m = r["map_metrics"]
             print(
                 f"  {name:<45} {r['implementation']:<10} {r['model']:<22} "
                 f"{_fmt(m.aggregate_violation_f1, 12)} {_fmt(m.constraint_exact_f1, 15)} "
@@ -633,17 +728,38 @@ class MapperGTOnlyExperiment(BaseExperiment):
 
         if results:
             print()
-            best_agg   = max(results.items(), key=lambda x: x[1]['map_metrics'].aggregate_violation_f1)
-            best_const = max(results.items(), key=lambda x: x[1]['map_metrics'].constraint_exact_f1)
-            best_syn   = max(results.items(), key=lambda x: x[1]['map_metrics'].pairwise_strict_accuracy)
-            best_viol  = max(results.items(), key=lambda x: x[1]['map_metrics'].pairwise_avg_execution_f1)
-            fastest    = min(results.items(), key=lambda x: x[1]['runtime_s'])
+            best_agg = max(
+                results.items(),
+                key=lambda x: x[1]["map_metrics"].aggregate_violation_f1,
+            )
+            best_const = max(
+                results.items(), key=lambda x: x[1]["map_metrics"].constraint_exact_f1
+            )
+            best_syn = max(
+                results.items(),
+                key=lambda x: x[1]["map_metrics"].pairwise_strict_accuracy,
+            )
+            best_viol = max(
+                results.items(),
+                key=lambda x: x[1]["map_metrics"].pairwise_avg_execution_f1,
+            )
+            fastest = min(results.items(), key=lambda x: x[1]["runtime_s"])
 
-            print(f"  Best Aggregate Violation F1:   {best_agg[0][:55]} ({best_agg[1]['map_metrics'].aggregate_violation_f1:.3f})")
-            print(f"  Best Constraint Exact F1:      {best_const[0][:55]} ({best_const[1]['map_metrics'].constraint_exact_f1:.3f})")
-            print(f"  Best Syntactic Exact Match:    {best_syn[0][:55]} ({best_syn[1]['map_metrics'].pairwise_strict_accuracy:.3f})")
-            print(f"  Best Pairwise Violation F1:    {best_viol[0][:55]} ({best_viol[1]['map_metrics'].pairwise_avg_execution_f1:.3f})")
-            print(f"  Fastest:                       {fastest[0][:55]} ({fastest[1]['runtime_s']:.2f}s)")
+            print(
+                f"  Best Aggregate Violation F1:   {best_agg[0][:55]} ({best_agg[1]['map_metrics'].aggregate_violation_f1:.3f})"
+            )
+            print(
+                f"  Best Constraint Exact F1:      {best_const[0][:55]} ({best_const[1]['map_metrics'].constraint_exact_f1:.3f})"
+            )
+            print(
+                f"  Best Syntactic Exact Match:    {best_syn[0][:55]} ({best_syn[1]['map_metrics'].pairwise_strict_accuracy:.3f})"
+            )
+            print(
+                f"  Best Pairwise Violation F1:    {best_viol[0][:55]} ({best_viol[1]['map_metrics'].pairwise_avg_execution_f1:.3f})"
+            )
+            print(
+                f"  Fastest:                       {fastest[0][:55]} ({fastest[1]['runtime_s']:.2f}s)"
+            )
 
         print("=" * 130)
 
@@ -652,16 +768,17 @@ class MapperGTOnlyExperiment(BaseExperiment):
 # Entry point
 # =============================================================================
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description='GT-only mapper evaluation: pure mapping quality, no classifier',
+        description="GT-only mapper evaluation: pure mapping quality, no classifier",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   python run_mapper_eval_gt_only.py configs/mappers/gt_only.yaml
-        """
+        """,
     )
-    parser.add_argument('config_file', help='Path to YAML config file')
+    parser.add_argument("config_file", help="Path to YAML config file")
     args = parser.parse_args()
 
     try:
