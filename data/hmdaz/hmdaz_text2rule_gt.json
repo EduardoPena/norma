@@ -1,0 +1,177 @@
+{
+   "_meta": {
+      "_comment": "Ground truth mapping between natural language sentences and denial constraint rules - REGULATION Z",
+      "dataset": "hmdaz.csv",
+      "source": "Regulation Z (12 CFR Part 1026)",
+      "structure": {
+         "sentences": "Array of related sentences (current datasets are 1-to-1, future: many-to-one or one-to-many)",
+         "rules": "Array of independent rules. Each rule is a predicate string or an explicit AND/OR expression. null if no valid rule exists",
+         "future_examples": {
+            "multiple_sentences_one_rule": "sentences: ['sent1', 'sent2'], rules: [{'AND': [pred1, pred2]}]",
+            "one_sentence_multiple_rules": "sentences: ['sent1'], rules: [pred1, {'AND': [pred2, pred3]}]"
+         }
+      }
+   },
+   "mapping": [
+      {
+         "id": 1,
+         "sentences": [
+            " The annual percentage rate at consummation of the transaction will exceed the average prime offer rate, as defined in § 1026.35(a)(2), for a comparable transaction by more than either (A) 6.5 percentage points for a first-lien transaction, other than as described in paragraph (a)(B) of this section; or (B) 8.5 percentage points for a subordinate-lien covered transaction."
+         ],
+         "rules": [
+            {
+               "AND": [
+                  "t1.hoepa_status_name != 'HOEPA loan'",
+                  {
+                     "OR": [
+                        {
+                           "AND": [
+                              "t1.lien_status_name = 'Secured by a first lien'",
+                              "t1.rate_spread > 6.5"
+                           ]
+                        },
+                        {
+                           "AND": [
+                              "t1.lien_status_name = 'Secured by a subordinate lien'",
+                              "t1.rate_spread > 8.5"
+                           ]
+                        }
+                     ]
+                  }
+               ]
+            }
+         ],
+         "_comment": "Ground Truth rule related to the target database"
+      },
+      {
+         "id": 3,
+         "sentences": [
+            " The transaction's total points and fees, as defined in paragraphs (b) and (2) of this section, will exceed 5 percent of the total loan amount for a transaction with a loan amount of $20,000 or more and the $20,000 figure shall be adjusted annually on January 1 by the annual percentage change in the Consumer Price Index that was reported on the preceding June 1;"
+         ],
+         "rules": [
+            {
+               "AND": [
+                  "t1.loan_amount > 20000",
+                  "t1.total_points_and_fees > 0.05 * t1.loan_amount",
+                  "t1.hoepa_status_name != 'HOEPA loan'"
+               ]
+            }
+         ],
+         "_comment": "Ground Truth rule related to the target database"
+      },
+      {
+         "id": 4,
+         "sentences": [
+            " Under the terms of the loan contract or open-end credit agreement, the creditor can charge a prepayment penalty, as defined in paragraph (b)(6) of this section, more than 36 months after consummation or account opening, or prepayment penalties that can exceed, in total, more than 2 percent of the amount prepaid."
+         ],
+         "rules": [
+            {
+               "AND": [
+                  "t1.prepayment_penalty_term > 36",
+                  "t1.hoepa_status_name != 'HOEPA loan'"
+               ]
+            }
+         ],
+         "_comment": "Ground Truth rule related to the target database"
+      },
+      {
+         "id": 5,
+         "sentences": [
+            " A reverse mortgage transaction subject to § 1026.33 and  A transaction to finance the initial construction of a dwelling."
+         ],
+         "rules": [
+            {
+               "AND": [
+                  "t1.reverse_mortgage_name = 'Reverse mortgage'",
+                  "t1.hoepa_status_name = 'HOEPA loan'"
+               ]
+            }
+         ],
+         "_comment": "Ground Truth rule related to the target database"
+      },
+      {
+         "id": 6,
+         "sentences": [
+            " “Higher-priced mortgage loan” means a closed-end consumer credit transaction secured by the consumer's principal dwelling with an annual percentage rate that exceeds the average prime offer rate for a comparable transaction as of the date the interest rate is set  By 1.5 or more percentage points for loans secured by a first lien with a principal obligation at consummation that does not exceed the limit in effect as of the date the transaction's interest rate is set for the maximum principal obligation eligible for purchase by Freddie Mac;"
+         ],
+         "rules": null,
+         "_comment": "Ground Truth rule related to the target database"
+      },
+      {
+         "id": 7,
+         "sentences": [
+            " “Higher-priced mortgage loan” means a closed-end consumer credit transaction secured by the consumer's principal dwelling with an annual percentage rate that exceeds the average prime offer rate for a comparable transaction as of the date the interest rate is set  By 3.5 or more percentage points for loans secured by a subordinate lien."
+         ],
+         "rules": null,
+         "_comment": "Ground Truth rule related to the target database"
+      },
+      {
+         "id": 8,
+         "sentences": [
+            "Except as provided in paragraph (b)(2) of this section, a creditor may not extend a higher-priced mortgage loan secured by a first lien on a consumer's principal dwelling unless an escrow account is established before consummation for payment of property taxes and premiums for mortgage-related insurance required by the creditor, such as insurance against loss of or damage to property, or against liability arising out of the ownership or use of the property, or insurance protecting the creditor against the consumer's default or other credit loss. For purposes of this paragraph (b), the term “escrow account” has the same meaning as under Regulation X (12 CFR 1024.17(b)), as amended."
+         ],
+         "rules": null,
+         "_comment": "Ground Truth rule related to the target database"
+      },
+      {
+         "id": 9,
+         "sentences": [
+            " Higher-priced covered transaction means a covered transaction with an annual percentage rate that exceeds the average prime offer rate for a comparable transaction as of the date the interest rate is set by 1.5 or more percentage points for a first-lien covered transaction, other than a qualified mortgage under paragraph (e)(5), (e)(6), or (f) of this section and by 3.5 or more percentage points for a first-lien covered transaction that is a qualified mortgage under paragraph (e)(5), (e)(6), or (f) of this section; or by 3.5 or more percentage points for a subordinate-lien covered transaction."
+         ],
+         "rules": null,
+         "_comment": "Ground Truth rule related to the target database"
+      },
+      {
+         "id": 10,
+         "sentences": [
+            "A creditor shall not make a loan that is a covered transaction unless the creditor makes a reasonable and good faith determination at or before consummation that the consumer will have a reasonable ability to repay the loan according to its terms."
+         ],
+         "rules": null,
+         "_comment": "Ground Truth rule related to the target database"
+      },
+      {
+         "id": 11,
+         "sentences": [
+            "Except as provided otherwise in paragraphs (d), (e), and (f) of this section, in making the repayment ability determination required under paragraph (c) of this section, a creditor must consider the following  The consumer's current or reasonably expected income or assets, other than the value of the dwelling, including any real property attached to the dwelling, that secures the loan;"
+         ],
+         "rules": null,
+         "_comment": "Ground Truth rule related to the target database"
+      },
+      {
+         "id": 12,
+         "sentences": [
+            "This section applies to any consumer credit transaction that is secured by a dwelling, as defined in § 1026.2(a)(19), including any real property attached to a dwelling, other than For purposes of paragraphs (c) through (f) of this section  A reverse mortgage subject to § 1026.33 and ii) A temporary or “bridge” loan with a term of 12 months or less, such as a loan to finance the purchase of a new dwelling where the consumer plans to sell a current dwelling within 12 months or a loan to finance the initial construction of a dwelling;"
+         ],
+         "rules": [
+            {
+               "AND": [
+                  "t1.reverse_mortgage_name = 'Reverse mortgage'",
+                  "t1.loan_term > 12"
+               ]
+            }
+         ],
+         "_comment": "Ground Truth rule related to the target database"
+      },
+      {
+         "id": 13,
+         "sentences": [
+            " The requirements of this section apply to a high-cost mortgage, which is any consumer credit transaction that is secured by the consumer's principal dwelling, other than as provided in paragraph (a)(2) of this section, and in which the transaction's total points and fees, as defined in paragraphs (b) and (2) of this section, will exceed the lesser of (i) 8 percent of the total loan amount; or (ii) $1,000, for a transaction with a loan amount of less than $20,000."
+         ],
+         "rules": [
+            {
+               "AND": [
+                  "t1.loan_amount < 20000",
+                  "t1.hoepa_status_name != 'HOEPA loan'",
+                  {
+                     "OR": [
+                        "t1.total_points_and_fees > t1.loan_amount * 0.08",
+                        "t1.total_points_and_fees > 1000"
+                     ]
+                  }
+               ]
+            }
+         ],
+         "_comment": "Ground Truth rule related to the target database"
+      }
+   ]
+}

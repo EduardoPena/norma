@@ -1,0 +1,434 @@
+{
+    "_meta": {
+        "_comments": "Ground truth mapping between natural language sentences and denial constraint rules - SISU Portaria Normativa 21/2012",
+        "structure": {
+            "sentences": "Array of related sentences (current datasets are 1-to-1, future: many-to-one or one-to-many)",
+            "rules": "Array of independent rules. Each rule is a predicate string or an explicit AND/OR expression. null if no valid rule exists",
+            "future_examples": {
+                "multiple_sentences_one_rule": "sentences: ['sent1', 'sent2'], rules: [{'AND': [pred1, pred2]}]",
+                "one_sentence_multiple_rules": "sentences: ['sent1'], rules: [pred1, {'AND': [pred2, pred3]}]"
+            }
+        }
+    },
+    "mapping": [
+        {
+            "id": 1,
+            "sentences": [
+                "Somente poderá se inscrever no processo seletivo do Sisu o estudante que tenha participado do Enem, conforme disposto no § 1º do art. 2º desta Portaria, e que atenda às condições estabelecidas no edital do Sisu."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 13 - Seção II Da Inscrição dos Estudantes. É regra, mas não dá pra checar nos dados"
+        },
+        {
+            "id": 2,
+            "sentences": [
+                "O estudante deverá efetuar sua inscrição no Sisu, especificando em ordem de preferência, as suas opções de vaga em instituição, local de oferta, curso, turno e  a modalidade de concorrência, conforme o disposto no art. 15 desta Portaria."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.codigo_ies IS NOT NULL",
+                        "s1.codigo_campus IS NOT NULL",
+                        "s1.codigo_curso IS NOT NULL",
+                        "s1.turno IS NOT NULL",
+                        "s1.mod_concorrencia IS NOT NULL"
+                    ]
+                }
+            ],
+            "_comment": "Art. 14, inciso I"
+        },
+        {
+            "id": 3,
+            "sentences": [
+                "É vedada ao estudante a inscrição em mais de uma modalidade de concorrência para o mesmo curso e turno, na mesma instituição de ensino e local de oferta."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.cpf = s2.cpf",
+                        "s1.codigo_ies = s2.codigo_ies",
+                        "s1.codigo_campus = s2.codigo_campus",
+                        "s1.codigo_curso = s2.codigo_curso",
+                        "s1.turno = s2.turno",
+                        "s1.mod_concorrencia != s2.mod_concorrencia"
+                    ]
+                }
+            ],
+            "_comment": "Art. 14, § 1º, alínea a. Uma DF legal"
+        },
+        {
+            "id": 4,
+            "sentences": [
+                "É vedada ao estudante a inscrição na segunda edição anual do processo seletivo do Sisu para o mesmo curso, turno, local de oferta e instituição, independentemente da modalidade de oferta, para o qual tenha se em razão de sua seleção na primeira edição anual do Sisu."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.cpf = s2.cpf",
+                        "s1.codigo_ies = s2.codigo_ies",
+                        "s1.codigo_campus = s2.codigo_campus",
+                        "s1.codigo_curso = s2.codigo_curso",
+                        "s1.turno = s2.turno",
+                        "s1.edicao = 2",
+                        "s2.edicao = 1",
+                        "s2.matricula = 'EFETIVADA'"
+                    ]
+                }
+            ],
+            "_comment": "Art. 14, § 1º, alínea b"
+        },
+        {
+            "id": 5,
+            "sentences": [
+                "Durante o período de inscrição o estudante poderá alterar as suas opções, bem como efetuar o seu cancelamento."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 14, § 2º"
+        },
+        {
+            "id": 6,
+            "sentences": [
+                "A classificação no processo seletivo do Sisu será efetuada com base na última alteração efetuada e confirmada pelo estudante no sistema."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 14, § 3º"
+        },
+        {
+            "id": 7,
+            "sentences": [
+                "Ao se inscrever no processo seletivo do Sisu, o estudante deverá optar por concorrer às vagas reservadas em decorrência do disposto na Lei nº 12.711, de 2012, observada a regulamentação em vigor."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 15, inciso I"
+        },
+        {
+            "id": 8,
+            "sentences": [
+                "Ao se inscrever no processo seletivo do Sisu, o estudante deverá optar por concorrer às vagas destinadas às demais políticas de ações afirmativas eventualmente adotadas pela instituição no Termo de Adesão."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 15, inciso II"
+        },
+        {
+            "id": 9,
+            "sentences": [
+                "Ao se inscrever no processo seletivo do Sisu, o estudante deverá optar por concorrer às vagas destinadas à ampla concorrência."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 15, inciso III"
+        },
+        {
+            "id": 10,
+            "sentences": [
+                "Compete exclusivamente ao estudante se certificar de que cumpre os requisitos estabelecidos para concorrer às vagas referidas nos incisos do caput."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 15, Parágrafo único"
+        },
+        {
+            "id": 11,
+            "sentences": [
+                "O Sisu disponibilizará ao estudante, em caráter exclusivamente informativo, a nota de corte para cada instituição, local de oferta, curso, turno e modalidade de concorrência, a qual será atualizada periodicamente conforme o processamento das inscrições efetuadas."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.nota_minima_l IS NOT NULL",
+                        "s1.nota_minima_ch IS NOT NULL",
+                        "s1.nota_minima_cn IS NOT NULL",
+                        "s1.nota_minima_m IS NOT NULL",
+                        "s1.nota_minima_r IS NOT NULL",
+                        "s1.media_minima IS NOT NULL"
+                    ]
+                }
+            ],
+            "_comment": "Art. 16"
+        },
+        {
+            "id": 12,
+            "sentences": [
+                "Considera-se nota de corte a menor nota para que o estudante se classifique dentro do número de vagas ofertadas no(s) curso(s) de opção e modalidade de concorrência no período de inscrição, não constituindo qualquer garantia de seleção para a(s) vaga(s) ofertada(s), mas tão somente mera referência de auxílio no monitoramento de sua inscrição."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 16, Parágrafo único. Compelxa; precisa de mais contexto para virar regra"
+        },
+        {
+            "id": 13,
+            "sentences": [
+                "A inscrição do estudante no processo seletivo do Sisu implica a concordância expressa e irretratável com o disposto nesta Portaria, no Termo de Adesão da instituição e nos editais divulgados pela SESu, bem como nos editais próprios da instituição para a qual tenha se inscrito."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 17, inciso I"
+        },
+        {
+            "id": 14,
+            "sentences": [
+                "A inscrição do estudante no processo seletivo do Sisu implica o consentimento com a utilização e a divulgação de suas notas no Enem e das informações prestadas no Exame, inclusive aquelas constantes do questionário socioeconômico, assim como os dados referentes à sua participação no Sisu."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 17, inciso II"
+        },
+        {
+            "id": 15,
+            "sentences": [
+                "O Ministério da Educação não se responsabilizará por inscrição via internet não recebida por quaisquer motivos de ordem técnica de computadores, falhas de comunicação, congestionamentos das linhas de comunicação, por procedimento indevido, bem como por outros fatores que impossibilitem a transferência de dados, sendo de responsabilidade exclusiva do estudante acompanhar a situação de sua inscrição."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 18"
+        },
+        {
+            "id": 16,
+            "sentences": [
+                "Encerrado o período de inscrição, o estudante será classificado na ordem decrescente das notas na opção de vaga para a qual se inscreveu, observado o limite de vagas disponíveis na instituição, por local de oferta, curso e turno bem como a modalidade de concorrência."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.cpf != s2.cpf",
+                        "s1.nota_candidato > s2.nota_candidato",
+                        "s1.classificacao > s2.classificacao",
+                        "s1.codigo_ies = s2.codigo_ies",
+                        "s1.codigo_campus = s2.codigo_campus",
+                        "s1.codigo_curso = s2.codigo_curso",
+                        "s1.turno = s2.turno",
+                        "s1.edicao = s2.edicao",
+                        "s1.mod_concorrencia = s2.mod_concorrencia"
+                    ]
+                }
+            ],
+            "_comment": "Art. 19 - Seção III Da Classificação e da Seleção"
+        },
+        {
+            "id": 17,
+            "sentences": [
+                "A nota final do estudante poderá variar de acordo com a ponderação dos pesos eventualmente estabelecidos pela instituição para cada uma das provas do Enem, na forma prevista no inciso IV do art. 5º desta Portaria."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 19, § 1º, inciso I. obscura pra mapear como regra"
+        },
+        {
+            "id": 18,
+            "sentences": [
+                "A nota final do estudante poderá variar de acordo com os bônus eventualmente estabelecidos pelas instituições em suas políticas de ações afirmativas, na forma prevista no inciso III do art. 5º desta Portaria."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 19, § 1º, inciso II"
+        },
+        {
+            "id": 19,
+            "sentences": [
+                "Os estudantes que optarem por concorrer às vagas reservadas em decorrência do disposto na Lei nº 12.711, de 2012, e regulamentação em vigor, serão classificados dentro de cada um dos seguintes grupos e subgrupos de inscritos."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20"
+        },
+        {
+            "id": 20,
+            "sentences": [
+                "Estudantes egressos de escola pública, com renda familiar bruta igual ou inferior a 1,5 salário-mínimo per capita, que se autodeclararam pretos, pardos e indígenas, que sejam pessoas com deficiência, serão classificados em grupo específico."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, inciso I, alínea a, item 1"
+        },
+        {
+            "id": 21,
+            "sentences": [
+                "Estudantes egressos de escola pública, com renda familiar bruta igual ou inferior a 1,5 salário-mínimo per capita, que se autodeclararam pretos, pardos e indígenas, que não sejam pessoas com deficiência, serão classificados em grupo específico."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, inciso I, alínea a, item 2"
+        },
+        {
+            "id": 22,
+            "sentences": [
+                "Estudantes egressos de escola pública, com renda familiar bruta igual ou inferior a 1,5 salário-mínimo per capita, que não se autodeclararam pretos, pardos e indígenas, que sejam pessoas com deficiência, serão classificados em grupo específico."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, inciso I, alínea b, item 1"
+        },
+        {
+            "id": 23,
+            "sentences": [
+                "Estudantes egressos de escola pública, com renda familiar bruta igual ou inferior a 1,5 salário-mínimo per capita, que não se autodeclararam pretos, pardos e indígenas, que não sejam pessoas com deficiência, serão classificados em grupo específico."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, inciso I, alínea b, item 2"
+        },
+        {
+            "id": 24,
+            "sentences": [
+                "Estudantes egressos de escolas públicas, independentemente de renda, que se autodeclararam pretos, pardos e indígenas, que sejam pessoas com deficiência, serão classificados em grupo específico."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, inciso II, alínea a, item 1"
+        },
+        {
+            "id": 25,
+            "sentences": [
+                "Estudantes egressos de escolas públicas, independentemente de renda, que se autodeclararam pretos, pardos e indígenas, que não sejam pessoas com deficiência, serão classificados em grupo específico."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, inciso II, alínea a, item 2"
+        },
+        {
+            "id": 26,
+            "sentences": [
+                "Estudantes egressos de escolas públicas, independentemente de renda, que não se autodeclararam pretos, pardos e indígenas, que sejam pessoas com deficiência, serão classificados em grupo específico."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, inciso II, alínea b, item 1"
+        },
+        {
+            "id": 27,
+            "sentences": [
+                "Estudantes egressos de escolas públicas, independentemente de renda, que não se autodeclararam pretos, pardos e indígenas, que não sejam pessoas com deficiência, serão classificados em grupo específico."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, inciso II, alínea b, item 2"
+        },
+        {
+            "id": 28,
+            "sentences": [
+                "A cada chamada regular do SiSU, serão selecionados os estudantes classificados, consoante o disposto nos arts. 19 e 20 desta Portaria, observando-se a ordem de preferência das opções efetuadas."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 21"
+        },
+        {
+            "id": 29,
+            "sentences": [
+                "O estudante será selecionado em apenas uma de suas opções."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.cpf = s2.cpf",
+                        "s1.edicao = s2.edicao",
+                        "s1.opcao != s2.opcao",
+                        "s1.aprovado = 'S'",
+                        "s2.aprovado = 'S'"
+                    ]
+                }
+            ],
+            "_comment": "Art. 21, § 1º"
+        },
+        {
+            "id": 30,
+            "sentences": [
+                "O estudante será selecionado exclusivamente em sua 1ª opção, caso tenha obtido nota suficiente para classificação nessa opção."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.opcao = 1",
+                        "s1.aprovado = 'N'",
+                        "s1.nota_candidato >= s1.nota_corte"
+                    ]
+                }
+            ],
+            "_comment": "Art. 21, § 1º, inciso I"
+        },
+        {
+            "id": 31,
+            "sentences": [
+                "O estudante será selecionado em sua 2ª opção, caso possua nota suficiente para tal, desde que não tenha sido selecionado em sua 1ª opção."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.cpf = s2.cpf",
+                        "s1.edicao = s2.edicao",
+                        "s1.opcao = 2",
+                        "s1.aprovado = 'N'",
+                        "s1.nota_candidato >= s1.nota_corte",
+                        "s2.opcao = 1",
+                        "s2.aprovado = 'N'"
+                    ]
+                }
+            ],
+            "_comment": "Art. 21, § 1º, inciso II"
+        },
+        {
+            "id": 32,
+            "sentences": [
+                "O estudante poderá consultar o resultado das chamadas no sítio eletrônico do SiSU na internet e nas instituições para as quais efetuou sua inscrição."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 21, § 2º"
+        },
+        {
+            "id": 33,
+            "sentences": [
+                "A seleção do estudante assegura apenas a expectativa de direito à vaga para a qual se inscreveu, estando sua matrícula condicionada à comprovação de atendimento dos requisitos legais e regulamentares pertinentes, em especial aqueles previstos na Lei nº 12.711, de 2012, e regulamentação em vigor."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 22"
+        }
+    ]
+}

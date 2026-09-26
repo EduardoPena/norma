@@ -1,0 +1,434 @@
+{
+    "_meta": {
+        "_comments": "Ground truth mapping between natural language sentences and denial constraint rules - SISU Normative Ordinance 21/2012",
+        "structure": {
+            "sentences": "Array of related sentences (current datasets are 1-to-1, future: many-to-one or one-to-many)",
+            "rules": "Array of independent rules. Each rule is a predicate string or an explicit AND/OR expression. null if no valid rule exists",
+            "future_examples": {
+                "multiple_sentences_one_rule": "sentences: ['sent1', 'sent2'], rules: [{'AND': [pred1, pred2]}]",
+                "one_sentence_multiple_rules": "sentences: ['sent1'], rules: [pred1, {'AND': [pred2, pred3]}]"
+            }
+        }
+    },
+    "mapping": [
+        {
+            "id": 1,
+            "sentences": [
+                "Only students who have participated in ENEM, as provided in § 1 of art. 2 of this Ordinance, and who meet the conditions established in the SISU public notice may register for the SISU selection process."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 13 - Section II Student Registration. It is a rule, but cannot be verified in the data"
+        },
+        {
+            "id": 2,
+            "sentences": [
+                "The student must register for SISU, specifying in order of preference their vacancy options for institution, campus, course, shift, and competition mode, as provided in art. 15 of this Ordinance."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.institution_code IS NOT NULL",
+                        "s1.campus_code IS NOT NULL",
+                        "s1.course_code IS NOT NULL",
+                        "s1.shift IS NOT NULL",
+                        "s1.competition_mode IS NOT NULL"
+                    ]
+                }
+            ],
+            "_comment": "Art. 14, item I"
+        },
+        {
+            "id": 3,
+            "sentences": [
+                "Students are prohibited from registering in more than one competition mode for the same course and shift, at the same institution and campus."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.cpf = s2.cpf",
+                        "s1.institution_code = s2.institution_code",
+                        "s1.campus_code = s2.campus_code",
+                        "s1.course_code = s2.course_code",
+                        "s1.shift = s2.shift",
+                        "s1.competition_mode != s2.competition_mode"
+                    ]
+                }
+            ],
+            "_comment": "Art. 14, § 1, clause a. A legal FD"
+        },
+        {
+            "id": 4,
+            "sentences": [
+                "Students are prohibited from registering in the second annual edition of the SISU selection process for the same course, shift, campus, and institution, regardless of the offer mode, for which they have enrolled as a result of their selection in the first annual edition of SISU."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.cpf = s2.cpf",
+                        "s1.institution_code = s2.institution_code",
+                        "s1.campus_code = s2.campus_code",
+                        "s1.course_code = s2.course_code",
+                        "s1.shift = s2.shift",
+                        "s1.edition = 2",
+                        "s2.edition = 1",
+                        "s2.enrollment = 'EFETIVADA'"
+                    ]
+                }
+            ],
+            "_comment": "Art. 14, § 1, clause b"
+        },
+        {
+            "id": 5,
+            "sentences": [
+                "During the registration period, the student may change their options, as well as cancel their registration."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 14, § 2"
+        },
+        {
+            "id": 6,
+            "sentences": [
+                "Classification in the SISU selection process will be based on the last change made and confirmed by the student in the system."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 14, § 3"
+        },
+        {
+            "id": 7,
+            "sentences": [
+                "When registering for the SISU selection process, the student must choose to compete for vacancies reserved under Law No. 12,711 of 2012, observing the current regulations."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 15, item I"
+        },
+        {
+            "id": 8,
+            "sentences": [
+                "When registering for the SISU selection process, the student must choose to compete for vacancies allocated to other affirmative action policies eventually adopted by the institution in the Adhesion Term."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 15, item II"
+        },
+        {
+            "id": 9,
+            "sentences": [
+                "When registering for the SISU selection process, the student must choose to compete for vacancies allocated to open competition."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 15, item III"
+        },
+        {
+            "id": 10,
+            "sentences": [
+                "It is exclusively the student's responsibility to verify that they meet the requirements established to compete for the vacancies referred to in the items above."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 15, Sole paragraph"
+        },
+        {
+            "id": 11,
+            "sentences": [
+                "SISU will make available to the student, for informational purposes only, the cutoff score for each institution, campus, course, shift, and competition mode, which will be updated periodically as registrations are processed."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.min_score_languages IS NOT NULL",
+                        "s1.min_score_humanities IS NOT NULL",
+                        "s1.min_score_natural_sciences IS NOT NULL",
+                        "s1.min_score_math IS NOT NULL",
+                        "s1.min_score_essay IS NOT NULL",
+                        "s1.min_average IS NOT NULL"
+                    ]
+                }
+            ],
+            "_comment": "Art. 16"
+        },
+        {
+            "id": 12,
+            "sentences": [
+                "The cutoff score is considered the minimum score for the student to be classified within the number of vacancies offered in the course(s) of choice and competition mode during the registration period, not constituting any guarantee of selection for the vacancy(ies) offered, but only a mere reference to assist in monitoring their registration."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 16, Sole paragraph. Complex; needs more context to become a rule"
+        },
+        {
+            "id": 13,
+            "sentences": [
+                "The student's registration in the SISU selection process implies express and irrevocable agreement with the provisions of this Ordinance, the institution's Adhesion Term, and the public notices published by SESu, as well as the institution's own public notices for which they have registered."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 17, item I"
+        },
+        {
+            "id": 14,
+            "sentences": [
+                "The student's registration in the SISU selection process implies consent to the use and disclosure of their ENEM scores and information provided in the Exam, including those in the socioeconomic questionnaire, as well as data related to their participation in SISU."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 17, item II"
+        },
+        {
+            "id": 15,
+            "sentences": [
+                "The Ministry of Education will not be responsible for internet registrations not received due to any technical reasons related to computers, communication failures, communication line congestion, improper procedures, as well as other factors that prevent data transfer, with the student being solely responsible for monitoring the status of their registration."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 18"
+        },
+        {
+            "id": 16,
+            "sentences": [
+                "After the registration period ends, the student will be ranked in descending order of scores for the vacancy option for which they registered, observing the limit of vacancies available at the institution, by campus, course, and shift, as well as the competition mode."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.cpf != s2.cpf",
+                        "s1.candidate_score > s2.candidate_score",
+                        "s1.ranking > s2.ranking",
+                        "s1.institution_code = s2.institution_code",
+                        "s1.campus_code = s2.campus_code",
+                        "s1.course_code = s2.course_code",
+                        "s1.shift = s2.shift",
+                        "s1.edition = s2.edition",
+                        "s1.competition_mode = s2.competition_mode"
+                    ]
+                }
+            ],
+            "_comment": "Art. 19 - Section III Classification and Selection"
+        },
+        {
+            "id": 17,
+            "sentences": [
+                "The student's final score may vary according to the weighting of weights eventually established by the institution for each ENEM test, as provided in item IV of art. 5 of this Ordinance."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 19, § 1, item I. Unclear to map as a rule"
+        },
+        {
+            "id": 18,
+            "sentences": [
+                "The student's final score may vary according to bonuses eventually established by institutions in their affirmative action policies, as provided in item III of art. 5 of this Ordinance."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 19, § 1, item II"
+        },
+        {
+            "id": 19,
+            "sentences": [
+                "Students who choose to compete for vacancies reserved under Law No. 12,711 of 2012 and current regulations will be classified within each of the following groups and subgroups of registrants."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20"
+        },
+        {
+            "id": 20,
+            "sentences": [
+                "Students who graduated from public schools, with gross family income equal to or less than 1.5 minimum wages per capita, who self-declared as Black, Brown, or Indigenous, and who are persons with disabilities, will be classified in a specific group."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, item I, clause a, item 1"
+        },
+        {
+            "id": 21,
+            "sentences": [
+                "Students who graduated from public schools, with gross family income equal to or less than 1.5 minimum wages per capita, who self-declared as Black, Brown, or Indigenous, and who are not persons with disabilities, will be classified in a specific group."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, item I, clause a, item 2"
+        },
+        {
+            "id": 22,
+            "sentences": [
+                "Students who graduated from public schools, with gross family income equal to or less than 1.5 minimum wages per capita, who did not self-declare as Black, Brown, or Indigenous, and who are persons with disabilities, will be classified in a specific group."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, item I, clause b, item 1"
+        },
+        {
+            "id": 23,
+            "sentences": [
+                "Students who graduated from public schools, with gross family income equal to or less than 1.5 minimum wages per capita, who did not self-declare as Black, Brown, or Indigenous, and who are not persons with disabilities, will be classified in a specific group."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, item I, clause b, item 2"
+        },
+        {
+            "id": 24,
+            "sentences": [
+                "Students who graduated from public schools, regardless of income, who self-declared as Black, Brown, or Indigenous, and who are persons with disabilities, will be classified in a specific group."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, item II, clause a, item 1"
+        },
+        {
+            "id": 25,
+            "sentences": [
+                "Students who graduated from public schools, regardless of income, who self-declared as Black, Brown, or Indigenous, and who are not persons with disabilities, will be classified in a specific group."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, item II, clause a, item 2"
+        },
+        {
+            "id": 26,
+            "sentences": [
+                "Students who graduated from public schools, regardless of income, who did not self-declare as Black, Brown, or Indigenous, and who are persons with disabilities, will be classified in a specific group."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, item II, clause b, item 1"
+        },
+        {
+            "id": 27,
+            "sentences": [
+                "Students who graduated from public schools, regardless of income, who did not self-declare as Black, Brown, or Indigenous, and who are not persons with disabilities, will be classified in a specific group."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 20, item II, clause b, item 2"
+        },
+        {
+            "id": 28,
+            "sentences": [
+                "In each regular SISU call, students classified according to arts. 19 and 20 of this Ordinance will be selected, observing the order of preference of the options made."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 21"
+        },
+        {
+            "id": 29,
+            "sentences": [
+                "The student will be selected in only one of their options."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.cpf = s2.cpf",
+                        "s1.edition = s2.edition",
+                        "s1.option != s2.option",
+                        "s1.approved = 'S'",
+                        "s2.approved = 'S'"
+                    ]
+                }
+            ],
+            "_comment": "Art. 21, § 1"
+        },
+        {
+            "id": 30,
+            "sentences": [
+                "The student will be selected exclusively in their 1st option, if they have obtained a sufficient score to be classified in that option."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.option = 1",
+                        "s1.approved = 'N'",
+                        "s1.candidate_score >= s1.cutoff_score"
+                    ]
+                }
+            ],
+            "_comment": "Art. 21, § 1, item I"
+        },
+        {
+            "id": 31,
+            "sentences": [
+                "The student will be selected in their 2nd option, if they have a sufficient score for it, provided they were not selected in their 1st option."
+            ],
+            "is_dq_rule": true,
+            "is_applicable_dq_rule": true,
+            "rules": [
+                {
+                    "AND": [
+                        "s1.cpf = s2.cpf",
+                        "s1.edition = s2.edition",
+                        "s1.option = 2",
+                        "s1.approved = 'N'",
+                        "s1.candidate_score >= s1.cutoff_score",
+                        "s2.option = 1",
+                        "s2.approved = 'N'"
+                    ]
+                }
+            ],
+            "_comment": "Art. 21, § 1, item II"
+        },
+        {
+            "id": 32,
+            "sentences": [
+                "The student may check the results of the calls on the SISU website and at the institutions for which they registered."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 21, § 2"
+        },
+        {
+            "id": 33,
+            "sentences": [
+                "The student's selection ensures only the expectation of the right to the vacancy for which they registered, with their enrollment conditioned on proof of compliance with the relevant legal and regulatory requirements, especially those provided for in Law No. 12,711 of 2012 and current regulations."
+            ],
+            "is_dq_rule": false,
+            "is_applicable_dq_rule": false,
+            "rules": null,
+            "_comment": "Art. 22"
+        }
+    ]
+}

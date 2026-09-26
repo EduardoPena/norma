@@ -1,0 +1,25 @@
+experiment_name: "HMDA Checks Mistral Multi-Step No Auditor"
+experiment_type: "mapper_gt_only"
+results_dir: "results/official_openrouter/mapping_hmda_checks_mistral_multistep_no_auditor"
+max_gt_rules: 3
+
+datasets:
+  - hmda_checks
+
+dataset_options:
+  hmda_checks:
+    data_file: "hmda.csv"
+    gt_file: "hmda_regc_checks-text2rule-gt.json"
+    stream_csv: true
+    profile_rows: 10000
+    validate_ground_truth: false
+    validate_predicates: false
+    additional_predicates:
+      - "FLOOR(t1.date_application_received / 10000) != t1.activity_year"
+      - "FLOOR(t1.date_application_received / 10000) != t1.activity_year - 1"
+      - "FLOOR(t1.date_application_received / 10000) != t1.activity_year - 2"
+
+variants:
+  - name: "Multi-Step | Mistral Medium 3.5 (fallback, no auditor)"
+    use_context: false
+    mapper: { implementation: "multi_step_refinement", provider: "openrouter", model: "mistralai/mistral-medium-3-5", max_refinement_iterations: 2, prompt_file: "multi_step_refinement", collect_timing: true, structured_output: true, enable_semantic_auditor: false }

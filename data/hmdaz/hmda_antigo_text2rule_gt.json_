@@ -1,0 +1,1199 @@
+{
+  "_meta": {
+    "_comment": "Ground truth mapping between natural language sentences and denial constraint rules",
+    "dataset": "../datasets/hmda2/hmda2-document.txt",
+    "source": "../datasets/hmda2/hmda2-rules.csv",
+    "structure": {
+      "sentences": "Array of related sentences (current datasets are 1-to-1, future: many-to-one or one-to-many)",
+      "rules": "Array of rules, each rule is an array of predicates. null if no valid rule exists. Predicates within a rule are order-independent (conjunction)",
+      "future_examples": {
+        "multiple_sentences_one_rule": "sentences: ['sent1', 'sent2'], rules: [[pred1, pred2]]",
+        "one_sentence_multiple_rules": "sentences: ['sent1'], rules: [[pred1], [pred2, pred3]]"
+      }
+    }
+  },
+  "mapping": [
+    {
+      "id": 1,
+      "sentences": [
+        "The financial institution shall retain a copy of its annual loan/ application register submitted pursuant to this paragraph (a)(1)(i) for its records for at least three years"
+      ],
+      "rules": [
+        [
+          "t1.date_application_received != t1.activity_year",
+          "t1.date_application_received != t1.activity_year - 1",
+          "t1.date_application_received != t1.activity_year - 2"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 2,
+      "sentences": [
+        "1) Depository financial institution means a bank, savings association, or credit union that: Meets one or more of the following two criteria: The institution is federally insured or regulated; or (B) Any loan referred to in paragraph (g)(1)(iii) of this section was insured, guaranteed, or supplemented by a Federal agency, or was intended by the institution for sale to the Federal National Mortgage Association or the Federal Home Loan Mortgage Corporation"
+      ],
+      "rules": [
+        [
+          "t1.purchaser_type_name IN ('Fannie Mae (FNMA)', 'Freddie Mac (FHLMC)')",
+          "t1.loan_type_name != 'Conventional'"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 3,
+      "sentences": [
+        "(iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.loan_amount is not null",
+          "t1.applicant_income is null"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 4,
+      "sentences": [
+        "A financial institution shall collect data regarding requests under a preapproval program, as defined in §1003.2(b)(2), only if the preapproval request is denied, is approved by the financial institution but not accepted by the applicant, or results in the origination of a home purchase loan. Except as provided in § 1003.3(d), the data collected shall include the following items: Whether the construction method for the dwelling related to the property identified in paragraph (a)(9) of this section is site-built or a manufactured home."
+      ],
+      "rules": [
+        [
+          "t1.property_type_name = 'One-to-four family dwelling (other than manufactured housing)'",
+          "t1.applicant_income is null",
+          "t1.loan_amount is null"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 13,
+      "sentences": [
+        "A financial institution shall collect data regarding requests under a preapproval program, as defined in §1003.2(b)(2), only if the preapproval request is denied, is approved by the financial institution but not accepted by the applicant, or results in the origination of a home purchase loan. Except as provided in § 1003.3(d), the data collected shall include the following items: (1)(ii) Except for purchased covered loans, the date the application was received or the date shown on the application form."
+      ],
+      "rules": [
+        [
+          "t1.action_taken_name = 'Loan originated'",
+          "t1.action_taken_date = t1.date_application_received"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 14,
+      "sentences": [
+        "A financial institution shall collect data regarding requests under a preapproval program, as defined in §1003.2(b)(2), only if the preapproval request is denied, is approved by the financial institution but not accepted by the applicant, or results in the origination of a home purchase loan. Except as provided in § 1003.3(d), the data collected shall include the following items: The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname;"
+      ],
+      "rules": [
+        [
+          "t1.action_taken_name IN ('Loan originated', 'Application approved but not accepted', 'Application denied', 'Application withdrawn by applicant', 'Application closed for incompleteness', 'Preapproval request denied', 'Preapproval request approved but not accepted')",
+          "t1.applicant_ethnicity_name = 'Not applicable'",
+          "t1.applicant_race_name_1 = 'Not applicable'",
+          "t1.applicant_sex_name = 'Not applicable'"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 15,
+      "sentences": [
+        "A financial institution shall collect data regarding requests under a preapproval program, as defined in §1003.2(b)(2), only if the preapproval request is denied, is approved by the financial institution but not accepted by the applicant, or results in the origination of a home purchase loan. Except as provided in § 1003.3(d), the data collected shall include the following items: The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname;"
+      ],
+      "rules": [
+        [
+          "t1.action_taken_type IN ('Loan originated', 'Application approved but not accepted', 'Application denied', 'Application withdrawn by applicant', 'Application closed for incompleteness', 'Preapproval request denied', 'Preapproval request approved but not accepted')",
+          "t1.applicant_ethnicity_name = 'Not applicable'",
+          "t1.applicant_race_name_1 = 'Not applicable'",
+          "t1.applicant_sex_name = 'Not applicable'",
+          "t1.co_applicant_ethnicity_name != 'Not applicable'",
+          "t1.co_applicant_race_name_1 != 'Not applicable'",
+          "t1.co_applicant_sex_name != 'Not applicable'"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 16,
+      "sentences": [
+        "A financial institution shall collect data regarding requests under a preapproval program, as defined in §1003.2(b)(2), only if the preapproval request is denied, is approved by the financial institution but not accepted by the applicant, or results in the origination of a home purchase loan. Except as provided in § 1003.3(d), the data collected shall include the following items: (10) The following information about the applicant or borrower: Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.applicant_income IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 19,
+      "sentences": [
+        "A financial institution shall collect data regarding requests under a preapproval program, as defined in §1003.2(b)(2), only if the preapproval request is denied, is approved by the financial institution but not accepted by the applicant, or results in the origination of a home purchase loan. Except as provided in § 1003.3(d), the data collected shall include the following items: The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.applicant_ethnicity_name = 'Not applicable'",
+          "t1.applicant_race_name_1 = 'Not applicable'",
+          "t1.applicant_sex_name = 'Not applicable'",
+          "t1.co_applicant_ethnicity_name = 'Not applicable'",
+          "t1.co_applicant_race_name_1 = 'Not applicable'",
+          "t1.co_applicant_sex_name = 'Not applicable'",
+          "t1.applicant_income IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 20,
+      "sentences": [
+        "(12) (i) For covered loans and applications that are approved but not accepted, and that are subject to Regulation Z, 12 CFR part 1026, other than assumptions, purchased covered loans, and reverse mortgages, the difference between the covered loan's annual percentage rate and the average prime offer rate for a comparable transaction as of the date the interest rate is set. (ii) \"Average prime offer rate\" means an annual percentage rate that is derived from average interest rates and other loan pricing terms currently offered to consumers by a set of creditors for mortgage loans that have low-risk pricing characteristics. The Bureau publishes tables of average prime offer rates by transaction type at least weekly and also publishes the methodology it uses to derive these rates. (13) For covered loans subject to the Home Ownership and Equity Protection Act of 1994, as implemented in Regulation Z, 12 CFR 1026.32, whether the covered loan is a high-cost mortgage under Regulation Z, 12 CFR 1026.32(a)."
+      ],
+      "rules": [
+        [
+          "t1.hoepa_status_name = 'HOEPA loan'",
+          "t1.action_taken_name = 'Loan originated'",
+          "t1.rate_spread IS NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 21,
+      "sentences": [
+        "(11) The type of entity purchasing a covered loan that the financial institution originates or purchases and then sells within the same calendar year. (12) (i) For covered loans and applications that are approved but not accepted, and that are subject to Regulation Z, 12 CFR part 1026, other than assumptions, purchased covered loans, and reverse mortgages, the difference between the covered loan's annual percentage rate and the average prime offer rate for a comparable transaction as of the date the interest rate is set. (ii) \"Average prime offer rate\" means an annual percentage rate that is derived from average interest rates and other loan pricing terms currently offered to consumers by a set of creditors for mortgage loans that have low-risk pricing characteristics. The Bureau publishes tables of average prime offer rates by transaction type at least weekly and also publishes the methodology it uses to derive these rates. (13) For covered loans subject to the Home Ownership and Equity Protection Act of 1994, as implemented in Regulation Z, 12 CFR 1026.32, whether the covered loan is a high-cost mortgage under Regulation Z, 12 CFR 1026.32(a). (14) The lien status (first or subordinate lien) of the property identified under paragraph (a)(9) of this section."
+      ],
+      "rules": [
+        [
+          "t1.purchaser_type_name IN ('Fannie Mae (FNMA)', 'Ginnie Mae (GNMA)', 'Freddie Mac (FHLMC)', 'Farmer Mac (FAMC)')",
+          "t1.lien_status_name IN ('Secured by a first lien', 'Secured by a subordinate lien')",
+          "t1.rate_spread IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 23,
+      "sentences": [
+        "(12) (i) For covered loans and applications that are approved but not accepted, and that are subject to Regulation Z, 12 CFR part 1026, other than assumptions, purchased covered loans, and reverse mortgages, the difference between the covered loan's annual percentage rate and the average prime offer rate for a comparable transaction as of the date the interest rate is set. (ii) \"Average prime offer rate\" means an annual percentage rate that is derived from average interest rates and other loan pricing terms currently offered to consumers by a set of creditors for mortgage loans that have low-risk pricing characteristics. The Bureau publishes tables of average prime offer rates by transaction type at least weekly and also publishes the methodology it uses to derive these rates."
+      ],
+      "rules": [
+        [
+          "t1.rate_spread IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 26,
+      "sentences": [
+        "(13) For covered loans subject to the Home Ownership and Equity Protection Act of 1994, as implemented in Regulation Z, 12 CFR 1026.32, whether the covered loan is a high-cost mortgage under Regulation Z, 12 CFR 1026.32(a)."
+      ],
+      "rules": [
+        [
+          "t1.loan_purpose = 'Home purchase'",
+          "t1.hoepa_status = 'HOEPA loan'"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 27,
+      "sentences": [
+        "(13) For covered loans subject to the Home Ownership and Equity Protection Act of 1994, as implemented in Regulation Z, 12 CFR 1026.32, whether the covered loan is a high-cost mortgage under Regulation Z, 12 CFR 1026.32(a)."
+      ],
+      "rules": [
+        [
+          "t1.agency = 5",
+          "t1.hoepa_status = 1"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 28,
+      "sentences": [
+        "(13) For covered loans subject to the Home Ownership and Equity Protection Act of 1994, as implemented in Regulation Z, 12 CFR 1026.32, whether the covered loan is a high-cost mortgage under Regulation Z, 12 CFR 1026.32(a)."
+      ],
+      "rules": [
+        [
+          "t1.applicant_ethnicity = 4",
+          "t1.applicant_race_1 = 7",
+          "t1.applicant_sex = 4",
+          "t1.hoepa_status = 1"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 29,
+      "sentences": [
+        "(13) For covered loans subject to the Home Ownership and Equity Protection Act of 1994, as implemented in Regulation Z, 12 CFR 1026.32, whether the covered loan is a high-cost mortgage under Regulation Z, 12 CFR 1026.32(a)."
+      ],
+      "rules": [
+        [
+          "t1.property_type = 3",
+          "t1.hoepa_status = 1"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 30,
+      "sentences": [
+        "(13) For covered loans subject to the Home Ownership and Equity Protection Act of 1994, as implemented in Regulation Z, 12 CFR 1026.32, whether the covered loan is a high-cost mortgage under Regulation Z, 12 CFR 1026.32(a)."
+      ],
+      "rules": [
+        [
+          "t1.purchaser_type IN (1, 3)",
+          "t1.hoepa_status = 1"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 31,
+      "sentences": [
+        "(f) Dwelling means a residential structure, whether or not attached to real property. The term includes but is not limited to a detached home, an individual condominium or cooperative unit, a manufactured home or other factory-built home, or a multifamily residential structure or community."
+      ],
+      "rules": [
+        [
+          "t1.loan_type IN (3, 4)",
+          "t1.property_type = 3"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 32,
+      "sentences": [
+        "(9) The following information about the location of the property securing the covered loan or, in the case of an application, proposed to secure the covered loan: (i) The property address; and (ii) If the property is located in an MSA or MD in which the financial institution has a home or branch office, or if the institution is subject to paragraph (e) of this section, the location of the property by: (A) State; (B) County; and (C) Census tract if the property is located in a county with a population of more than 30,000 according to the most recent decennial census conducted by the U.S. Census Bureau."
+      ],
+      "rules": [
+        [
+          "t1.action_taken_type IN (7, 8)",
+          "t1.msa_md IS NOT NULL",
+          "t1.state_name != ''",
+          "t1.county_name != ''",
+          "t1.census_tract_number IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 33,
+      "sentences": [
+        "(ii) Except for purchased covered loans, the date the application was received or the date shown on the application form."
+      ],
+      "rules": null,
+      "_comment": "This is not a rule related to the target database"
+    },
+    {
+      "id": 34,
+      "sentences": [
+        "(ii) Except for purchased covered loans, the date the application was received or the date shown on the application form."
+      ],
+      "rules": [
+        [
+          "t1.action_taken_type = 6",
+          "t1.date_application_received IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 35,
+      "sentences": [
+        "(2) Whether the covered loan is, or in the case of an application would have been, insured by the Federal Housing Administration, guaranteed by the Department of Veterans Affairs, or guaranteed by the Rural Housing Service or the Farm Service Agency."
+      ],
+      "rules": [
+        [
+          "t1.loan_type NOT IN (1, 2, 3, 4)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 36,
+      "sentences": [
+        "(f) Dwelling means a residential structure, whether or not attached to real property. The term includes but is not limited to a detached home, an individual condominium or cooperative unit, a manufactured home or other factory-built home, or a multifamily residential structure or community."
+      ],
+      "rules": [
+        [
+          "t1.property_type NOT IN (1, 2, 3)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 37,
+      "sentences": [
+        "(3) Whether the covered loan is, or the application is for, a home purchase loan, a home improvement loan, a refinancing, a cash-out refinancing, or for a purpose other than home purchase, home improvement, refinancing, or cash-out refinancing."
+      ],
+      "rules": [
+        [
+          "t1.loan_purpose NOT IN (1, 2, 3)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 38,
+      "sentences": [
+        "(14) The lien status (first or subordinate lien) of the property identified under paragraph (a)(9) of this section."
+      ],
+      "rules": [
+        [
+          "t1.lien_status = 3",
+          "t1.loan_purpose != 2"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 39,
+      "sentences": [
+        "(6) Whether the property identified in paragraph (a) (9) of this section is or will be used by the applicant or borrower as a principal residence, as a second residence, or as an investment property."
+      ],
+      "rules": [
+        [
+          "t1.occupancy NOT IN (1, 2, 3)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 40,
+      "sentences": [
+        "(7) The amount of the covered loan or the amount applied for, as applicable. (i) For a closed-end mortgage loan, other than a purchased loan, an assumption, or a reverse mortgage, the amount to be repaid as disclosed on the legal obligation. For a purchased closed-end mortgage loan or an assumption of a closed-end mortgage loan, the unpaid principal balance at the time of purchase or assumption. (ii) For an open-end line of credit, other than a reverse mortgage open-end line of credit, the amount of credit available to the borrower under the terms of the plan. (iii) For a reverse mortgage, the initial principal limit, as determined pursuant to section 255 of the National Housing Act (12 U.S.C. 1715z-20) and implementing regulations and mortgagee letters issued by the U.S. Department of Housing and Urban Development."
+      ],
+      "rules": [
+        [
+          "t1.loan_amount <= 0"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 41,
+      "sentences": [
+        "(4) Whether the application or covered loan involved a request for a preapproval of a home purchase loan under a preapproval program."
+      ],
+      "rules": [
+        [
+          "t1.preapproval NOT IN (1, 2, 3)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 42,
+      "sentences": [
+        "(4) Whether the application or covered loan involved a request for a preapproval of a home purchase loan under a preapproval program."
+      ],
+      "rules": [
+        [
+          "t1.loan_purpose = 1",
+          "t1.action_taken_type = 6",
+          "t1.preapproval != 3"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 43,
+      "sentences": [
+        "(4) Whether the application or covered loan involved a request for a preapproval of a home purchase loan under a preapproval program."
+      ],
+      "rules": [
+        [
+          "t1.loan_purpose IN (2, 3)",
+          "t1.preapproval != 3"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 44,
+      "sentences": [
+        "(4) Whether the application or covered loan involved a request for a preapproval of a home purchase loan under a preapproval program."
+      ],
+      "rules": [
+        [
+          "t1.action_taken_type IN (7, 8)",
+          "t1.preapproval != 1"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 45,
+      "sentences": [
+        "(8) The following information about the financial institution's action: (i) The action taken by the financial institution, recorded as one of the following: (A) Whether a covered loan was originated or purchased; (B) Whether an application for a covered loan that did not result in the origination of a covered loan was approved but not accepted, denied, withdrawn by the applicant, or closed for incompleteness; and (C) Whether a preapproval request that did not result in the origination of a home purchase loan was denied or approved but not accepted. (ii) The date of the action taken by the financial institution."
+      ],
+      "rules": [
+        [
+          "t1.action_taken_type NOT IN (1, 2, 3, 4, 5, 6, 7, 8)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 46,
+      "sentences": [
+        "(16) The principal reason or reasons the financial institution denied the application, if applicable."
+      ],
+      "rules": [
+        [
+          "t1.denial_reason_1 >= 1",
+          "t1.denial_reason_1 <= 9",
+          "t1.action_taken_type NOT IN (3, 7)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 47,
+      "sentences": [
+        "(ii) Except for purchased covered loans, the date the application was received or the date shown on the application form."
+      ],
+      "rules": [
+        [
+          "t1.date_application_received IS NULL",
+          "t1.action_taken_type != 6"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 48,
+      "sentences": [
+        "(8) The following information about the financial institution's action: (i) The action taken by the financial institution, recorded as one of the following: (A) Whether a covered loan was originated or purchased; (B) Whether an application for a covered loan that did not result in the origination of a covered loan was approved but not accepted, denied, withdrawn by the applicant, or closed for incompleteness; and (C) Whether a preapproval request that did not result in the origination of a home purchase loan was denied or approved but not accepted. (ii) The date of the action taken by the financial institution."
+      ],
+      "rules": [
+        [
+          "t1.preapproval = 1",
+          "t1.action_taken_type NOT IN (1, 2, 3, 4, 5, 7, 8)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 49,
+      "sentences": [
+        "(8) The following information about the financial institution's action: (i) The action taken by the financial institution, recorded as one of the following: (A) Whether a covered loan was originated or purchased; (B) Whether an application for a covered loan that did not result in the origination of a covered loan was approved but not accepted, denied, withdrawn by the applicant, or closed for incompleteness; and (C) Whether a preapproval request that did not result in the origination of a home purchase loan was denied or approved but not accepted. (ii) The date of the action taken by the financial institution."
+      ],
+      "rules": [
+        [
+          "t1.preapproval = 2",
+          "t1.action_taken_type NOT IN (1, 2, 3, 4, 5)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 50,
+      "sentences": [
+        "(8) The following information about the financial institution's action: (i) The action taken by the financial institution, recorded as one of the following: (A) Whether a covered loan was originated or purchased; (B) Whether an application for a covered loan that did not result in the origination of a covered loan was approved but not accepted, denied, withdrawn by the applicant, or closed for incompleteness; and (C) Whether a preapproval request that did not result in the origination of a home purchase loan was denied or approved but not accepted. (ii) The date of the action taken by the financial institution."
+      ],
+      "rules": [
+        [
+          "t1.preapproval = 3",
+          "t1.action_taken_type NOT IN (1, 2, 3, 4, 5, 6)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 51,
+      "sentences": [
+        "(8) The following information about the financial institution's action: (i) The action taken by the financial institution, recorded as one of the following: (A) Whether a covered loan was originated or purchased; (B) Whether an application for a covered loan that did not result in the origination of a covered loan was approved but not accepted, denied, withdrawn by the applicant, or closed for incompleteness; and (C) Whether a preapproval request that did not result in the origination of a home purchase loan was denied or approved but not accepted. (ii) The date of the action taken by the financial institution."
+      ],
+      "rules": null,
+      "_comment": "This is not a rule related to the target database"
+    },
+    {
+      "id": 52,
+      "sentences": [
+        "(8) The following information about the financial institution's action: (i) The action taken by the financial institution, recorded as one of the following: (A) Whether a covered loan was originated or purchased; (B) Whether an application for a covered loan that did not result in the origination of a covered loan was approved but not accepted, denied, withdrawn by the applicant, or closed for incompleteness; and (C) Whether a preapproval request that did not result in the origination of a home purchase loan was denied or approved but not accepted. (ii) The date of the action taken by the financial institution."
+      ],
+      "rules": [
+        [
+          "t1.date_application_received IS NOT NULL",
+          "t1.action_taken_date < t1.date_application_received"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 53,
+      "sentences": [
+        "(9) The following information about the location of the property securing the covered loan or, in the case of an application, proposed to secure the covered loan: (i) The property address; and (ii) If the property is located in an MSA or MD in which the financial institution has a home or branch office, or if the institution is subject to paragraph (e) of this section, the location of the property by: (A) State; (B) County; and (C) Census tract if the property is located in a county with a population of more than 30,000 according to the most recent decennial census conducted by the U.S. Census Bureau."
+      ],
+      "rules": null,
+      "_comment": "This is not a rule related to the target database"
+    },
+    {
+      "id": 54,
+      "sentences": [
+        "(9) The following information about the location of the property securing the covered loan or, in the case of an application, proposed to secure the covered loan: (i) The property address; and (ii) If the property is located in an MSA or MD in which the financial institution has a home or branch office, or if the institution is subject to paragraph (e) of this section, the location of the property by: (A) State; (B) County; and (C) Census tract if the property is located in a county with a population of more than 30,000 according to the most recent decennial census conducted by the U.S. Census Bureau."
+      ],
+      "rules": null,
+      "_comment": "This is not a rule related to the target database"
+    },
+    {
+      "id": 55,
+      "sentences": [
+        "(9) The following information about the location of the property securing the covered loan or, in the case of an application, proposed to secure the covered loan: (i) The property address; and (ii) If the property is located in an MSA or MD in which the financial institution has a home or branch office, or if the institution is subject to paragraph (e) of this section, the location of the property by: (A) State; (B) County; and (C) Census tract if the property is located in a county with a population of more than 30,000 according to the most recent decennial census conducted by the U.S. Census Bureau."
+      ],
+      "rules": null,
+      "_comment": "This is not a rule related to the target database"
+    },
+    {
+      "id": 56,
+      "sentences": [
+        "(9) The following information about the location of the property securing the covered loan or, in the case of an application, proposed to secure the covered loan: (i) The property address; and (ii) If the property is located in an MSA or MD in which the financial institution has a home or branch office, or if the institution is subject to paragraph (e) of this section, the location of the property by: (A) State; (B) County; and (C) Census tract if the property is located in a county with a population of more than 30,000 according to the most recent decennial census conducted by the U.S. Census Bureau."
+      ],
+      "rules": null,
+      "_comment": "This is not a rule related to the target database"
+    },
+    {
+      "id": 57,
+      "sentences": [
+        "(9) The following information about the location of the property securing the covered loan or, in the case of an application, proposed to secure the covered loan: (i) The property address; and (ii) If the property is located in an MSA or MD in which the financial institution has a home or branch office, or if the institution is subject to paragraph (e) of this section, the location of the property by: (A) State; (B) County; and (C) Census tract if the property is located in a county with a population of more than 30,000 according to the most recent decennial census conducted by the U.S. Census Bureau."
+      ],
+      "rules": null,
+      "_comment": "This is not a rule related to the target database"
+    },
+    {
+      "id": 58,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.applicant_ethnicity NOT IN (1, 2, 3, 4)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 59,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.co_applicant_ethnicity NOT IN (1, 2, 3, 4, 5)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 60,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.co_applicant_ethnicity != 5",
+          "t1.co_applicant_race_1 != 8"
+        ],
+        [
+          "t1.co_applicant_ethnicity != 5",
+          "t1.co_applicant_sex != 5"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 61,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.applicant_ethnicity IN (1, 2, 3)",
+          "t1.applicant_race_1 = 7"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 62,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.co_applicant_ethnicity IN (1, 2, 3)",
+          "t1.co_applicant_race_1 IN (7, 8)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 63,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.applicant_race_1 NOT IN (1, 2, 3, 4, 5, 6, 7)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 64,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.applicant_race_1 IN (1, 2, 3, 4, 5)",
+          "t1.applicant_race_2 IS NOT NULL",
+          "t1.applicant_race_2 NOT IN (1, 2, 3, 4, 5)",
+          "t1.applicant_race_3 IS NOT NULL",
+          "t1.applicant_race_3 NOT IN (1, 2, 3, 4, 5)",
+          "t1.applicant_race_4 IS NOT NULL",
+          "t1.applicant_race_4 NOT IN (1, 2, 3, 4, 5)",
+          "t1.applicant_race_5 IS NOT NULL",
+          "t1.applicant_race_5 NOT IN (1, 2, 3, 4, 5)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 65,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.applicant_race_1 IN (6, 7)",
+          "t1.applicant_race_2 IS NOT NULL",
+          "t1.applicant_race_3 IS NOT NULL",
+          "t1.applicant_race_4 IS NOT NULL",
+          "t1.applicant_race_5 IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 66,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.applicant_race_1 = t1.applicant_race_2"
+        ],
+        [
+          "t1.applicant_race_1 = t1.applicant_race_3"
+        ],
+        [
+          "t1.applicant_race_1 = t1.applicant_race_4"
+        ],
+        [
+          "t1.applicant_race_1 = t1.applicant_race_5"
+        ],
+        [
+          "t1.applicant_race_2 = t1.applicant_race_3"
+        ],
+        [
+          "t1.applicant_race_2 = t1.applicant_race_4"
+        ],
+        [
+          "t1.applicant_race_2 = t1.applicant_race_5"
+        ],
+        [
+          "t1.applicant_race_3 = t1.applicant_race_4"
+        ],
+        [
+          "t1.applicant_race_3 = t1.applicant_race_5"
+        ],
+        [
+          "t1.applicant_race_4 = t1.applicant_race_5"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 67,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.co_applicant_race_1 NOT IN (1, 2, 3, 4, 5, 6, 7, 8)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 68,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.co_applicant_race_1 = 8",
+          "t1.applicant_ethnicity = 5"
+        ],
+        [
+          "t1.co_applicant_race_1 = 8",
+          "t1.co_applicant_sex = 5"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 69,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.co_applicant_race_1 IN (1, 2, 3, 4, 5)",
+          "t1.co_applicant_race_2 IS NOT NULL",
+          "t1.co_applicant_race_2 NOT IN (1, 2, 3, 4, 5)"
+        ],
+        [
+          "t1.co_applicant_race_1 IN (1, 2, 3, 4, 5)",
+          "t1.co_applicant_race_3 IS NOT NULL",
+          "t1.co_applicant_race_3 NOT IN (1, 2, 3, 4, 5)"
+        ],
+        [
+          "t1.co_applicant_race_1 IN (1, 2, 3, 4, 5)",
+          "t1.co_applicant_race_4 IS NOT NULL",
+          "t1.co_applicant_race_4 NOT IN (1, 2, 3, 4, 5)"
+        ],
+        [
+          "t1.co_applicant_race_1 IN (1, 2, 3, 4, 5)",
+          "t1.co_applicant_race_5 IS NOT NULL",
+          "t1.co_applicant_race_5 NOT IN (1, 2, 3, 4, 5)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 70,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.co_applicant_race_1 IN (6, 7, 8)",
+          "t1.co_applicant_race_2 IS NOT NULL"
+        ],
+        [
+          "t1.co_applicant_race_1 IN (6, 7, 8)",
+          "t1.co_applicant_race_3 IS NOT NULL"
+        ],
+        [
+          "t1.co_applicant_race_1 IN (6, 7, 8)",
+          "t1.co_applicant_race_4 IS NOT NULL"
+        ],
+        [
+          "t1.co_applicant_race_1 IN (6, 7, 8)",
+          "t1.co_applicant_race_5 IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 71,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.co_applicant_race_1 = t1.co_applicant_race_2"
+        ],
+        [
+          "t1.co_applicant_race_1 = t1.co_applicant_race_3"
+        ],
+        [
+          "t1.co_applicant_race_1 = t1.co_applicant_race_4"
+        ],
+        [
+          "t1.co_applicant_race_1 = t1.co_applicant_race_5"
+        ],
+        [
+          "t1.co_applicant_race_2 = t1.co_applicant_race_3"
+        ],
+        [
+          "t1.co_applicant_race_2 = t1.co_applicant_race_4"
+        ],
+        [
+          "t1.co_applicant_race_2 = t1.co_applicant_race_5"
+        ],
+        [
+          "t1.co_applicant_race_3 = t1.co_applicant_race_4"
+        ],
+        [
+          "t1.co_applicant_race_3 = t1.co_applicant_race_5"
+        ],
+        [
+          "t1.co_applicant_race_4 = t1.co_applicant_race_5"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 72,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.applicant_sex NOT IN (1, 2, 3, 4)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 73,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.co_applicant_sex NOT IN (1, 2, 3, 4, 5)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 74,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.co_applicant_sex != 5",
+          "t1.applicant_ethnicity != 5"
+        ],
+        [
+          "t1.co_applicant_sex != 5",
+          "t1.co_applicant_race_1 != 8"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 75,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.applicant_income <= 0",
+          "t1.applicant_income IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 76,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.property_type = 3",
+          "t1.applicant_income IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 77,
+      "sentences": [
+        "(10) The following information about the applicant or borrower: (i) Ethnicity, race, and sex, and whether this information was collected on the basis of visual observation or surname; (ii) Age; and (iii) Except for covered loans or applications for which the credit decision did not consider or would not have considered income, the gross annual income relied on in making the credit decision or, if a credit decision was not made, the gross annual income relied on in processing the application."
+      ],
+      "rules": [
+        [
+          "t1.applicant_ethnicity = 4",
+          "t1.applicant_race_1 = 7",
+          "t1.applicant_sex = 4",
+          "t1.co_applicant_ethnicity = 5",
+          "t1.co_applicant_race_1 = 8",
+          "t1.co_applicant_sex = 5",
+          "t1.action_taken_type IN (1, 2, 3, 4, 5, 7, 8)",
+          "t1.applicant_income IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 78,
+      "sentences": [
+        "(11) The type of entity purchasing a covered loan that the financial institution originates or purchases and then sells within the same calendar year."
+      ],
+      "rules": [
+        [
+          "t1.purchaser_type NOT IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 79,
+      "sentences": [
+        "(11) The type of entity purchasing a covered loan that the financial institution originates or purchases and then sells within the same calendar year."
+      ],
+      "rules": [
+        [
+          "t1.purchaser_type IN (1, 2, 3, 4, 5, 6, 7, 8, 9)",
+          "t1.action_taken_type NOT IN (1, 6)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 80,
+      "sentences": [
+        "(11) The type of entity purchasing a covered loan that the financial institution originates or purchases and then sells within the same calendar year."
+      ],
+      "rules": [
+        [
+          "t1.purchaser_type = 2",
+          "t1.loan_type NOT IN (2, 3, 4)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 81,
+      "sentences": [
+        "(16) The principal reason or reasons the financial institution denied the application, if applicable."
+      ],
+      "rules": [
+        [
+          "t1.agency IN (2, 3, 5, 7, 9)",
+          "t1.denial_reason_1 IS NOT NULL",
+          "t1.denial_reason_1 NOT IN (1, 2, 3, 4, 5, 6, 7, 8, 9)",
+          "t1.denial_reason_2 IS NOT NULL",
+          "t1.denial_reason_2 NOT IN (1, 2, 3, 4, 5, 6, 7, 8, 9)",
+          "t1.denial_reason_3 IS NOT NULL",
+          "t1.denial_reason_3 NOT IN (1, 2, 3, 4, 5, 6, 7, 8, 9)"
+        ],
+        [
+          "t1.agency = 1",
+          "t1.action_taken_type NOT IN (3,7)",
+          "t1.denial_reason_1 IS NOT NULL",
+          "t1.denial_reason_1 NOT IN (1, 2, 3, 4, 5, 6, 7, 8, 9)",
+          "t1.denial_reason_2 IS NOT NULL",
+          "t1.denial_reason_2 NOT IN (1, 2, 3, 4, 5, 6, 7, 8, 9)",
+          "t1.denial_reason_3 IS NOT NULL",
+          "t1.denial_reason_3 NOT IN (1, 2, 3, 4, 5, 6, 7, 8, 9)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 82,
+      "sentences": [
+        "(16) The principal reason or reasons the financial institution denied the application, if applicable."
+      ],
+      "rules": [
+        [
+          "t1.denial_reason_1 = t1.denial_reason_2"
+        ],
+        [
+          "t1.denial_reason_1 = t1.denial_reason_3"
+        ],
+        [
+          "t1.denial_reason_2 = t1.denial_reason_3"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 83,
+      "sentences": [
+        "(16) The principal reason or reasons the financial institution denied the application, if applicable."
+      ],
+      "rules": [
+        [
+          "t1.agency = 1",
+          "t1.action_taken_type IN (3, 7)",
+          "t1.denial_reason_1 NOT IN (1, 2, 3, 4, 5, 6, 7, 8, 9)",
+          "t1.denial_reason_2 NOT IN (1, 2, 3, 4, 5, 6, 7, 8, 9)",
+          "t1.denial_reason_3 NOT IN (1, 2, 3, 4, 5, 6, 7, 8, 9)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 84,
+      "sentences": [
+        "(12) (i) For covered loans and applications that are approved but not accepted, and that are subject to Regulation Z, 12 CFR part 1026, other than assumptions, purchased covered loans, and reverse mortgages, the difference between the covered loan's annual percentage rate and the average prime offer rate for a comparable transaction as of the date the interest rate is set. (ii) \"Average prime offer rate\" means an annual percentage rate that is derived from average interest rates and other loan pricing terms currently offered to consumers by a set of creditors for mortgage loans that have low-risk pricing characteristics. The Bureau publishes tables of average prime offer rates by transaction type at least weekly and also publishes the methodology it uses to derive these rates."
+      ],
+      "rules": [
+        [
+          "t1.rate_spread IS NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 85,
+      "sentences": [
+        "(12) (i) For covered loans and applications that are approved but not accepted, and that are subject to Regulation Z, 12 CFR part 1026, other than assumptions, purchased covered loans, and reverse mortgages, the difference between the covered loan's annual percentage rate and the average prime offer rate for a comparable transaction as of the date the interest rate is set. (ii) \"Average prime offer rate\" means an annual percentage rate that is derived from average interest rates and other loan pricing terms currently offered to consumers by a set of creditors for mortgage loans that have low-risk pricing characteristics. The Bureau publishes tables of average prime offer rates by transaction type at least weekly and also publishes the methodology it uses to derive these rates."
+      ],
+      "rules": [
+        [
+          "t1.action_taken_type IN (2, 3, 4, 5, 6, 7, 8)",
+          "t1.rate_spread IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 86,
+      "sentences": [
+        "(12) (i) For covered loans and applications that are approved but not accepted, and that are subject to Regulation Z, 12 CFR part 1026, other than assumptions, purchased covered loans, and reverse mortgages, the difference between the covered loan's annual percentage rate and the average prime offer rate for a comparable transaction as of the date the interest rate is set. (ii) \"Average prime offer rate\" means an annual percentage rate that is derived from average interest rates and other loan pricing terms currently offered to consumers by a set of creditors for mortgage loans that have low-risk pricing characteristics. The Bureau publishes tables of average prime offer rates by transaction type at least weekly and also publishes the methodology it uses to derive these rates."
+      ],
+      "rules": [
+        [
+          "t1.lien_status = 1",
+          "t1.rate_spread < 1.5"
+        ],
+        [
+          "t1.lien_status = 1",
+          "t1.rate_spread > 99.99"
+        ],
+        [
+          "t1.lien_status = 1",
+          "t1.rate_spread IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 87,
+      "sentences": [
+        "(12) (i) For covered loans and applications that are approved but not accepted, and that are subject to Regulation Z, 12 CFR part 1026, other than assumptions, purchased covered loans, and reverse mortgages, the difference between the covered loan's annual percentage rate and the average prime offer rate for a comparable transaction as of the date the interest rate is set. (ii) \"Average prime offer rate\" means an annual percentage rate that is derived from average interest rates and other loan pricing terms currently offered to consumers by a set of creditors for mortgage loans that have low-risk pricing characteristics. The Bureau publishes tables of average prime offer rates by transaction type at least weekly and also publishes the methodology it uses to derive these rates."
+      ],
+      "rules": [
+        [
+          "t1.lien_status = 1",
+          "t1.rate_spread < 3.5"
+        ],
+        [
+          "t1.lien_status = 1",
+          "t1.rate_spread > 99.99"
+        ],
+        [
+          "t1.lien_status = 1",
+          "t1.rate_spread IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 88,
+      "sentences": [
+        "(12) (i) For covered loans and applications that are approved but not accepted, and that are subject to Regulation Z, 12 CFR part 1026, other than assumptions, purchased covered loans, and reverse mortgages, the difference between the covered loan's annual percentage rate and the average prime offer rate for a comparable transaction as of the date the interest rate is set. (ii) \"Average prime offer rate\" means an annual percentage rate that is derived from average interest rates and other loan pricing terms currently offered to consumers by a set of creditors for mortgage loans that have low-risk pricing characteristics. The Bureau publishes tables of average prime offer rates by transaction type at least weekly and also publishes the methodology it uses to derive these rates."
+      ],
+      "rules": [
+        [
+          "t1.lien_status = 3",
+          "t1.rate_spread IS NOT NULL"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 89,
+      "sentences": [
+        "(13) For covered loans subject to the Home Ownership and Equity Protection Act of 1994, as implemented in Regulation Z, 12 CFR 1026.32, whether the covered loan is a high-cost mortgage under Regulation Z, 12 CFR 1026.32(a)."
+      ],
+      "rules": [
+        [
+          "t1.action_taken_type IN (2, 3, 4, 5, 7, 8)",
+          "t1.hoepa_status != 2"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 90,
+      "sentences": [
+        "(13) For covered loans subject to the Home Ownership and Equity Protection Act of 1994, as implemented in Regulation Z, 12 CFR 1026.32, whether the covered loan is a high-cost mortgage under Regulation Z, 12 CFR 1026.32(a)."
+      ],
+      "rules": [
+        [
+          "t1.hoepa_status NOT IN (1, 2)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 91,
+      "sentences": [
+        "(13) For covered loans subject to the Home Ownership and Equity Protection Act of 1994, as implemented in Regulation Z, 12 CFR 1026.32, whether the covered loan is a high-cost mortgage under Regulation Z, 12 CFR 1026.32(a)."
+      ],
+      "rules": [
+        [
+          "t1.lien_status = 3",
+          "t1.hoepa_status != 2"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 92,
+      "sentences": [
+        "(14) The lien status (first or subordinate lien) of the property identified under paragraph (a)(9) of this section."
+      ],
+      "rules": [
+        [
+          "t1.lien_status NOT IN (1, 2, 3, 4)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 93,
+      "sentences": [
+        "(14) The lien status (first or subordinate lien) of the property identified under paragraph (a)(9) of this section."
+      ],
+      "rules": [
+        [
+          "t1.loan_purpose IN (1, 3)",
+          "t1.lien_status NOT IN (1, 2, 4)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 94,
+      "sentences": [
+        "(14) The lien status (first or subordinate lien) of the property identified under paragraph (a)(9) of this section."
+      ],
+      "rules": [
+        [
+          "t1.action_taken_type IN (1, 2, 3, 4, 5, 7, 8)",
+          "t1.lien_status NOT IN (1, 2, 3)"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    },
+    {
+      "id": 95,
+      "sentences": [
+        "(14) The lien status (first or subordinate lien) of the property identified under paragraph (a)(9) of this section."
+      ],
+      "rules": [
+        [
+          "t1.action_taken_type = 6",
+          "t1.lien_status != 4"
+        ]
+      ],
+      "_comment": "Ground Truth rule related to the target database"
+    }
+  ]
+}
