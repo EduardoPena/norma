@@ -4,6 +4,22 @@
 DATA_PATH = 'data/restaurant/'  # Adjust as needed
 
 
+def test_recursive_rule_canonicalization():
+    """Logical child order is irrelevant, while the logical operator is not."""
+    from src.predicates import canonical_rules
+
+    gold = [{"AND": ["t1.a = 1", {"OR": ["t1.b = 2", "t1.c = 3"]}]}]
+    reordered = [
+        {"AND": [{"OR": ["t1.c = 3", "t1.b = 2"]}, "t1.a = 1"]}
+    ]
+    changed_logic = [
+        {"OR": [{"OR": ["t1.c = 3", "t1.b = 2"]}, "t1.a = 1"]}
+    ]
+
+    assert canonical_rules(gold) == canonical_rules(reordered)
+    assert canonical_rules(gold) != canonical_rules(changed_logic)
+
+
 def test_classification_evaluation():
     """Test and evaluate LLM-based classifier with all available prompts."""
     from src.classifiers.llm import LLMRuleClassifier

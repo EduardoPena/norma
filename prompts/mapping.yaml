@@ -3,13 +3,13 @@
 zero_shot: |
   Task: Convert sentences to denial constraint predicates.
 
-  Definition: A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+  Definition: A rule is a predicate string or a recursive JSON node {{"AND": [...]}} / {{"OR": [...]}}. A true rule is a violation.
 
   Instructions:
   1. Use t1. and t2. as tuple identifiers
   2. Extract concrete values from the sentence (replace $int, $string, etc.)
-  3. For SINGLE sentence: Return ["pred1", "pred2", ...] or null if not a constraint
-  4. For MULTIPLE sentences: Return array [result1, result2, ...] where each result is either ["pred1", ...] or null if not a constraint
+  3. For SINGLE sentence: Return a list of independent rules or null; use explicit AND/OR nodes to combine predicates
+  4. For MULTIPLE sentences: Return [result1, result2, ...], where each result is a rules list or null
   5. CRITICAL: Output array length MUST equal input sentence count - use null for non-constraints
   6. Output ONLY the JSON array - no explanations, no markdown labels, no extra text
 
@@ -17,12 +17,13 @@ zero_shot: |
   - Single-tuple: t1.field_name OPERATOR constant OR t1.field_name OPERATOR t1.field_name2
   - Cross-tuple: t1.field_name OPERATOR t2.field_name OR t1.field_name OPERATOR t2.field_name2
   - Operators: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL
+  - Arithmetic inside predicates: +, -, *, /, %, ^, with parentheses allowed
 
   Examples:
 
   Single sentence:
   Input: "Records with same ID must have same status"
-  Output: ["t1.id = t2.id", "t1.status != t2.status"]
+  Output: [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]
 
   Input: "Users generally prefer the system"
   Output: null
@@ -45,7 +46,7 @@ zero_shot: |
 zero_shot_with_table: |
   Task: Convert sentences to denial constraint predicates using the table context.
 
-  Definition: A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+  Definition: A rule is a predicate string or a recursive JSON node {{"AND": [...]}} / {{"OR": [...]}}. A true rule is a violation.
 
   Table context:
   {table_context}
@@ -54,8 +55,8 @@ zero_shot_with_table: |
   1. Use t1. and t2. as tuple identifiers
   2. Map sentence terms to table columns
   3. Extract concrete values from the sentence (replace $int, $string, etc.)
-  4. For SINGLE sentence: Return ["pred1", ...] or null if not a constraint
-  5. For MULTIPLE sentences: Return array [result1, result2, ...] where each result is either ["pred1", ...] or null if not a constraint
+  4. For SINGLE sentence: Return a list of independent rules or null; use explicit AND/OR nodes to combine predicates
+  5. For MULTIPLE sentences: Return [result1, result2, ...], where each result is a rules list or null
   6. CRITICAL: Output array length MUST equal input sentence count - use null for non-constraints
   7. Output ONLY the JSON array - no explanations, no markdown labels, no extra text
 
@@ -63,6 +64,7 @@ zero_shot_with_table: |
   - Single-tuple: t1.field_name OPERATOR constant OR t1.field_name OPERATOR t1.field_name2
   - Cross-tuple: t1.field_name OPERATOR t2.field_name OR t1.field_name OPERATOR t2.field_name2
   - Operators: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL
+  - Arithmetic inside predicates: +, -, *, /, %, ^, with parentheses allowed
 
   Examples:
 
@@ -92,14 +94,14 @@ zero_shot_with_table: |
 with_examples: |
   Task: Convert sentences to denial constraint predicates.
 
-  Definition: A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+  Definition: A rule is a predicate string or a recursive JSON node {{"AND": [...]}} / {{"OR": [...]}}. A true rule is a violation.
 
   Instructions:
   1. Use t1. and t2. as tuple identifiers
   2. Apply denial semantics: "must be X" means violation when "!= X"
   3. Extract concrete values from the sentence (replace $int, $string, $values with actual values)
-  4. For SINGLE sentence: Return ["pred1", ...] or null if not a constraint
-  5. For MULTIPLE sentences: Return array [result1, result2, ...] where each result is either ["pred1", ...] or null if not a constraint
+  4. For SINGLE sentence: Return a list of independent rules or null; use explicit AND/OR nodes to combine predicates
+  5. For MULTIPLE sentences: Return [result1, result2, ...], where each result is a rules list or null
   6. CRITICAL: Output array length MUST equal input sentence count - use null for non-constraints
   7. Output ONLY the JSON array - no explanations, no markdown labels, no extra text
 
@@ -109,6 +111,7 @@ with_examples: |
   - Cross-tuple: t1.field_name OPERATOR t2.field_name OR t1.field_name OPERATOR t2.field_name2
     Examples: t1.amount > t2.amount, t1.id = t2.id, t1.created_date < t2.updated_date
   - Operators: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL
+  - Arithmetic inside predicates: +, -, *, /, %, ^, with parentheses allowed
   - Placeholders: $int (numbers), $string (text), $values (lists)
 
   Examples:
@@ -121,7 +124,7 @@ with_examples: |
   Example 2 - Cross-tuple consistency:
   Input: "Records with same ID must have same status"
   Analysis: Same ID + different status = violation
-  Output: ["t1.id = t2.id", "t1.status != t2.status"]
+  Output: [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]
 
   Example 3 - Field comparison:
   Input: "Start date must be before end date"
@@ -158,7 +161,7 @@ with_examples: |
 with_examples_and_table: |
   Task: Convert sentences to denial constraint predicates using the table context.
 
-  Definition: A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+  Definition: A rule is a predicate string or a recursive JSON node {{"AND": [...]}} / {{"OR": [...]}}. A true rule is a violation.
 
   Table context:
   {table_context}
@@ -168,8 +171,8 @@ with_examples_and_table: |
   2. Map sentence terms to table columns
   3. Apply denial semantics: "must be X" means violation when "!= X"
   4. Extract concrete values from the sentence (replace $int, $string, $values with actual values)
-  5. For SINGLE sentence: Return ["pred1", ...] or null if not a constraint
-  6. For MULTIPLE sentences: Return array [result1, result2, ...] where each result is either ["pred1", ...] or null if not a constraint
+  5. For SINGLE sentence: Return a list of independent rules or null; use explicit AND/OR nodes to combine predicates
+  6. For MULTIPLE sentences: Return [result1, result2, ...], where each result is a rules list or null
   7. CRITICAL: Output array length MUST equal input sentence count - use null for non-constraints
   8. Output ONLY the JSON array - no explanations, no markdown labels, no extra text
 
@@ -179,6 +182,7 @@ with_examples_and_table: |
   - Cross-tuple: t1.field_name OPERATOR t2.field_name OR t1.field_name OPERATOR t2.field_name2
     Examples: t1.amount > t2.amount, t1.id = t2.id, t1.created_date < t2.updated_date
   - Operators: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL
+  - Arithmetic inside predicates: +, -, *, /, %, ^, with parentheses allowed
   - Placeholders: $int (numbers), $string (text), $values (lists)
 
   Examples:
@@ -193,7 +197,7 @@ with_examples_and_table: |
 
   Example 3 - Cross-tuple consistency:
   Input: "Records with same ID must have same status"
-  Output: ["t1.id = t2.id", "t1.status != t2.status"]
+  Output: [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]
 
   Example 4 - Field comparison:
   Input: "Start date must be before end date"
@@ -232,13 +236,13 @@ with_examples_and_table: |
 zero_shot_pt: |
   Tarefa: Converter sentenças em predicados de restrições de negação.
 
-  Definição: Uma restrição de negação é uma lista de predicados que NÃO PODEM ser todos verdadeiros simultaneamente.
+  Definição: Uma regra é um predicado ou nó JSON recursivo {{"AND": [...]}} / {{"OR": [...]}}. Uma regra verdadeira é uma violação.
 
   Instruções:
   1. Use t1. e t2. como identificadores de tupla
   2. Extraia valores concretos da sentença (substitua $int, $string, etc.)
-  3. Para UMA ÚNICA sentença: Retorne ["pred1", "pred2", ...] ou null se não for uma restrição
-  4. Para MÚLTIPLAS sentenças: Retorne array [resultado1, resultado2, ...] onde cada resultado é ["pred1", ...] ou null se não for uma restrição
+  3. Para UMA sentença: retorne uma lista de regras independentes ou null; use nós AND/OR explícitos para combinar predicados
+  4. Para MÚLTIPLAS sentenças: retorne [resultado1, resultado2, ...], sendo cada resultado uma lista de regras ou null
   5. CRÍTICO: O tamanho do array de saída DEVE ser igual ao número de sentenças de entrada - use null para não-restrições
   6. Produza APENAS o array JSON - sem explicações, sem rótulos markdown, sem texto extra
 
@@ -246,12 +250,13 @@ zero_shot_pt: |
   - Tupla única: t1.nome_campo OPERADOR constante OU t1.nome_campo OPERADOR t1.nome_campo2
   - Entre tuplas: t1.nome_campo OPERADOR t2.nome_campo OU t1.nome_campo OPERADOR t2.nome_campo2
   - Operadores: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL
+  - Aritmética: +, -, *, /, %, ^, com parênteses permitidos
 
   Exemplos:
 
   Sentença única:
   Entrada: "Registros com mesmo ID devem ter mesmo status"
-  Saída: ["t1.id = t2.id", "t1.status != t2.status"]
+  Saída: [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]
 
   Entrada: "Usuários geralmente preferem o sistema"
   Saída: null
@@ -274,7 +279,7 @@ zero_shot_pt: |
 zero_shot_with_table_pt: |
   Tarefa: Converter sentenças em predicados de restrições de negação usando o contexto da tabela.
 
-  Definição: Uma restrição de negação é uma lista de predicados que NÃO PODEM ser todos verdadeiros simultaneamente.
+  Definição: Uma regra é um predicado ou nó JSON recursivo {{"AND": [...]}} / {{"OR": [...]}}. Uma regra verdadeira é uma violação.
 
   Contexto da tabela:
   {table_context}
@@ -283,8 +288,8 @@ zero_shot_with_table_pt: |
   1. Use t1. e t2. como identificadores de tupla
   2. Mapeie termos da sentença para colunas da tabela
   3. Extraia valores concretos da sentença (substitua $int, $string, etc.)
-  4. Para UMA ÚNICA sentença: Retorne ["pred1", ...] ou null se não for uma restrição
-  5. Para MÚLTIPLAS sentenças: Retorne array [resultado1, resultado2, ...] onde cada resultado é ["pred1", ...] ou null se não for uma restrição
+  4. Para UMA sentença: retorne uma lista de regras independentes ou null; use nós AND/OR explícitos para combinar predicados
+  5. Para MÚLTIPLAS sentenças: retorne [resultado1, resultado2, ...], sendo cada resultado uma lista de regras ou null
   6. CRÍTICO: O tamanho do array de saída DEVE ser igual ao número de sentenças de entrada - use null para não-restrições
   7. Produza APENAS o array JSON - sem explicações, sem rótulos markdown, sem texto extra
 
@@ -292,6 +297,7 @@ zero_shot_with_table_pt: |
   - Tupla única: t1.nome_campo OPERADOR constante OU t1.nome_campo OPERADOR t1.nome_campo2
   - Entre tuplas: t1.nome_campo OPERADOR t2.nome_campo OU t1.nome_campo OPERADOR t2.nome_campo2
   - Operadores: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL
+  - Aritmética: +, -, *, /, %, ^, com parênteses permitidos
 
   Exemplos:
 
@@ -321,14 +327,14 @@ zero_shot_with_table_pt: |
 with_examples_pt: |
   Tarefa: Converter sentenças em predicados de restrições de negação.
 
-  Definição: Uma restrição de negação é uma lista de predicados que NÃO PODEM ser todos verdadeiros simultaneamente.
+  Definição: Uma regra é um predicado ou nó JSON recursivo {{"AND": [...]}} / {{"OR": [...]}}. Uma regra verdadeira é uma violação.
 
   Instruções:
   1. Use t1. e t2. como identificadores de tupla
   2. Aplique semântica de negação: "deve ser X" significa violação quando "!= X"
   3. Extraia valores concretos da sentença (substitua $int, $string, $values com valores reais)
-  4. Para UMA ÚNICA sentença: Retorne ["pred1", ...] ou null se não for uma restrição
-  5. Para MÚLTIPLAS sentenças: Retorne array [resultado1, resultado2, ...] onde cada resultado é ["pred1", ...] ou null se não for uma restrição
+  4. Para UMA sentença: retorne uma lista de regras independentes ou null; use nós AND/OR explícitos para combinar predicados
+  5. Para MÚLTIPLAS sentenças: retorne [resultado1, resultado2, ...], sendo cada resultado uma lista de regras ou null
   6. CRÍTICO: O tamanho do array de saída DEVE ser igual ao número de sentenças de entrada - use null para não-restrições
   7. Produza APENAS o array JSON - sem explicações, sem rótulos markdown, sem texto extra
 
@@ -338,6 +344,7 @@ with_examples_pt: |
   - Entre tuplas: t1.nome_campo OPERADOR t2.nome_campo OU t1.nome_campo OPERADOR t2.nome_campo2
     Exemplos: t1.amount > t2.amount, t1.id = t2.id, t1.created_date < t2.updated_date
   - Operadores: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL
+  - Aritmética: +, -, *, /, %, ^, com parênteses permitidos
   - Placeholders: $int (números), $string (texto), $values (listas)
 
   Exemplos:
@@ -350,7 +357,7 @@ with_examples_pt: |
   Exemplo 2 - Consistência entre tuplas:
   Entrada: "Registros com mesmo ID devem ter mesmo status"
   Análise: Mesmo ID + status diferente = violação
-  Saída: ["t1.id = t2.id", "t1.status != t2.status"]
+  Saída: [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]
 
   Exemplo 3 - Comparação entre campos:
   Entrada: "Data de início deve ser anterior à data de término"
@@ -374,7 +381,7 @@ with_examples_pt: |
   3. Usuários geralmente preferem o novo sistema
   4. Email é obrigatório
   5. O banco de dados é rápido
-  Saída: [["t1.value < 100"], ["t1.id = t2.id", "t1.status != t2.status"], null, ["t1.email IS NULL"], null]
+  Saída: [["t1.value < 100"], [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}], null, ["t1.email IS NULL"], null]
 
   Predicados disponíveis:
   {predicates_list}
@@ -387,7 +394,7 @@ with_examples_pt: |
 with_examples_and_table_pt: |
   Tarefa: Converter sentenças em predicados de restrições de negação usando o contexto da tabela.
 
-  Definição: Uma restrição de negação é uma lista de predicados que NÃO PODEM ser todos verdadeiros simultaneamente.
+  Definição: Uma regra é um predicado ou nó JSON recursivo {{"AND": [...]}} / {{"OR": [...]}}. Uma regra verdadeira é uma violação.
 
   Contexto da tabela:
   {table_context}
@@ -397,8 +404,8 @@ with_examples_and_table_pt: |
   2. Mapeie termos da sentença para colunas da tabela
   3. Aplique semântica de negação: "deve ser X" significa violação quando "!= X"
   4. Extraia valores concretos da sentença (substitua $int, $string, $values com valores reais)
-  5. Para UMA ÚNICA sentença: Retorne ["pred1", ...] ou null se não for uma restrição
-  6. Para MÚLTIPLAS sentenças: Retorne array [resultado1, resultado2, ...] onde cada resultado é ["pred1", ...] ou null se não for uma restrição
+  5. Para UMA sentença: retorne uma lista de regras independentes ou null; use nós AND/OR explícitos para combinar predicados
+  6. Para MÚLTIPLAS sentenças: retorne [resultado1, resultado2, ...], sendo cada resultado uma lista de regras ou null
   7. CRÍTICO: O tamanho do array de saída DEVE ser igual ao número de sentenças de entrada - use null para não-restrições
   8. Produza APENAS o array JSON - sem explicações, sem rótulos markdown, sem texto extra
 
@@ -408,6 +415,7 @@ with_examples_and_table_pt: |
   - Entre tuplas: t1.nome_campo OPERADOR t2.nome_campo OU t1.nome_campo OPERADOR t2.nome_campo2
     Exemplos: t1.amount > t2.amount, t1.id = t2.id, t1.created_date < t2.updated_date
   - Operadores: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL
+  - Aritmética: +, -, *, /, %, ^, com parênteses permitidos
   - Placeholders: $int (números), $string (texto), $values (listas)
 
   Exemplos:

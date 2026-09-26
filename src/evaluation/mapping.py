@@ -8,6 +8,7 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 from src.predicates import Predicate
+from src.predicates import Rule, Rules, canonical_rule, canonical_rules, normalize_rules
 from src.dbms.db_interface import DBExecutor
 from src.dbms.sql_translator import SQLTranslator
 
@@ -131,11 +132,9 @@ def normalize_predicate(pred_str: str) -> str:
     return pred_str
 
 
-def normalize_constraint(rule: List[str]) -> frozenset:
-    """Convert a list of predicate strings into a canonical frozenset."""
-    if not rule:
-        return frozenset()
-    return frozenset(normalize_predicate(p) for p in rule)
+def normalize_constraint(rule: Rule) -> str:
+    """Canonicalize one predicate or logical rule, ignoring logical item order."""
+    return canonical_rule(rule)
 
 
 # ---------------------------------------------------------------------------
@@ -160,8 +159,8 @@ class SentenceMappingResult:
     execution_recall: Optional[float] = None
     execution_f1: Optional[float] = None
 
-    gold_rule: Optional[List[str]] = None
-    pred_rule: Optional[List[str]] = None
+    gold_rule: Any = None
+    pred_rule: Any = None
     gold_violations: Optional[Set[int]] = None
     pred_violations: Optional[Set[int]] = None
 
@@ -273,7 +272,7 @@ class MappingEvaluator:
 
     def __init__(
         self,
-        ground_truth: Dict[str, List[str]],
+        ground_truth: Dict[str, Any],
         df: Optional[pd.DataFrame] = None,
         csv_path: Optional[str] = None,
     ):
@@ -291,16 +290,14 @@ class MappingEvaluator:
     # ------------------------------------------------------------------
 
     def evaluate_constraint_exact_match(
-        self, predicted_rules: List[List[str]], gold_rules: List[List[str]]
+        self, predicted_rules: List[Any], gold_rules: List[Any]
     ) -> Dict[str, Any]:
         """
         Set-membership exact match after predicate normalisation.
         Returns tp, fp, fn, precision, recall, f1, num_pred, num_gold.
         """
-        gold_set = {normalize_constraint(r) for r in gold_rules}
-        pred_set = {normalize_constraint(r) for r in predicted_rules}
-        gold_set.discard(frozenset())
-        pred_set.discard(frozenset())
+        gold_set = self._canonical_rule_set(gold_rules)
+        pred_set = self._canonical_rule_set(predicted_rules)
 
         tp = len(pred_set & gold_set)
         fp = len(pred_set - gold_set)
@@ -325,7 +322,7 @@ class MappingEvaluator:
         }
 
     def evaluate(
-        self, predictions: List[Tuple[str, Optional[List[str]]]]
+        self, predictions: List[Tuple[str, Any]]
     ) -> Tuple[MappingMetrics, List[SentenceMappingResult]]:
         """Sentence-level evaluation."""
         if not predictions:
@@ -346,7 +343,7 @@ class MappingEvaluator:
         return metrics, sentence_results
 
     def evaluate_document_level(
-        self, predicted_rules: List[List[str]], gold_rules: List[List[str]]
+        self, predicted_rules: List[Any], gold_rules: List[Any]
     ) -> Dict[str, Any]:
         """Document-level evaluation (requires a dataframe for execution)."""
         if self.db is None:
@@ -393,9 +390,7 @@ class MappingEvaluator:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _evaluate_single(
-        self, sentence: str, pred_rule: Optional[List[str]]
-    ) -> SentenceMappingResult:
+    def _evaluate_single(self, sentence: str, pred_rule: Any) -> SentenceMappingResult:
         gold_rule = self.ground_truth.get(sentence)
         gold_is_rule = bool(gold_rule)
         pred_is_rule = bool(pred_rule)
@@ -408,11 +403,9 @@ class MappingEvaluator:
                 pred_rule=pred_rule,
             )
 
-        # Syntactic metrics – compare normalised predicate sets
-        gold_norm = {normalize_predicate(p) for p in gold_rule}
-        pred_norm = (
-            {normalize_predicate(p) for p in pred_rule} if pred_is_rule else set()
-        )
+        # Syntactic metrics compare complete rule trees, not flattened leaves.
+        gold_norm = set(canonical_rules(gold_rule) or ())
+        pred_norm = set(canonical_rules(pred_rule) or ()) if pred_is_rule else set()
 
         strict_correct = (gold_norm == pred_norm) if pred_is_rule else False
         predicate_jaccard = self._jaccard(gold_norm, pred_norm)
@@ -555,7 +548,7 @@ class MappingEvaluator:
     # Execution helpers
     # ------------------------------------------------------------------
 
-    def _execute_rules_union(self, rules: List[List[str]], label: str = "") -> Set[int]:
+    def _execute_rules_union(self, rules: List[Any], label: str = "") -> Set[int]:
         union: Set[int] = set()
         for i, rule in enumerate(rules, 1):
             union.update(self._execute_rule(rule))
@@ -564,22 +557,32 @@ class MappingEvaluator:
         print(f"  Total unique {label} violations: {len(union)}")
         return union
 
-    def _execute_rule(self, rule: Optional[List[str]]) -> Set[int]:
-        if not rule:
+    def _execute_rule(self, rules: Any) -> Set[int]:
+        """Execute a sentence output (independent rule list) and union violations."""
+        if not rules:
             return set()
         try:
-            result = self.translator.execute_violation(rule)
-            if not result["success"]:
-                print(f"Warning: Rule execution failed: {result.get('error')}")
-                return set()
             violation_ids: Set[int] = set()
-            for row in result.get("rows", []):
-                for tid in row:
-                    violation_ids.add(tid)
+            normalized = normalize_rules(rules)
+            for rule in normalized or []:
+                result = self.translator.execute_violation(rule)
+                if not result["success"]:
+                    print(f"Warning: Rule execution failed: {result.get('error')}")
+                    continue
+                for row in result.get("rows", []):
+                    for tid in row:
+                        violation_ids.add(tid)
             return violation_ids
         except Exception as e:
             print(f"Warning: Exception during rule execution: {e}")
             return set()
+
+    @staticmethod
+    def _canonical_rule_set(rule_groups: List[Any]) -> Set[str]:
+        canonical: Set[str] = set()
+        for rules in rule_groups:
+            canonical.update(canonical_rules(rules) or ())
+        return canonical
 
     # ------------------------------------------------------------------
     # Similarity helpers

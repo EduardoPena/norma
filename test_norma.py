@@ -1,7 +1,48 @@
 # test.py - Quick migration testing
 
 
-DATA_PATH = 'data/tax/'  # Adjust as needed
+DATA_PATH = "data/tax/"  # Adjust as needed
+
+
+def test_recursive_rule_parser_and_sql():
+    """Nested logic and arithmetic survive parsing and execute as one rule."""
+    import pandas as pd
+
+    from src.dbms import DBExecutor
+    from src.dbms.sql_translator import SQLTranslator
+    from src.predicates import normalize_rules, predicate_strings
+
+    rules = [
+        {
+            "AND": [
+                "t1.amount / (t1.units + 1) > 4",
+                {"OR": ["t1.status = 'bad'", "t1.score ^ 2 >= 9"]},
+            ]
+        }
+    ]
+    assert normalize_rules(rules) == rules
+    assert predicate_strings(rules) == [
+        "t1.amount / (t1.units + 1) > 4",
+        "t1.status = 'bad'",
+        "t1.score ^ 2 >= 9",
+    ]
+
+    db = DBExecutor(
+        pd.DataFrame(
+            {
+                "amount": [10, 3],
+                "units": [1, 1],
+                "status": ["ok", "bad"],
+                "score": [3, 1],
+            }
+        )
+    )
+    try:
+        result = SQLTranslator(db).execute_violation(rules[0])
+        assert result["success"]
+        assert result["row_count"] == 1
+    finally:
+        db.close()
 
 
 def test_load():
@@ -15,10 +56,9 @@ def test_load():
     print(df.head())
 
     print(f"\nLoaded {len(sentences)} sentences and {len(df)} rows")
-    print(
-        f"Predicate space has {len(predicate_space['predicates'])} predicates")
+    print(f"Predicate space has {len(predicate_space['predicates'])} predicates")
     print(f"\nFirst 10 predicates:")
-    for pred in predicate_space['predicates'][:10]:
+    for pred in predicate_space["predicates"][:10]:
         print(f"  {pred}")
 
     print(f"\nFirst 5 sentences:")
@@ -94,8 +134,12 @@ def test_sql():
 
         result = db.execute_violation_query(sql)
         assert result["success"], f"SQL execution failed: {result.get('error')}"
-        print("violated:", result["constraint_violated"],
-              "row_count:", result["row_count"])
+        print(
+            "violated:",
+            result["constraint_violated"],
+            "row_count:",
+            result["row_count"],
+        )
 
         # show up to first 5 violations
         if result["rows"]:
@@ -145,7 +189,8 @@ def test_classifier():
         print(f"\n--- Prompt: {prompt_name} ---")
         prompt_template = prompt_loader.load("classification", prompt_name)
         classifier = LLMRuleClassifier(
-            model_name="mistral-small-2506", prompt_template=prompt_template)
+            model_name="mistral-small-2506", prompt_template=prompt_template
+        )
 
         results = classifier.classify(test_sentences, context=context)
 
@@ -167,14 +212,14 @@ def test_slm_classifier():
 
     # Option 1: Local trained classification model
     # model_path = "models/slm_classifier"
-    
+
     # Option 2: Sentence transformer from HuggingFace (e.g., mpnet)
     # This will use embeddings without a classifier head (returns neutral probabilities)
     model_path = "sentence-transformers/all-mpnet-base-v2"
-    
+
     # Option 3: Local sentence transformer with trained classifier head
     # model_path = "models/mpnet_with_classifier"
-    
+
     # Uncomment to check local path
     # if not os.path.exists(model_path):
     #     print(f"Skipping - Model not found at {model_path}")
@@ -192,43 +237,43 @@ def test_slm_classifier():
             model_path=model_path,
             batch_size=16,
             device=None,  # Auto-detect
-            model_type='auto'  # Can be 'classification', 'sentence-transformer', or 'auto'
+            model_type="auto",  # Can be 'classification', 'sentence-transformer', or 'auto'
         )
-        
+
         # Display model info
         model_info = classifier.get_model_info()
         print(f"\nModel info:")
         for key, value in model_info.items():
             print(f"  {key}: {value}")
-        
+
         # Test on first 10 sentences
         test_sentences = sentences[:10]
-        
+
         # Build table context
         context_builder = TableContextBuilder(sample_strategy="head", num_rows=3)
         context = context_builder.build(df)
-        
+
         print(f"\nClassifying {len(test_sentences)} sentences...")
         results = classifier.classify(test_sentences, context=context)
-        
+
         print("\nResults:")
         for sentence, is_rule in results:
-            gt_dc = sentence2dcs_map.get(sentence, 'Unknown')
-            has_gt_rule = bool(gt_dc and gt_dc != 'Unknown')
+            gt_dc = sentence2dcs_map.get(sentence, "Unknown")
+            has_gt_rule = bool(gt_dc and gt_dc != "Unknown")
             match = "✓" if is_rule == has_gt_rule else "✗"
             label = "RULE" if is_rule else "NOT"
             print(f"{match} [{label}] {sentence[:60]}...")
-            if gt_dc and gt_dc != 'Unknown':
+            if gt_dc and gt_dc != "Unknown":
                 print(f"   Ground truth: {gt_dc}")
-        
+
         print("\nOK")
-        
+
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         print("Make sure the model is properly trained and saved")
-
 
 
 def test_mapper():
@@ -276,14 +321,14 @@ def test_mapper():
     for prompt_name in prompt_names:
         print(f"\n{'=' * 60}")
         print(f"Testing Prompt: {prompt_name}")
-        print('=' * 60)
+        print("=" * 60)
 
         # Create mapper
         mapper = LLMMapper(
             model_name="gpt-4o-mini",
             prompt_name=prompt_name,
-            allowed_predicates=predicate_space['predicates'],
-            chunk_size=10
+            allowed_predicates=predicate_space["predicates"],
+            chunk_size=10,
         )
 
         # Map sentences
@@ -347,7 +392,8 @@ def test_mapper_all():
     rule_sentences = [s for s, dc in sentence2dcs_map.items() if dc]
 
     non_rule_test_sentences = [
-        sentence for sentence in sentences if sentence not in sentence2dcs_map]
+        sentence for sentence in sentences if sentence not in sentence2dcs_map
+    ]
 
     # Test on first 5 rule sentences
     test_sentences = rule_sentences[:5] + non_rule_test_sentences[:5]
@@ -356,15 +402,15 @@ def test_mapper_all():
     for prompt_name in prompt_names:
         print(f"\n{'=' * 60}")
         print(f"Testing Prompt: {prompt_name}")
-        print('=' * 60)
+        print("=" * 60)
 
         # Create mapper
         mapper = LLMMapper(
             # model_name="gpt-5-mini",
             model_name="mistral-small-2506",
             prompt_name=prompt_name,
-            allowed_predicates=predicate_space['predicates'],
-            chunk_size=10
+            allowed_predicates=predicate_space["predicates"],
+            chunk_size=10,
         )
 
         # Map sentences
@@ -372,8 +418,7 @@ def test_mapper_all():
 
         # Display results
         for sentence, predicted_dc in results:
-            ground_truth_dc = sentence2dcs_map.get(
-                sentence, 'Non rule sentence')
+            ground_truth_dc = sentence2dcs_map.get(sentence, "Non rule sentence")
 
             print(f"\nSentence: {sentence}")
             print(f"Ground Truth: {ground_truth_dc}")
@@ -423,19 +468,17 @@ def test_norma_sentence_direct():
     mapping_prompt_names = prompt_loader.list_prompts("mapping")
     # Test first prompt only for brevity
     mapping_prompt = mapping_prompt_names[0]
-    print(
-        f"Available prompts: {mapping_prompt_names}, but using {mapping_prompt}\n")
+    print(f"Available prompts: {mapping_prompt_names}, but using {mapping_prompt}\n")
 
     mapper = LLMMapper(
         # model_name="gpt-5-mini",
         model_name="mistral-small-2506",
         prompt_name=mapping_prompt,
-        allowed_predicates=predicate_space['predicates'],
-        chunk_size=10
+        allowed_predicates=predicate_space["predicates"],
+        chunk_size=10,
     )
     # Initialize Norma pipeline in SENTENCE_DIRECT mode
-    pipeline = NormaPipeline(
-        mode=ProcessingMode.SENTENCE_DIRECT, mapper=mapper)
+    pipeline = NormaPipeline(mode=ProcessingMode.SENTENCE_DIRECT, mapper=mapper)
 
     # Process sentences through the pipeline
     results = pipeline.process(sentences, context=context)
@@ -444,7 +487,9 @@ def test_norma_sentence_direct():
     results_dir = "results/test"
     os.makedirs(results_dir, exist_ok=True)
     dataset_name = os.path.basename(os.path.normpath(DATA_PATH))
-    result_file = os.path.join(results_dir, f"test_norma_sentence_direct_results_{dataset_name}.csv")
+    result_file = os.path.join(
+        results_dir, f"test_norma_sentence_direct_results_{dataset_name}.csv"
+    )
 
     print("\nSaving results to results/test...")
     pipeline.save(results, output_file=result_file, ground_truth=sentence2dcs_map)
@@ -453,13 +498,14 @@ def test_norma_sentence_direct():
     # Display results for first 5 sentences
     print("\nFirst 5 results:")
     for sentence, is_rule, predicates in results[:5]:
-        gt_dc = sentence2dcs_map.get(sentence, 'Non rule sentence')
+        gt_dc = sentence2dcs_map.get(sentence, "Non rule sentence")
         print(f"\nSentence: {sentence}")
         print(f"Ground Truth: {gt_dc}")
         print(f"Is Rule: {is_rule}")
         print(f"Predicates: {predicates}")
 
     print("\nNorma Pipeline test complete!")
+
 
 def test_norma_sentence_filtered():
     """Test the full Norma pipeline in SENTENCE_FILTERED mode."""
@@ -499,26 +545,32 @@ def test_norma_sentence_filtered():
     mapping_prompt = mapping_prompt_names[0]
 
     print(
-        f"Available classification prompts: {classification_prompt_names}, but using {classification_prompt}\n")
+        f"Available classification prompts: {classification_prompt_names}, but using {classification_prompt}\n"
+    )
     print(
-        f"Available mapping prompts: {mapping_prompt_names}, but using {mapping_prompt}\n")
+        f"Available mapping prompts: {mapping_prompt_names}, but using {mapping_prompt}\n"
+    )
 
     # Load the actual prompt template for classifier
-    classification_prompt_template = prompt_loader.load("classification", classification_prompt)
-    
+    classification_prompt_template = prompt_loader.load(
+        "classification", classification_prompt
+    )
+
     classifier = LLMRuleClassifier(
-        model_name="mistral-small-2506", prompt_template=classification_prompt_template)
-    
+        model_name="mistral-small-2506", prompt_template=classification_prompt_template
+    )
+
     mapper = LLMMapper(
         model_name="mistral-small-2506",
         prompt_name=mapping_prompt,
-        allowed_predicates=predicate_space['predicates'],
-        chunk_size=10
+        allowed_predicates=predicate_space["predicates"],
+        chunk_size=10,
     )
 
     # Initialize Norma pipeline in SENTENCE_FILTERED mode
     pipeline = NormaPipeline(
-        mode=ProcessingMode.SENTENCE_FILTERED, classifier=classifier, mapper=mapper)
+        mode=ProcessingMode.SENTENCE_FILTERED, classifier=classifier, mapper=mapper
+    )
 
     # Process sentences through the pipeline
     results = pipeline.process(sentences, context=context)
@@ -527,8 +579,9 @@ def test_norma_sentence_filtered():
     results_dir = "results/test"
     os.makedirs(results_dir, exist_ok=True)
     dataset_name = os.path.basename(os.path.normpath(DATA_PATH))
-    result_file = os.path.join(results_dir, f"test_norma_sentence_filtered_results_{dataset_name}.csv")
-
+    result_file = os.path.join(
+        results_dir, f"test_norma_sentence_filtered_results_{dataset_name}.csv"
+    )
 
     print("\nSaving results to results/test...")
     pipeline.save(results, output_file=result_file, ground_truth=sentence2dcs_map)
@@ -550,7 +603,7 @@ def test_norma_slm_filtered():
 
     # Check if model exists
     model_path = "models/slm_classifier"  # Adjust this path as needed
-    
+
     if not os.path.exists(model_path):
         print(f"Skipping - SLM model not found at {model_path}")
         print("Train a model first or update the model_path variable")
@@ -578,37 +631,38 @@ def test_norma_slm_filtered():
     # Test first prompt only for brevity
     mapping_prompt = mapping_prompt_names[0]
 
-    print(f"Available mapping prompts: {mapping_prompt_names}, but using {mapping_prompt}\n")
+    print(
+        f"Available mapping prompts: {mapping_prompt_names}, but using {mapping_prompt}\n"
+    )
 
     # Initialize SLM classifier
     try:
         classifier = SLMRuleClassifier(
-            model_path=model_path,
-            batch_size=16,
-            device=None  # Auto-detect
+            model_path=model_path, batch_size=16, device=None  # Auto-detect
         )
-        
+
         # Display model info
         model_info = classifier.get_model_info()
         print(f"SLM Model info:")
         for key, value in model_info.items():
             print(f"  {key}: {value}")
         print()
-        
+
     except Exception as e:
         print(f"Error loading SLM classifier: {e}")
         return
-    
+
     mapper = LLMMapper(
         model_name="mistral-small-2506",
         prompt_name=mapping_prompt,
-        allowed_predicates=predicate_space['predicates'],
-        chunk_size=10
+        allowed_predicates=predicate_space["predicates"],
+        chunk_size=10,
     )
 
     # Initialize Norma pipeline in SENTENCE_FILTERED mode
     pipeline = NormaPipeline(
-        mode=ProcessingMode.SENTENCE_FILTERED, classifier=classifier, mapper=mapper)
+        mode=ProcessingMode.SENTENCE_FILTERED, classifier=classifier, mapper=mapper
+    )
 
     # Process sentences through the pipeline
     print("Processing sentences...")
@@ -618,7 +672,9 @@ def test_norma_slm_filtered():
     results_dir = "results/test"
     os.makedirs(results_dir, exist_ok=True)
     dataset_name = os.path.basename(os.path.normpath(DATA_PATH))
-    result_file = os.path.join(results_dir, f"test_norma_slm_filtered_results_{dataset_name}.csv")
+    result_file = os.path.join(
+        results_dir, f"test_norma_slm_filtered_results_{dataset_name}.csv"
+    )
 
     print("\nSaving results to results/test...")
     pipeline.save(results, output_file=result_file, ground_truth=sentence2dcs_map)
@@ -627,7 +683,7 @@ def test_norma_slm_filtered():
     # Display results for first 5 sentences
     print("\nFirst 5 results:")
     for sentence, is_rule, predicates in results[:5]:
-        gt_dc = sentence2dcs_map.get(sentence, 'Non rule sentence')
+        gt_dc = sentence2dcs_map.get(sentence, "Non rule sentence")
         print(f"\nSentence: {sentence}")
         print(f"Ground Truth: {gt_dc}")
         print(f"Is Rule: {is_rule}")
@@ -662,24 +718,24 @@ def test_norma_document_mapping():
     # Build table context
     context_builder = TableContextBuilder(sample_strategy="head", num_rows=3)
     context = context_builder.build(df)
-    
+
     # Add predicates list to context (REQUIRED for document mapping)
-    predicates_list_str = "\n".join(predicate_space['predicates'])
-    context['predicates_list'] = predicates_list_str
-    
+    predicates_list_str = "\n".join(predicate_space["predicates"])
+    context["predicates_list"] = predicates_list_str
+
     # print(f"\nTable context preview:\n{context['table_context'][:200]}...\n")
     # print(f"Predicates list preview:\n{predicates_list_str[:200]}...\n")
 
     # Get available document mapping prompts
     prompt_loader = PromptLoader()
-    
+
     try:
         document_prompt_names = prompt_loader.list_prompts("document_mapping")
         print(f"Available document prompts: {document_prompt_names}\n")
     except Exception as e:
         print(f"Error loading prompts: {e}")
         document_prompt_names = ["basic"]
-    
+
     # Test with first prompt
     document_prompt = document_prompt_names[0]
     print(f"Using prompt: {document_prompt}\n")
@@ -688,13 +744,12 @@ def test_norma_document_mapping():
     document_mapper = LLMDocumentMapper(
         # model_name="mistral-small-2506",
         model_name="gpt-5-mini",
-        prompt_name=document_prompt
+        prompt_name=document_prompt,
     )
 
     # Initialize Norma pipeline in DOCUMENT mode
     pipeline = NormaPipeline(
-        mode=ProcessingMode.DOCUMENT,
-        document_mapper=document_mapper
+        mode=ProcessingMode.DOCUMENT, document_mapper=document_mapper
     )
 
     # Process entire document (all sentences together)
@@ -704,7 +759,7 @@ def test_norma_document_mapping():
     # Display extraction results
     print(f"\n{'=' * 60}")
     print(f"Extracted {len(results)} denial constraints from document")
-    print('=' * 60)
+    print("=" * 60)
 
     for i, dc in enumerate(results, 1):
         print(f"\nConstraint {i}:")
@@ -714,12 +769,12 @@ def test_norma_document_mapping():
     # Compare with ground truth
     print(f"\n{'=' * 60}")
     print("Ground Truth Comparison")
-    print('=' * 60)
-    
+    print("=" * 60)
+
     gt_dcs = [dc for dc in sentence2dcs_map.values() if dc]
     print(f"Ground truth constraints: {len(gt_dcs)}")
     print(f"Extracted constraints: {len(results)}")
-    
+
     if gt_dcs:
         print("\nGround truth DCs (first 5):")
         for i, dc in enumerate(gt_dcs[:5], 1):
@@ -730,8 +785,7 @@ def test_norma_document_mapping():
     os.makedirs(results_dir, exist_ok=True)
     dataset_name = os.path.basename(os.path.normpath(DATA_PATH))
     result_file = os.path.join(
-        results_dir, 
-        f"test_norma_document_{document_prompt}_{dataset_name}"
+        results_dir, f"test_norma_document_{document_prompt}_{dataset_name}"
     )
 
     print(f"\nSaving results to {result_file}...")
@@ -747,18 +801,18 @@ def test_norma_document_mapping():
 
 
 if __name__ == "__main__":
-    
+
     # test_load()
     # test_llm_clients()
     # test_sql()
-    
+
     # test_classifier()
 
     test_slm_classifier()
 
     # test_mapper()
     # test_mapper_all()
-    
+
     # Norma Pipeline tests - uncomment to run
     # test_norma_sentence_direct()
     # test_norma_sentence_filtered()

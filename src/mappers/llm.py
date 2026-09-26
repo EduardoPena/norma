@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional
 from src.mappers.base import BaseMapper
 from src.llm.client import get_llm_client
 from src.llm.helper import PromptLoader, parse_json_response
+from src.predicates import Rule, RuleValidationError, normalize_rules
 
 
 class LLMMapper(BaseMapper):
@@ -41,7 +42,7 @@ class LLMMapper(BaseMapper):
 
     def _map_sentences(
         self, sentences: List[str], context: Dict[str, Any]
-    ) -> List[Optional[List[str]]]:
+    ) -> List[Optional[List[Rule]]]:
         """Map sentences to predicates using LLM."""
         prompt = self._build_prompt(sentences, context)
         response = self.llm.complete(prompt)
@@ -77,7 +78,7 @@ class LLMMapper(BaseMapper):
 
     def _parse_response(
         self, response: str, expected_count: int
-    ) -> List[Optional[List[str]]]:
+    ) -> List[Optional[List[Rule]]]:
         """
         Parse LLM response into predicates.
 
@@ -104,24 +105,9 @@ class LLMMapper(BaseMapper):
                 print(f"Warning: Got null response for {expected_count} sentences")
                 return [None] * expected_count
 
-            # Single sentence case
+            # A single result is exactly the public rules list or null.
             if expected_count == 1:
-                # Check if it's in batch format (array of arrays)
-                if len(parsed) > 0 and isinstance(parsed[0], (list, type(None))):
-                    # Batch format: [["pred1", "pred2"]] or [null]
-                    if len(parsed) != 1:
-                        raise ValueError(
-                            f"Single sentence expected 1 result, got {len(parsed)}. "
-                            f"Response: {response}"
-                        )
-                    return parsed
-                else:
-                    # Direct format: ["pred1", "pred2"]
-                    if self._validate_predicate_list(parsed):
-                        return [parsed]
-                    else:
-                        print(f"Warning: Invalid predicate list format: {parsed}")
-                        return [None]
+                return [normalize_rules(parsed)]
 
             # Multiple sentences - MUST be batch format
             if len(parsed) != expected_count:
@@ -137,10 +123,10 @@ class LLMMapper(BaseMapper):
                 if item is None:
                     results.append(None)
                 elif isinstance(item, list):
-                    if self._validate_predicate_list(item):
-                        results.append(item)
-                    else:
-                        print(f"Warning: Invalid predicate list at index {i}: {item}")
+                    try:
+                        results.append(normalize_rules(item))
+                    except RuleValidationError as exc:
+                        print(f"Warning: Invalid rules at index {i}: {exc}")
                         results.append(None)
                 else:
                     print(
@@ -158,22 +144,3 @@ class LLMMapper(BaseMapper):
             # Catch other errors and return None for all
             print(f"Unexpected parse error: {e}")
             return [None] * expected_count
-
-    def _validate_predicate_list(self, predicates: List) -> bool:
-        """
-        Validate that a list contains only strings (predicates).
-
-        Args:
-            predicates: List to validate
-
-        Returns:
-            True if valid predicate list
-        """
-        if not isinstance(predicates, list):
-            return False
-
-        for pred in predicates:
-            if not isinstance(pred, str):
-                return False
-
-        return True

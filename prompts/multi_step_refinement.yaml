@@ -282,14 +282,15 @@ construct_constraint: |
   Selected predicates: {selected_predicates}
 
   WHAT IS A DENIAL CONSTRAINT:
-  A denial constraint is a list of predicates that CANNOT all be true simultaneously.
-  If they ARE all true for a tuple or pair of tuples, that indicates a data quality violation.
+   A denial constraint is a predicate string or a JSON logical node with exactly one
+   key, AND or OR, whose value has at least two predicate/logical-node items. Nodes may
+   be nested without a depth limit. If a rule evaluates to true, that is a violation.
   Think of it as: "what combination of values in a record or pair of records should never exist?"
 
   Example 1 — single row, value range:
   Rule: "A value in range [A, B] must result in category Z"
   Violation: value is in [A,B] BUT category is not Z
-  → ["t1.value >= A", "t1.value <= B", "t1.category != 'Z'"]
+   → [{{"AND": ["t1.value >= A", "t1.value <= B", "t1.category != 'Z'"]}}]
 
   Example 2 — single row, required field (unconditional):
   Rule: "Field X must always be present"
@@ -300,17 +301,17 @@ construct_constraint: |
   Example 3 — single row, required field (conditional):
   Rule: "If type is A, then field X must be present"
   Violation: type is A BUT field X is missing
-  → ["t1.type = 'A'", "t1.field_x IS NULL"]
+   → [{{"AND": ["t1.type = 'A'", "t1.field_x IS NULL"]}}]
 
   Example 4 — single row, conditional rule:
   Rule: "If counter reaches N, status must be Z"
   Violation: counter >= N AND status is not Z
-  → ["t1.counter >= N", "t1.status != 'Z'"]
+   → [{{"AND": ["t1.counter >= N", "t1.status != 'Z'"]}}]
 
    Example 4b — single row, status definition by threshold:
    Rule: "A loan is a HOEPA loan if rate spread exceeds 6.5 for first-lien transactions"
    Violation: threshold condition holds BUT status is not HOEPA
-   → ["t1.rate_spread > 6.5", "t1.lien_status = 1", "t1.hoepa_status_name != 'HOEPA loan'"]
+   → [{{"AND": ["t1.rate_spread > 6.5", "t1.lien_status = 1", "t1.hoepa_status_name != 'HOEPA loan'"]}}]
    Wrong: ["t1.hoepa_status IS NULL", "t1.lien_status = 1", "t1.rate_spread <= 0.065"]
    because it flips the threshold direction, changes the units, and replaces a status mismatch
    with a missing-value check that the sentence never asked for.
@@ -318,17 +319,17 @@ construct_constraint: |
   Example 5 — cross row, functional dependency:
   Rule: "Same key must determine same attribute"
   Violation: two rows share the same key but have different attribute values
-  → ["t1.key = t2.key", "t1.attribute != t2.attribute"]
+   → [{{"AND": ["t1.key = t2.key", "t1.attribute != t2.attribute"]}}]
 
   Example 6 — cross row, uniqueness:
   Rule: "Entity cannot appear twice in the same period"
   Violation: two rows share the same entity and period
-  → ["t1.entity_id = t2.entity_id", "t1.period = t2.period"]
+   → [{{"AND": ["t1.entity_id = t2.entity_id", "t1.period = t2.period"]}}]
 
   Example 7 — cross row, comparative:
   Rule: "Within same group, higher rank should have lower value"
   Violation: same group, t1 has higher rank but also higher value
-  → ["t1.group = t2.group", "t1.rank > t2.rank", "t1.value >= t2.value"]
+   → [{{"AND": ["t1.group = t2.group", "t1.rank > t2.rank", "t1.value >= t2.value"]}}]
 
   Example 8 — single row, temporal:
   Rule: "Every entity must be processed within N days"
@@ -340,7 +341,12 @@ construct_constraint: |
   Example 9 — cross row, ordering:
   Rule: "Within the same group, a later event must have a higher sequence number"
   Violation: same group, t1 occurs after t2 but has a lower or equal sequence number
-  → ["t1.group = t2.group", "t1.event_date > t2.event_date", "t1.sequence <= t2.sequence"]
+   → [{{"AND": ["t1.group = t2.group", "t1.event_date > t2.event_date", "t1.sequence <= t2.sequence"]}}]
+
+   Example 10 — nested OR and arithmetic:
+   Violation: wrong status AND either first-lien spread above 6.5 or subordinate spread above 8.5
+   → [{{"AND": ["t1.status != 'HOEPA loan'", {{"OR": [{{"AND": ["t1.lien = 'first'", "t1.rate_spread > 6.5"]}}, {{"AND": ["t1.lien = 'subordinate'", "t1.rate_spread > 8.5"]}}]}}]}}]
+   Arithmetic predicate example: ["t1.salary * (t1.rate / 100) > t1.salary"]
 
   SUBSTITUTION:
   Replace placeholders with constants from the sentence:
@@ -425,8 +431,9 @@ construct_constraint: |
   IMPORTANT NOTES:
   - Single-row: use only t1 predicates
   - Cross-row: use both t1 and t2 predicates
-  - List predicates as plain strings, not wrapped in logic operators
-  - Each predicate is independent — system combines them with AND
+   - Return a list of independent rules; return null when no valid rule exists
+   - Use {{"AND": [...]}} and {{"OR": [...]}} explicitly whenever predicates combine
+   - Arithmetic (+, -, *, /, %, ^) and parenthesized arithmetic are allowed in predicates
 
   BEFORE FINALIZING — check each predicate:
   1. Is it necessary? Would removing it change which tuples are flagged, given the
@@ -447,14 +454,15 @@ construct_constraint: |
 
   Respond with JSON:
   {{
-    "constraint": ["pred1", "pred2"] or null,
+      "rules": [{{"AND": ["pred1", "pred2"]}}] or ["single predicate"] or null,
     "reasoning": "how these predicates detect violations",
     "constraint_type": "bound|required|functional_dependency|conditional|value_mapping|temporal|uniqueness|comparative|other",
     "constraint_interpretation": "In plain language: what scenario is a violation",
     "is_single_row": true/false
   }}
 
-  If construction is genuinely impossible with the available predicates, return null for the constraint field.
+   A sentence may produce multiple independent rules in the rules list. If construction
+   is genuinely impossible with the available predicates, return null for rules.
 
 
 # refine_constraint: Fix based on SQL or semantic errors
@@ -504,8 +512,7 @@ refine_constraint: |
      If constraint finds violations when there should be none, or misses violations:
      - Check if inequality direction is correct (!= vs =)
      - Verify range boundaries (< vs <=)
-     - Denial constraints use AND logic — all predicates must be true simultaneously
-       for a violation to be flagged
+       - Preserve explicit AND/OR grouping; a rule is violated when its full expression is true
 
   7) STRING CASE MISMATCH
      Symptom: zero violations when some are expected
@@ -532,13 +539,13 @@ refine_constraint: |
 
   Respond with JSON:
   {{
-    "refined_constraint": ["pred1", "pred2"],
+      "refined_rules": [{{"AND": ["pred1", "pred2"]}}] or ["single predicate"] or null,
     "changes_made": "specific changes from original",
     "reasoning": "why these changes fix the error",
     "confidence": "high|medium|low"
   }}
 
-  If no refinement is possible, return the original constraint unchanged in the refined_constraint field.
+   If no refinement is possible, return the original rules unchanged in refined_rules.
 
 
 # generate_initial: DirectRefinementMapper
@@ -550,9 +557,9 @@ generate_initial: |
   Available predicates:
   {predicates_list}
 
-  A denial constraint is a list of predicates that CANNOT all be true simultaneously —
-  if they are, that tuple or pair of tuples is a violation.
-  Format: ["t1.col1 = t2.col1", "t1.col2 != t2.col2"]  (JSON array of strings)
+   Return a list of independent rules or null. A rule is a predicate string or a JSON
+   node {{"AND": [...]}} / {{"OR": [...]}} with at least two recursively nested items.
+   Arithmetic and parenthesized arithmetic are allowed inside predicate strings.
 
   COMMON PATTERNS:
 
@@ -598,17 +605,17 @@ generate_initial: |
   - Single-row constraints: use only t1
   - Cross-row constraints: use both t1 and t2
   - Look for derived columns (days_to_*, consecutive_*, etc.)
-  - Plain predicate list, no AND/OR/NOT wrappers
+   - Use explicit AND/OR nodes whenever predicates combine
   - Only include IS NULL when the sentence explicitly states a field must be present —
     never add IS NULL or IS NOT NULL on scope or anchor columns
 
   Respond with JSON:
   {{
-    "constraint": ["pred1", "pred2"] or null,
+      "rules": [{{"AND": ["pred1", "pred2"]}}] or ["single predicate"] or null,
     "reasoning": "brief explanation of constraint type and logic"
   }}
 
-  If this is not a checkable data constraint, return null for the constraint field.
+   If this is not a checkable data constraint, return null for rules.
 
 
 # refine_simple: DirectRefinementMapper refinement
@@ -636,7 +643,7 @@ refine_simple: |
 
   Respond with JSON:
   {{
-    "refined": ["pred1", "pred2"],
+      "refined_rules": [{{"AND": ["pred1", "pred2"]}}] or ["single predicate"] or null,
     "fix": "what changed and why"
   }}
 

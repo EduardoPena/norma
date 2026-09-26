@@ -43,6 +43,7 @@ from src.mappers.llm import LLMMapper
 from src.mappers.multi_step_refinement import MultiStepRefinementMapper
 from src.evaluation.mapping import MappingEvaluator
 from src.llm.helper import PromptLoader
+from src.predicates import Rule, predicate_strings, transform_predicates
 
 _NA = "N/A"
 
@@ -235,13 +236,13 @@ class MapperGTOnlyExperiment(BaseExperiment):
 
         runtime_s = time.perf_counter() - t0
 
-        # Normalize to List[Tuple[str, Optional[List[str]]]].
+        # Normalize to sentence/rules tuples.
         if (
             raw_outputs
             and isinstance(raw_outputs[0], tuple)
             and len(raw_outputs[0]) == 2
         ):
-            predictions_raw: List[Tuple[str, Optional[List[str]]]] = raw_outputs
+            predictions_raw: List[Tuple[str, Optional[List[Rule]]]] = raw_outputs
         else:
             predictions_raw = list(zip(gt_sentences, raw_outputs))
 
@@ -443,6 +444,8 @@ class MapperGTOnlyExperiment(BaseExperiment):
         return TableContextBuilder(sample_strategy="head", num_rows=num_rows).build(df)
 
     def _get_primary_csv_path(self, predicate_space: Dict) -> Optional[str]:
+        if predicate_space.get("_sample_rows") is not None:
+            return None
         table_files = predicate_space.get("_table_files") or {}
         if not table_files:
             return None
@@ -454,18 +457,21 @@ class MapperGTOnlyExperiment(BaseExperiment):
 
     def _map_semantically_valid_constraint_predicates(
         self,
-        predictions: List[Tuple[str, Optional[List[str]]]],
-        sentence2dcs_map: Dict[str, List[str]],
-    ) -> List[Tuple[str, Optional[List[str]]]]:
+        predictions: List[Tuple[str, Optional[List[Rule]]]],
+        sentence2dcs_map: Dict[str, List[Rule]],
+    ) -> List[Tuple[str, Optional[List[Rule]]]]:
         mapped = []
         for sentence, pred_constraint in predictions:
             if pred_constraint is None or sentence not in sentence2dcs_map:
                 mapped.append((sentence, pred_constraint))
                 continue
-            gt_predicates = sentence2dcs_map[sentence]
-            normalized = [
-                self._match_to_gt_predicate(p, gt_predicates) for p in pred_constraint
-            ]
+            gt_predicates = predicate_strings(sentence2dcs_map[sentence])
+            normalized = transform_predicates(
+                pred_constraint,
+                lambda predicate: self._match_to_gt_predicate(
+                    predicate, gt_predicates
+                ),
+            )
             mapped.append((sentence, normalized))
         return mapped
 
@@ -553,7 +559,7 @@ class MapperGTOnlyExperiment(BaseExperiment):
     def _save_detailed_sentence_results(
         self,
         sentence_results,
-        predictions: List[Tuple[str, Optional[List[str]]]],
+        predictions: List[Tuple[str, Optional[List[Rule]]]],
         gt_sentence2dcs_map: Dict,
         dataset_name: str,
         variant_name: str,

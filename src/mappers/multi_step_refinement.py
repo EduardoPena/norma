@@ -55,6 +55,14 @@ from src.llm.client import get_llm_client
 from src.llm.helper import PromptLoader
 from src.dbms.db_interface import DBExecutor
 from src.dbms.sql_translator import SQLTranslator
+from src.predicates import (
+    Rule,
+    Rules,
+    RuleValidationError,
+    normalize_rules,
+    predicate_strings,
+    transform_predicates,
+)
 
 # ============================================================================
 # Shared Utilities
@@ -156,39 +164,37 @@ def extract_json(text: str) -> str:
     return repaired
 
 
-def _normalize_constraint_list(constraint: Any) -> Optional[List[str]]:
-    """Normalize LLM constraint output to a flat list of predicate strings."""
-    if constraint is None or not isinstance(constraint, list):
+def _normalize_constraint_list(constraint: Any, *, legacy: bool = False) -> Any:
+    """Validate mapper output, converting the former flat conjunction when requested."""
+    if constraint is None:
         return None
-
-    if constraint and all(isinstance(item, list) for item in constraint):
-        if len(constraint) == 1 and all(
-            isinstance(pred, str) for pred in constraint[0]
-        ):
-            constraint = constraint[0]
-        else:
-            return None
-
-    if not all(isinstance(pred, str) for pred in constraint):
-        return None
-
-    return constraint
+    if (
+        legacy
+        and isinstance(constraint, list)
+        and all(isinstance(predicate, str) for predicate in constraint)
+    ):
+        constraint = [constraint]
+    return normalize_rules(constraint)
 
 
-def _restore_percentage_point_units(
-    sentence: str, constraint: Optional[List[str]]
-) -> Optional[List[str]]:
+def _map_rule_predicates(value: Any, transform) -> Any:
+    return transform_predicates(value, transform)
+
+
+def _predicate_strings(rules: Any) -> List[str]:
+    return predicate_strings(rules)
+
+
+def _restore_percentage_point_units(sentence: str, constraint: Any) -> Any:
     """Keep percentage-point thresholds in their original units for rate_spread-like columns."""
     if not constraint or "percentage point" not in sentence.lower():
         return constraint
 
-    adjusted = []
     pattern = re.compile(
         r"(\b(?:t[12]\.)?\w*rate_spread\w*\s*(?:<=|>=|=|<|>)\s*)(-?\d+(?:\.\d+)?)"
     )
 
-    for predicate in constraint:
-
+    def adjust(predicate: str) -> str:
         def replace(match: re.Match[str]) -> str:
             value = float(match.group(2))
             if 0 < abs(value) < 1:
@@ -200,9 +206,9 @@ def _restore_percentage_point_units(
                 return f"{match.group(1)}{value_str}"
             return match.group(0)
 
-        adjusted.append(pattern.sub(replace, predicate))
+        return pattern.sub(replace, predicate)
 
-    return adjusted
+    return _map_rule_predicates(constraint, adjust)
 
 
 def token_similarity(s1: str, s2: str) -> float:
@@ -250,6 +256,7 @@ class MultiStepRefinementMapper(BaseMapper):
         csv_path: Optional[str] = None,
         max_refinement_iterations: int = 2,
         violation_ratio_threshold: float = 0.2,
+        max_candidate_predicates: int = 5000,
         prompt_file: str = "multi_step_refinement_less_restrict",
         chunk_size: Optional[int] = None,
     ):
@@ -262,6 +269,7 @@ class MultiStepRefinementMapper(BaseMapper):
         self.df = df
         self.max_refinement_iterations = max_refinement_iterations
         self.violation_ratio_threshold = violation_ratio_threshold
+        self.max_candidate_predicates = max_candidate_predicates
 
         self.db_executor = None
         self.sql_translator = None
@@ -308,18 +316,14 @@ class MultiStepRefinementMapper(BaseMapper):
         mapped = matches[0]
         return str(mapped)
 
-    def _replace_code_columns_with_names(
-        self, constraint: Optional[List[str]]
-    ) -> Optional[List[str]]:
+    def _replace_code_columns_with_names(self, constraint: Any) -> Any:
         """Prefer *_name predicates over coded numeric enums when both columns exist."""
         if not constraint:
             return constraint
 
-        adjusted = []
         pattern = re.compile(r"\b(t[12])\.(\w+)\s*(=|!=)\s*(-?\d+(?:\.0+)?)\b")
 
-        for predicate in constraint:
-
+        def adjust(predicate: str) -> str:
             def replace(match: re.Match[str]) -> str:
                 alias, column, operator, raw_value = match.groups()
                 mapped_name = self._lookup_name_for_code(column, raw_value)
@@ -327,13 +331,11 @@ class MultiStepRefinementMapper(BaseMapper):
                     return match.group(0)
                 return f"{alias}.{column}_name {operator} '{mapped_name}'"
 
-            adjusted.append(pattern.sub(replace, predicate))
+            return pattern.sub(replace, predicate)
 
-        return adjusted
+        return _map_rule_predicates(constraint, adjust)
 
-    def _restore_exceed_direction(
-        self, sentence: str, constraint: Optional[List[str]]
-    ) -> Optional[List[str]]:
+    def _restore_exceed_direction(self, sentence: str, constraint: Any) -> Any:
         """Keep violation direction aligned with exceed/more-than language for threshold predicates."""
         if not constraint:
             return constraint
@@ -344,19 +346,15 @@ class MultiStepRefinementMapper(BaseMapper):
         ):
             return constraint
 
-        adjusted = []
         pattern = re.compile(
             r"(\b(?:t[12]\.)?(?:rate_spread|interest_rate|total_points_and_fees)\b\s*)(<=|<)(\s*.+)$"
         )
 
-        for predicate in constraint:
-            adjusted.append(pattern.sub(r"\1>\3", predicate))
+        return _map_rule_predicates(
+            constraint, lambda predicate: pattern.sub(r"\1>\3", predicate)
+        )
 
-        return adjusted
-
-    def _prefer_rate_spread_for_apor_rules(
-        self, sentence: str, constraint: Optional[List[str]]
-    ) -> Optional[List[str]]:
+    def _prefer_rate_spread_for_apor_rules(self, sentence: str, constraint: Any) -> Any:
         """Prefer rate_spread over interest_rate for APOR percentage-point rules."""
         if not constraint:
             return constraint
@@ -368,17 +366,12 @@ class MultiStepRefinementMapper(BaseMapper):
         ) or "percentage point" not in sentence_lower:
             return constraint
 
-        adjusted = []
         pattern = re.compile(r"\b((?:t[12]\.)?)interest_rate\b")
+        return _map_rule_predicates(
+            constraint, lambda predicate: pattern.sub(r"\1rate_spread", predicate)
+        )
 
-        for predicate in constraint:
-            adjusted.append(pattern.sub(r"\1rate_spread", predicate))
-
-        return adjusted
-
-    def _repair_constructed_constraint(
-        self, sentence: str, constraint: Optional[List[str]]
-    ) -> Optional[List[str]]:
+    def _repair_constructed_constraint(self, sentence: str, constraint: Any) -> Any:
         """Apply deterministic local repairs for common HMDA-style construction errors."""
         constraint = self._prefer_rate_spread_for_apor_rules(sentence, constraint)
         constraint = _restore_percentage_point_units(sentence, constraint)
@@ -504,7 +497,7 @@ class MultiStepRefinementMapper(BaseMapper):
 
     def _map_sentences(
         self, sentences: List[str], context: Dict[str, Any]
-    ) -> List[Optional[List[str]]]:
+    ) -> List[Any]:
         """Process sentences through multi-step refinement pipeline."""
         self.processing_errors = []
         results = []
@@ -519,9 +512,7 @@ class MultiStepRefinementMapper(BaseMapper):
                 results.append(None)
         return results
 
-    def _process_single_sentence(
-        self, sentence: str, context: Dict[str, Any]
-    ) -> Optional[List[str]]:
+    def _process_single_sentence(self, sentence: str, context: Dict[str, Any]) -> Any:
         print(f"\n{'='*60}")
         print(f"Processing: {sentence[:80]}...")
 
@@ -808,7 +799,7 @@ class MultiStepRefinementMapper(BaseMapper):
         sentence: str,
         schema_analysis: Dict[str, Any],
         predicate_selection: Dict[str, Any],
-    ) -> Optional[List[str]]:
+    ) -> Any:
         """Step 4: Construct initial denial constraint."""
         relevant_columns = schema_analysis.get("relevant_columns", [])
         selected_predicates = predicate_selection.get("selected_predicates", [])
@@ -838,13 +829,17 @@ class MultiStepRefinementMapper(BaseMapper):
 
         try:
             parsed = json.loads(extract_json(response))
-            constraint = _normalize_constraint_list(parsed.get("constraint"))
+            has_new_rules = "rules" in parsed
+            constraint = _normalize_constraint_list(
+                parsed.get("rules") if has_new_rules else parsed.get("constraint"),
+                legacy=not has_new_rules,
+            )
             constraint = self._repair_constructed_constraint(sentence, constraint)
             constraint_type = parsed.get("constraint_type", "unknown")
 
             if constraint and len(constraint) > 0:
                 print(
-                    f"-> Step 4: Constructed {constraint_type} with {len(constraint)} predicates"
+                    f"-> Step 4: Constructed {constraint_type} with {len(constraint)} rule(s)"
                 )
                 print(f"   {constraint}")
                 print(f"   {parsed.get('constraint_interpretation', '')}")
@@ -861,7 +856,7 @@ class MultiStepRefinementMapper(BaseMapper):
     # ========================================================================
 
     def _step5_verify_constraint(
-        self, constraint: List[str], sentence: str
+        self, constraint: Any, sentence: str
     ) -> Dict[str, Any]:
         """Step 5: Verify constraint on database sample.
 
@@ -893,7 +888,9 @@ class MultiStepRefinementMapper(BaseMapper):
 
         # ── Execute SQL ───────────────────────────────────────────────────
         try:
-            result = self.sql_translator.execute_violation(constraint)
+            results = [
+                self.sql_translator.execute_violation(rule) for rule in constraint
+            ]
         except Exception as e:
             return {
                 "is_valid": False,
@@ -902,20 +899,23 @@ class MultiStepRefinementMapper(BaseMapper):
                 "constraint": constraint,
             }
 
-        if not result["success"]:
-            print(f"-> Step 5: SQL execution failed - {result.get('error', 'unknown')}")
+        failed = next((result for result in results if not result["success"]), None)
+        if failed:
+            print(f"-> Step 5: SQL execution failed - {failed.get('error', 'unknown')}")
             return {
                 "is_valid": False,
-                "message": f"SQL execution failed: {result.get('error', 'unknown')}",
-                "sql_error": result.get("error"),
-                "sql": result.get("sql"),
+                "message": f"SQL execution failed: {failed.get('error', 'unknown')}",
+                "sql_error": failed.get("error"),
+                "sql": failed.get("sql"),
                 "constraint": constraint,
             }
 
-        violation_count = result["row_count"]
+        violation_count = sum(result["row_count"] for result in results)
         print(f"-> Step 5: Found {violation_count} violations")
 
-        is_single_row = not any("t2." in p for p in constraint)
+        is_single_row = not any(
+            "t2." in predicate for predicate in _predicate_strings(constraint)
+        )
 
         # ── G2: Violation ratio  ──────────────────────────
         # if not is_single_row and self.df is not None:
@@ -1000,7 +1000,7 @@ class MultiStepRefinementMapper(BaseMapper):
     # Gate helpers
     # ========================================================================
 
-    def _check_predicate_satisfiability(self, constraint: List[str]) -> List[str]:
+    def _check_predicate_satisfiability(self, constraint: Any) -> List[str]:
         """G1 — For every predicate with a literal constant, verify at least one
         row in the table satisfies it.
 
@@ -1036,7 +1036,7 @@ class MultiStepRefinementMapper(BaseMapper):
             re.IGNORECASE,
         )
 
-        for pred in constraint:
+        for pred in _predicate_strings(constraint):
             # Skip cross-row predicates — no literal constant to domain-check
             if "t2." in pred:
                 continue
@@ -1100,7 +1100,7 @@ class MultiStepRefinementMapper(BaseMapper):
 
         return dead
 
-    def _probe_inverted_logic(self, constraint: List[str]) -> Tuple[bool, List[str]]:
+    def _probe_inverted_logic(self, constraint: List[Rule]) -> Tuple[bool, List[Rule]]:
         """G3 — Flip comparison operators in cross-row predicates and test.
 
         Returns (True, inverted_constraint) if the inverted version finds violations,
@@ -1116,23 +1116,26 @@ class MultiStepRefinementMapper(BaseMapper):
             " <= ": " >= ",
         }
 
-        inverted = []
         any_changed = False
-        for pred in constraint:
+
+        def invert(pred: str) -> str:
+            nonlocal any_changed
             new_pred = pred
             for op, inv_op in INVERSIONS.items():
                 if op in pred:
                     new_pred = pred.replace(op, inv_op, 1)
                     any_changed = True
                     break
-            inverted.append(new_pred)
+            return new_pred
+
+        inverted = transform_predicates(constraint, invert) or []
 
         if not any_changed:
             return False, []
 
         try:
-            result = self.sql_translator.execute_violation(inverted)
-            if result["success"] and result["row_count"] > 0:
+            results = [self.sql_translator.execute_violation(rule) for rule in inverted]
+            if any(result["success"] and result["row_count"] > 0 for result in results):
                 return True, inverted
         except Exception:
             pass
@@ -1145,12 +1148,12 @@ class MultiStepRefinementMapper(BaseMapper):
 
     def _step6_refine_constraint(
         self,
-        constraint: List[str],
+        constraint: List[Rule],
         sentence: str,
         verification: Dict[str, Any],
         schema_analysis: Dict[str, Any],
         predicate_selection: Dict[str, Any],
-    ) -> List[str]:
+    ) -> List[Rule]:
         """Step 6: Refine constraint based on verification results."""
         error_msg = verification.get("message", "")
         sql_error = verification.get("sql_error", "")
@@ -1185,8 +1188,14 @@ class MultiStepRefinementMapper(BaseMapper):
 
         try:
             parsed = json.loads(extract_json(response))
+            has_new_rules = "refined_rules" in parsed
             refined = _normalize_constraint_list(
-                parsed.get("refined_constraint", constraint)
+                (
+                    parsed.get("refined_rules")
+                    if has_new_rules
+                    else parsed.get("refined_constraint", constraint)
+                ),
+                legacy=not has_new_rules,
             )
 
             if refined:
@@ -1218,15 +1227,19 @@ class MultiStepRefinementMapper(BaseMapper):
     def _filter_predicates_by_columns(self, columns: List[str]) -> List[str]:
         """Filter allowed predicates to those relevant for given columns."""
         if not columns or not self.allowed_predicates:
-            return list(self.allowed_predicates)
+            return sorted(self.allowed_predicates)[: self.max_candidate_predicates]
 
+        selected_columns = set(columns)
+        column_reference = re.compile(r"\bt\d+\.([A-Za-z_][A-Za-z0-9_]*)\b")
         relevant = [
             pred
             for pred in self.allowed_predicates
-            if any(col in pred for col in columns)
+            if (references := set(column_reference.findall(pred)))
+            and references <= selected_columns
         ]
 
-        return relevant if relevant else list(self.allowed_predicates)
+        candidates = relevant if relevant else list(self.allowed_predicates)
+        return sorted(candidates)[: self.max_candidate_predicates]
 
     def _find_similar_columns(
         self, target: str, available: List[str], top_n: int = 3
@@ -1284,7 +1297,7 @@ class DirectRefinementMapper(BaseMapper):
 
     def _map_sentences(
         self, sentences: List[str], context: Dict[str, Any]
-    ) -> List[Optional[List[str]]]:
+    ) -> List[Optional[List[Rule]]]:
         """Simple refinement loop for each sentence."""
         results = []
         for sentence in sentences:
@@ -1334,7 +1347,7 @@ class DirectRefinementMapper(BaseMapper):
 
     def _generate_initial(
         self, sentence: str, context: Dict[str, Any]
-    ) -> Optional[List[str]]:
+    ) -> Optional[List[Rule]]:
         """Generate initial constraint attempt."""
         predicates_list = "\n".join(
             [f"  - {p}" for p in sorted(self.allowed_predicates)]
@@ -1355,12 +1368,16 @@ class DirectRefinementMapper(BaseMapper):
 
         try:
             parsed = json.loads(extract_json(response))
-            return _normalize_constraint_list(parsed.get("constraint"))
+            has_new_rules = "rules" in parsed
+            return _normalize_constraint_list(
+                parsed.get("rules") if has_new_rules else parsed.get("constraint"),
+                legacy=not has_new_rules,
+            )
         except Exception as e:
             print(f"-> Parse error: {e}")
             return None
 
-    def _verify(self, constraint: List[str]) -> Dict[str, Any]:
+    def _verify(self, constraint: List[Rule]) -> Dict[str, Any]:
         """Verify constraint on database (includes G1 satisfiability gate)."""
         if not self.sql_translator:
             return {"is_valid": True}
@@ -1375,16 +1392,21 @@ class DirectRefinementMapper(BaseMapper):
             }
 
         try:
-            result = self.sql_translator.execute_violation(constraint)
+            results = [
+                self.sql_translator.execute_violation(rule) for rule in constraint
+            ]
+            failed = next((result for result in results if not result["success"]), None)
+            if failed:
+                return {"is_valid": False, "error": failed.get("error")}
 
-            if not result["success"]:
-                return {"is_valid": False, "error": result.get("error")}
-
-            return {"is_valid": True, "violation_count": result["row_count"]}
+            return {
+                "is_valid": True,
+                "violation_count": sum(result["row_count"] for result in results),
+            }
         except Exception as e:
             return {"is_valid": False, "error": str(e)}
 
-    def _check_predicate_satisfiability(self, constraint: List[str]) -> List[str]:
+    def _check_predicate_satisfiability(self, constraint: List[Rule]) -> List[str]:
         """G1 — existence check with LIMIT 1 for speed.
 
         Identical logic to MultiStepRefinementMapper._check_predicate_satisfiability.
@@ -1404,7 +1426,7 @@ class DirectRefinementMapper(BaseMapper):
             re.IGNORECASE,
         )
 
-        for pred in constraint:
+        for pred in predicate_strings(constraint):
             if "t2." in pred:
                 continue
             if re.search(r"\bIS\s+(NOT\s+)?NULL\b", pred, re.IGNORECASE):
@@ -1448,10 +1470,10 @@ class DirectRefinementMapper(BaseMapper):
     def _refine(
         self,
         sentence: str,
-        constraint: List[str],
+        constraint: List[Rule],
         verification: Dict[str, Any],
         context: Dict[str, Any],
-    ) -> List[str]:
+    ) -> List[Rule]:
         """Refine constraint based on verification."""
         error = verification.get("error", "validation failed")
         predicates_list = "\n".join(
@@ -1475,7 +1497,11 @@ class DirectRefinementMapper(BaseMapper):
 
         try:
             parsed = json.loads(extract_json(response))
-            refined = _normalize_constraint_list(parsed.get("refined"))
+            has_new_rules = "refined_rules" in parsed
+            refined = _normalize_constraint_list(
+                parsed.get("refined_rules") if has_new_rules else parsed.get("refined"),
+                legacy=not has_new_rules,
+            )
             return refined if refined else constraint
         except Exception as e:
             print(f"-> Refinement parse error: {e}")

@@ -87,10 +87,30 @@ class DBExecutor:
         )
 
     def _build_column_type_map(self, df: pd.DataFrame) -> Dict[str, str]:
-        return {
+        inferred_types = {
             column_name: self._duckdb_type_for_series(df[column_name]) or "VARCHAR"
             for column_name in df.columns
         }
+        declared_types = df.attrs.get("declared_column_types", {})
+        for column_name, declared_type in declared_types.items():
+            if column_name in inferred_types:
+                inferred_types[column_name] = self._duckdb_type_for_declared_type(
+                    declared_type
+                )
+        return inferred_types
+
+    @staticmethod
+    def _duckdb_type_for_declared_type(declared_type: str) -> str:
+        normalized = str(declared_type).lower()
+        if normalized in {"int", "integer"}:
+            return "BIGINT"
+        if normalized in {"float", "double", "number", "numeric", "decimal"}:
+            return "DOUBLE"
+        if normalized in {"bool", "boolean"}:
+            return "BOOLEAN"
+        if normalized in {"date", "datetime", "timestamp"}:
+            return "TIMESTAMP"
+        return "VARCHAR"
 
     def _duckdb_type_for_series(self, series: pd.Series) -> Optional[str]:
         if is_bool_dtype(series):

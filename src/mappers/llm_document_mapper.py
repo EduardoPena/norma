@@ -3,6 +3,7 @@
 from typing import List, Dict, Any
 from src.llm.client import get_llm_client
 from src.llm.helper import PromptLoader, parse_json_response
+from src.predicates import Rule, normalize_rules
 
 
 class LLMDocumentMapper:
@@ -29,7 +30,7 @@ class LLMDocumentMapper:
         # Load from document_mapping category, not mapping
         self.prompt_template = loader.load("document_mapping", prompt_name)
 
-    def extract(self, sentences: List[str], context: Dict[str, Any]) -> List[List[str]]:
+    def extract(self, sentences: List[str], context: Dict[str, Any]) -> List[Rule]:
         """
         Extract all DCs from document.
 
@@ -67,7 +68,7 @@ class LLMDocumentMapper:
             predicates_list=predicates_list,
         )
 
-    def _parse_response(self, response: str) -> List[List[str]]:
+    def _parse_response(self, response: str) -> List[Rule]:
         """
         Parse response containing all DCs.
         Expected: [["pred1", "pred2"], ["pred3"], ...]
@@ -77,13 +78,7 @@ class LLMDocumentMapper:
             if parsed is None:
                 return []
 
-            # Validate each DC
-            dcs = []
-            for item in parsed:
-                if isinstance(item, list) and all(isinstance(p, str) for p in item):
-                    dcs.append(item)
-
-            return dcs
+            return normalize_rules(parsed) or []
         except Exception as e:
             print(f"Parse error: {e}")
             return []

@@ -57,6 +57,7 @@ from src.mappers.multi_step_refinement import MultiStepRefinementMapper
 from src.evaluation.mapping import MappingEvaluator
 from src.evaluation.classification import ClassificationEvaluator
 from src.llm.helper import PromptLoader
+from src.predicates import Rule, predicate_strings, transform_predicates
 
 _NA = "N/A"
 
@@ -70,7 +71,7 @@ def call_external_tool_single(
     sentence: str,
     context: Dict,
     config: Dict,
-) -> Optional[List[str]]:
+) -> Optional[List[Rule]]:
     """
     Call an external constraint extraction / Text2SQL tool for a single sentence.
 
@@ -87,7 +88,7 @@ def call_external_tool_single(
                    just adding keys to the YAML.
 
     Returns:
-        List[str]  — predicted predicates, e.g. ["age > 18", "status = 'active'"]
+        List[Rule] — independent predicted rules
         None       — if the sentence is not classified as a constraint
     """
     raise NotImplementedError(
@@ -634,7 +635,7 @@ class MapperEvalFullExperiment(BaseExperiment):
         sentences: List[str],
         context: Dict,
         mapper_config: Dict,
-    ) -> List[Tuple[str, bool, Optional[List[str]]]]:
+    ) -> List[Tuple[str, bool, Optional[List[Rule]]]]:
         results = []
         for i, sentence in enumerate(sentences, 1):
             if i % 10 == 0 or i == len(sentences):
@@ -723,6 +724,8 @@ class MapperEvalFullExperiment(BaseExperiment):
         return TableContextBuilder(sample_strategy="head", num_rows=num_rows).build(df)
 
     def _get_primary_csv_path(self, predicate_space: Dict) -> Optional[str]:
+        if predicate_space.get("_sample_rows") is not None:
+            return None
         table_files = predicate_space.get("_table_files") or {}
         if not table_files:
             return None
@@ -734,18 +737,19 @@ class MapperEvalFullExperiment(BaseExperiment):
 
     def _map_semantically_valid_constraint_predicates(
         self,
-        predictions: List[Tuple[str, Optional[List[str]]]],
-        sentence2dcs_map: Dict[str, List[str]],
-    ) -> List[Tuple[str, Optional[List[str]]]]:
+        predictions: List[Tuple[str, Optional[List[Rule]]]],
+        sentence2dcs_map: Dict[str, List[Rule]],
+    ) -> List[Tuple[str, Optional[List[Rule]]]]:
         mapped = []
         for sentence, pred_constraint in predictions:
             if pred_constraint is None or sentence not in sentence2dcs_map:
                 mapped.append((sentence, pred_constraint))
                 continue
-            gt_predicates = sentence2dcs_map[sentence]
-            normalized = [
-                self._match_to_gt_predicate(p, gt_predicates) for p in pred_constraint
-            ]
+            gt_predicates = predicate_strings(sentence2dcs_map[sentence])
+            normalized = transform_predicates(
+                pred_constraint,
+                lambda predicate: self._match_to_gt_predicate(predicate, gt_predicates),
+            )
             mapped.append((sentence, normalized))
         return mapped
 

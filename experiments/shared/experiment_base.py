@@ -7,41 +7,22 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 import pandas as pd
 
+from src.predicates import normalize_rules
+
 
 def _normalize_sentence_rules(
     rules: Any,
     *,
     drop_multi_rule_sentences: bool = False,
-) -> Optional[List[str]]:
-    """Adapt dataset ground truth to the single-rule-per-sentence format used by experiments."""
+) -> Any:
+    """Validate GT rules and convert only the legacy nested-list representation."""
     if rules is None:
         return None
 
-    if not isinstance(rules, list):
-        raise ValueError(
-            f"Invalid rules format: expected list or null, got {type(rules).__name__}"
-        )
-
-    if not rules:
+    normalized = normalize_rules(rules)
+    if drop_multi_rule_sentences and normalized and len(normalized) > 1:
         return None
-
-    if all(isinstance(pred, str) for pred in rules):
-        return rules
-
-    if (
-        len(rules) == 1
-        and isinstance(rules[0], list)
-        and all(isinstance(pred, str) for pred in rules[0])
-    ):
-        return rules[0]
-
-    if drop_multi_rule_sentences:
-        return None
-
-    raise ValueError(
-        "Experiments currently support at most one rule per sentence; "
-        f"got {len(rules)} rules"
-    )
+    return normalized
 
 
 class BaseExperiment:
@@ -107,7 +88,7 @@ class BaseExperiment:
         Returns:
             tuple: (df, sentences, sentence2dcs_map, predicate_space)
         """
-        from data.loader import DatasetLoader
+        from src.data import DatasetLoader
 
         data_dir = Path("data") / dataset_name
         if not data_dir.exists():
@@ -158,6 +139,7 @@ class BaseExperiment:
                 table_name: str(path) for table_name, path in loader.table_files.items()
             },
             "_stream_csv": dataset_options.get("stream_csv", False),
+            "_sample_rows": dataset_options.get("sample_rows"),
             "tables": [
                 {
                     "name": table_name,
