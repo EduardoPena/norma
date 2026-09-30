@@ -98,6 +98,14 @@ select_predicates: |
   needed to fully express the constraint as a denial constraint.
   Do not introduce columns outside the relevant columns list above.
 
+   SCOPING DISCIPLINE:
+   - Relevant columns are candidates, not mandatory conditions in the rule.
+   - Add a scope, exclusion, or status predicate ONLY when that condition is
+      explicitly stated in the sentence or is required by its explicit logic.
+   - Do NOT infer exclusions or scope from domain knowledge, nearby regulations,
+      or customary policy (for example, reverse mortgages, business purpose, or
+      product type) when the sentence does not state them.
+
   A denial constraint is a set of predicates that CANNOT all be true simultaneously —
   if they are, that tuple or pair of tuples is a violation. The goal here is to select
   the predicate templates that together will form that constraint. Some predicates are
@@ -165,7 +173,8 @@ select_predicates: |
   for scope columns, anchor columns, or based on column profiles showing nulls.
 
   KEY PRINCIPLES:
-  - Use ONLY predicates from the available list — do not invent new ones
+   - Use ONLY predicates from the available list — copy each selected template
+      exactly; do not change its operator or invent variants such as IN $values
   - Single-row constraints use only t1 (no t2 needed)
   - Cross-row constraints use both t1 and t2
   - For derived columns (days_to_*, consecutive_*, etc.) — USE THEM!

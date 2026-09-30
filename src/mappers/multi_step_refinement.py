@@ -256,12 +256,13 @@ class MultiStepRefinementMapper(BaseMapper):
         csv_path: Optional[str] = None,
         max_refinement_iterations: int = 2,
         violation_ratio_threshold: float = 0.2,
-        max_candidate_predicates: int = 5000,
+        max_candidate_predicates: int = 1000,
         prompt_file: str = "multi_step_refinement_less_restrict",
         chunk_size: Optional[int] = None,
+        max_tokens: Optional[int] = None,
     ):
         super().__init__(chunk_size=chunk_size)
-        self.llm = get_llm_client(model_name, provider=provider)
+        self.llm = get_llm_client(model_name, provider=provider, max_tokens=max_tokens)
         self.processing_errors: List[str] = []
         self.prompt_loader = PromptLoader()
         self.prompt_file = prompt_file
@@ -674,7 +675,9 @@ class MultiStepRefinementMapper(BaseMapper):
         """Step 3: Select predicates from allowed set."""
         relevant_columns = schema_analysis.get("relevant_columns", [])
 
-        candidate_predicates = self._filter_predicates_by_columns(relevant_columns)
+        candidate_predicates = self._filter_predicates_by_columns(
+            relevant_columns, sentence
+        )
 
         if not candidate_predicates:
             return {
@@ -683,7 +686,10 @@ class MultiStepRefinementMapper(BaseMapper):
                 "selected_predicates": [],
             }
 
-        predicates_desc = "\n".join([f"  - {p}" for p in sorted(candidate_predicates)])
+        print(
+            f"-> Step 3: Considering {len(candidate_predicates)} predicate candidates"
+        )
+        predicates_desc = "\n".join([f"  - {p}" for p in candidate_predicates])
         column_profiles_desc = self._format_column_profiles_for(relevant_columns)
 
         prompt_template = self.prompt_loader.load(self.prompt_file, "select_predicates")
@@ -708,10 +714,26 @@ class MultiStepRefinementMapper(BaseMapper):
             invalid_preds = [p for p in selected if p not in self.allowed_predicates]
 
             if invalid_preds:
-                parsed["is_valid"] = False
-                parsed["reason"] = (
-                    f"Invalid predicates (not in allowed set): {invalid_preds}"
+                print(
+                    "-> Step 3: Retrying selection with only the offered predicate templates"
                 )
+                retry_prompt = (
+                    f"{prompt}\n\n"
+                    "CORRECTION REQUIRED: Your prior selection included templates not "
+                    f"offered above: {invalid_preds}. Return corrected JSON now. "
+                    "Select only exact templates from Available predicates; omit a "
+                    "predicate when no offered template expresses it."
+                )
+                retry_response = self.llm.complete(retry_prompt)
+                parsed = json.loads(extract_json(retry_response))
+                selected = parsed.get("selected_predicates", [])
+                invalid_preds = [
+                    p for p in selected if p not in self.allowed_predicates
+                ]
+
+            if invalid_preds:
+                parsed["is_valid"] = False
+                parsed["reason"] = f"Invalid predicates (not in allowed set): {invalid_preds}"
 
             if not parsed.get("is_valid") and "reason" not in parsed:
                 parsed["reason"] = "unknown"
@@ -1224,7 +1246,9 @@ class MultiStepRefinementMapper(BaseMapper):
 
         return "\n".join(lines)
 
-    def _filter_predicates_by_columns(self, columns: List[str]) -> List[str]:
+    def _filter_predicates_by_columns(
+        self, columns: List[str], sentence: str = ""
+    ) -> List[str]:
         """Filter allowed predicates to those relevant for given columns."""
         if not columns or not self.allowed_predicates:
             return sorted(self.allowed_predicates)[: self.max_candidate_predicates]
@@ -1239,7 +1263,45 @@ class MultiStepRefinementMapper(BaseMapper):
         ]
 
         candidates = relevant if relevant else list(self.allowed_predicates)
-        return sorted(candidates)[: self.max_candidate_predicates]
+        sentence_tokens = set(re.findall(r"[a-z]+", sentence.lower()))
+        priority_columns = {
+            column
+            for column in selected_columns
+            if any(
+                part in sentence_tokens and len(part) >= 4 for part in column.split("_")
+            )
+        }
+
+        def has_arithmetic(predicate: str) -> bool:
+            return bool(re.search(r"\s[+*/%]\s", predicate))
+
+        simple = [
+            predicate
+            for predicate in candidates
+            if len(set(column_reference.findall(predicate))) == 1
+            and not has_arithmetic(predicate)
+        ]
+        simple_set = set(simple)
+
+        def relevance_rank(predicate: str) -> Tuple[int, int, bool, int, str]:
+            references = set(column_reference.findall(predicate))
+            outside_priority = len(references - priority_columns)
+            arithmetic_penalty = int(
+                has_arithmetic(predicate) and "percent" not in sentence_tokens
+            )
+            return (
+                outside_priority,
+                arithmetic_penalty,
+                "t2." in predicate,
+                len(references),
+                predicate,
+            )
+
+        ordered = sorted(simple) + sorted(
+            (predicate for predicate in candidates if predicate not in simple_set),
+            key=relevance_rank,
+        )
+        return ordered[: self.max_candidate_predicates]
 
     def _find_similar_columns(
         self, target: str, available: List[str], top_n: int = 3

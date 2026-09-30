@@ -7,6 +7,24 @@ import os
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 
+class EmptyModelContentError(RuntimeError):
+    """Raised when a provider returns a completion without usable content."""
+
+
+def _empty_content_error(response) -> EmptyModelContentError:
+    choice = response.choices[0]
+    usage = getattr(response, "usage", None)
+    completion_tokens = getattr(usage, "completion_tokens", None)
+    details = getattr(usage, "completion_tokens_details", None)
+    reasoning_tokens = getattr(details, "reasoning_tokens", None)
+    return EmptyModelContentError(
+        "Model returned empty content "
+        f"(finish_reason={choice.finish_reason!r}, "
+        f"completion_tokens={completion_tokens}, "
+        f"reasoning_tokens={reasoning_tokens})"
+    )
+
+
 def _extract_openai_compatible_text(response) -> str:
     """Extract text safely from OpenAI-compatible chat responses."""
     message = response.choices[0].message
@@ -37,7 +55,7 @@ def _extract_openai_compatible_text(response) -> str:
     if isinstance(refusal, str) and refusal.strip():
         return refusal.strip()
 
-    raise RuntimeError("Model returned empty content")
+    raise _empty_content_error(response)
 
 
 class LLMClient(ABC):
@@ -175,7 +193,7 @@ class GroqClient(LLMClient):
 class OpenRouterClient(LLMClient):
     """OpenRouter client using the OpenAI-compatible API."""
 
-    def __init__(self, api_key: str, model_name: str):
+    def __init__(self, api_key: str, model_name: str, max_tokens: Optional[int] = None):
         from openai import OpenAI
 
         self.client = OpenAI(
@@ -183,16 +201,28 @@ class OpenRouterClient(LLMClient):
             base_url=OPENROUTER_BASE_URL,
         )
         self.model_name = model_name
+        self.max_tokens = max_tokens
         self.temperature = 1 if model_name.startswith("gpt-5") else 0.0
 
     def complete(self, prompt: str) -> str:
         try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=self.temperature,
-            )
-            return _extract_openai_compatible_text(response)
+            request = {
+                "model": self.model_name,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": self.temperature,
+            }
+            if self.max_tokens is not None:
+                request["max_tokens"] = self.max_tokens
+            for attempt in range(3):
+                response = self.client.chat.completions.create(**request)
+                try:
+                    return _extract_openai_compatible_text(response)
+                except EmptyModelContentError as error:
+                    if attempt == 2:
+                        raise
+                    print(
+                        f"OpenRouter returned empty content; retrying completion: {error}"
+                    )
         except Exception as e:
             raise RuntimeError(f"OpenRouter API error: {e}") from e
 
@@ -216,16 +246,21 @@ def _normalize_openrouter_model_name(model_name: str) -> str:
     return model_name
 
 
-def _get_openrouter_client(model_name: str) -> OpenRouterClient:
+def _get_openrouter_client(
+    model_name: str, max_tokens: Optional[int] = None
+) -> OpenRouterClient:
     api_key = _get_required_api_key("OPENROUTER_API_KEY")
     return OpenRouterClient(
         api_key=api_key,
         model_name=_normalize_openrouter_model_name(model_name),
+        max_tokens=max_tokens,
     )
 
 
 def get_llm_client(
-    model_name: str = "gpt-5-mini", provider: Optional[str] = None
+    model_name: str = "gpt-5-mini",
+    provider: Optional[str] = None,
+    max_tokens: Optional[int] = None,
 ) -> LLMClient:
     """
     Factory to create LLM clients based on model name
@@ -244,7 +279,7 @@ def get_llm_client(
     provider = provider.lower() if provider else None
 
     if provider == "openrouter" or _is_openrouter_model(model_name):
-        return _get_openrouter_client(model_name)
+        return _get_openrouter_client(model_name, max_tokens=max_tokens)
 
     if provider == "openai":
         return OpenAIClient(
@@ -310,7 +345,7 @@ def get_llm_client(
         )
 
     if os.getenv("OPENROUTER_API_KEY"):
-        return _get_openrouter_client(model_name)
+        return _get_openrouter_client(model_name, max_tokens=max_tokens)
 
     raise ValueError(
         f"Unknown model: {model_name}. Set OPENROUTER_API_KEY to route arbitrary models via OpenRouter."

@@ -434,6 +434,7 @@ class MapperGTOnlyExperiment(BaseExperiment):
                     "max_refinement_iterations", 2
                 ),
                 prompt_file=mapper_config.get("prompt_file", "multi_step_refinement"),
+                max_tokens=mapper_config.get("max_tokens"),
             )
         else:
             raise ValueError(f"Unknown mapper implementation: {implementation}")
