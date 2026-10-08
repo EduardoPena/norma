@@ -182,6 +182,8 @@ class _PredicateParser:
             right: Optional[Union[Expression, tuple[Constant, ...]]] = None
         elif operator in {"IN", "NOT IN"}:
             right = self.parse_constant_list()
+        elif operator in {"LIKE", "NOT LIKE"}:
+            right = self.parse_pattern()
         else:
             right = self.parse_expression()
 
@@ -203,14 +205,13 @@ class _PredicateParser:
         if token.kind == "PREDICATE_OP" and token.value in _COMPARISON_OPERATORS:
             self.advance()
             return token.value
-        if token.kind == "WORD" and token.value == "IN":
+        if token.kind == "WORD" and token.value in {"IN", "LIKE"}:
             self.advance()
-            return "IN"
+            return token.value
         if token.kind == "WORD" and token.value == "NOT":
             self.advance()
-            if self.current.kind == "WORD" and self.current.value == "IN":
-                self.advance()
-                return "NOT IN"
+            if self.current.kind == "WORD" and self.current.value in {"IN", "LIKE"}:
+                return f"NOT {self.advance().value}"
         if token.kind == "WORD" and token.value == "IS":
             self.advance()
             if self.current.kind == "WORD" and self.current.value == "NOT":
@@ -239,6 +240,12 @@ class _PredicateParser:
             raise RuleValidationError("Unbalanced parentheses in constant list")
         self.advance()
         return tuple(values)
+
+    def parse_pattern(self) -> Constant:
+        """LIKE / NOT LIKE take a single SQL pattern string (paper §2, pattern predicates)."""
+        if self.current.kind != "STRING":
+            raise RuleValidationError("LIKE and NOT LIKE require a quoted pattern string")
+        return Constant(self.advance().value, is_text=True)
 
     def parse_constant(self) -> Constant:
         negative = False
@@ -317,7 +324,7 @@ class _PredicateParser:
 
     def _is_predicate_operator_start(self) -> bool:
         return self.current.kind == "PREDICATE_OP" or (
-            self.current.kind == "WORD" and self.current.value in {"IN", "NOT", "IS"}
+            self.current.kind == "WORD" and self.current.value in {"IN", "NOT", "IS", "LIKE"}
         )
 
 

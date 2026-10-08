@@ -26,6 +26,8 @@ class PredicateSpaceBuilder:
         cross_column_overlap: float = 0.3,
         min_distinct_for_cross: int = 3,
         enable_same_type_comparisons: bool = True,
+        mirror_second_tuple: bool = False,
+        numeric_range_overlap: Optional[float] = None,
     ):
         """
         Args:
@@ -34,12 +36,21 @@ class PredicateSpaceBuilder:
             cross_column_overlap: Min overlap ratio to consider columns joinable.
             min_distinct_for_cross: Min distinct values to consider cross-column (avoids binary).
             enable_same_type_comparisons: Allow comparisons between same-type columns (dates, timestamps, etc.) without overlap requirement.
+            mirror_second_tuple: Also emit single-column templates (constants, nulls,
+                patterns, sets) for the second tuple, so pair DCs can constrain t2
+                (e.g. t2.edition = $int).
+            numeric_range_overlap: If set, also compare numeric columns of the same
+                tuple whose value ranges overlap by at least this fraction of the
+                smaller range (e.g. salary vs. exemption amounts), which exact-value
+                overlap misses.
         """
         self.table_alias = table_alias
         self.categorical_threshold = categorical_threshold
         self.cross_column_overlap = cross_column_overlap
         self.min_distinct_for_cross = min_distinct_for_cross
         self.enable_same_type_comparisons = enable_same_type_comparisons
+        self.mirror_second_tuple = mirror_second_tuple
+        self.numeric_range_overlap = numeric_range_overlap
         self.t1 = f"{table_alias}1"
         self.t2 = f"{table_alias}2"
 
@@ -135,7 +146,40 @@ class PredicateSpaceBuilder:
 
         # Cross-column predicates (same tuple, different columns)
         predicates.update(self._build_cross_column_predicates(df))
+        if self.numeric_range_overlap is not None:
+            predicates.update(self._build_numeric_range_predicates(df))
 
+        if self.mirror_second_tuple:
+            # Single-column templates only (constants, nulls, patterns, sets)
+            predicates.update(
+                p.replace(f"{self.t1}.", f"{self.t2}.")
+                for p in list(predicates)
+                if f"{self.t2}." not in p and p.count(f"{self.t1}.") == 1
+            )
+
+        return predicates
+
+    def _build_numeric_range_predicates(self, df: pd.DataFrame) -> Set[str]:
+        """Same-tuple comparisons between numeric columns with overlapping value ranges."""
+        predicates = set()
+        numeric = [
+            col
+            for col in df.columns
+            if is_numeric_dtype(df[col])
+            and df[col].dropna().nunique() >= self.min_distinct_for_cross
+        ]
+        for i, col1 in enumerate(numeric):
+            for col2 in numeric[i + 1 :]:
+                low = max(df[col1].min(), df[col2].min())
+                high = min(df[col1].max(), df[col2].max())
+                span = min(
+                    df[col1].max() - df[col1].min(), df[col2].max() - df[col2].min()
+                )
+                if span <= 0 or (high - low) / span < self.numeric_range_overlap:
+                    continue
+                for op in ["=", "!=", "<", ">", "<=", ">="]:
+                    predicates.add(f"{self.t1}.{col1} {op} {self.t1}.{col2}")
+                    predicates.add(f"{self.t1}.{col2} {op} {self.t1}.{col1}")
         return predicates
 
     def _get_column_overlap(self, df: pd.DataFrame, col1: str, col2: str) -> float:
