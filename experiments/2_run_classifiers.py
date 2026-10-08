@@ -171,6 +171,7 @@ class ClassifierExperiment(BaseExperiment):
                         "false_positives": result.false_positives,
                         "true_negatives": result.true_negatives,
                         "false_negatives": result.false_negatives,
+                        "model_output_failures": self.last_output_failures,
                         "status": "success",
                     }
                 )
@@ -265,6 +266,7 @@ class ClassifierExperiment(BaseExperiment):
         # Get predictions
         print(f"  Classifying {len(sentences)} sentences...")
         sentence_predictions = classifier.classify(sentences, context=context)
+        self.last_output_failures = len(getattr(classifier, "output_failures", []))
 
         # Format predictions for evaluator (list of tuples)
         predictions = sentence_predictions
@@ -345,6 +347,7 @@ class ClassifierExperiment(BaseExperiment):
                 provider=variant.get("provider"),
                 prompt_template=prompt_template,
                 chunk_size=variant.get("batch_size", 20),
+                structured_output=variant.get("structured_output", True),
             )
 
         elif implementation == "rag":

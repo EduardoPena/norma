@@ -8,10 +8,10 @@ zero_shot: |
   Instructions:
   1. Use t1. and t2. as tuple identifiers
   2. Extract concrete values from the sentence (replace $int, $string, etc.)
-  3. For SINGLE sentence: Return a list of independent rules or null; use explicit AND/OR nodes to combine predicates
-  4. For MULTIPLE sentences: Return [result1, result2, ...], where each result is a rules list or null
-  5. CRITICAL: Output array length MUST equal input sentence count - use null for non-constraints
-  6. Output ONLY the JSON array - no explanations, no markdown labels, no extra text
+  3. Return ONLY a JSON object: {{"results": [{{"id": <sentence number>, "rules": <rules list or null>}}, ...]}}
+  4. Each "rules" value is a list of independent rules or null; use explicit AND/OR nodes to combine predicates
+  5. CRITICAL: Include exactly one result for EACH input sentence, with "id" equal to the sentence number - use "rules": null for non-constraints
+  6. No explanations, no markdown labels, no extra text
 
   Predicate Format:
   - Single-tuple: t1.field_name OPERATOR constant OR t1.field_name OPERATOR t1.field_name2
@@ -23,17 +23,17 @@ zero_shot: |
 
   Single sentence:
   Input: "Records with same ID must have same status"
-  Output: [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]
+  Output: {{"results": [{{"id": 1, "rules": [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]}}]}}
 
   Input: "Users generally prefer the system"
-  Output: null
+  Output: {{"results": [{{"id": 1, "rules": null}}]}}
 
   Multiple sentences (3 inputs = 3 outputs):
   Input:
   1. Value must be at least 100
   2. Users generally prefer the system
   3. Email is required
-  Output: [["t1.value < 100"], null, ["t1.email IS NULL"]]
+  Output: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}, {{"id": 2, "rules": null}}, {{"id": 3, "rules": ["t1.email IS NULL"]}}]}}
 
   Available predicates:
   {predicates_list}
@@ -55,10 +55,10 @@ zero_shot_with_table: |
   1. Use t1. and t2. as tuple identifiers
   2. Map sentence terms to table columns
   3. Extract concrete values from the sentence (replace $int, $string, etc.)
-  4. For SINGLE sentence: Return a list of independent rules or null; use explicit AND/OR nodes to combine predicates
-  5. For MULTIPLE sentences: Return [result1, result2, ...], where each result is a rules list or null
-  6. CRITICAL: Output array length MUST equal input sentence count - use null for non-constraints
-  7. Output ONLY the JSON array - no explanations, no markdown labels, no extra text
+  4. Return ONLY a JSON object: {{"results": [{{"id": <sentence number>, "rules": <rules list or null>}}, ...]}}
+  5. Each "rules" value is a list of independent rules or null; use explicit AND/OR nodes to combine predicates
+  6. CRITICAL: Include exactly one result for EACH input sentence, with "id" equal to the sentence number - use "rules": null for non-constraints
+  7. No explanations, no markdown labels, no extra text
 
   Predicate Format:
   - Single-tuple: t1.field_name OPERATOR constant OR t1.field_name OPERATOR t1.field_name2
@@ -70,10 +70,10 @@ zero_shot_with_table: |
 
   Single sentence:
   Input: "Value must be at least 100"
-  Output: ["t1.value < 100"]
+  Output: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}]}}
 
   Input: "This is a general comment"
-  Output: null
+  Output: {{"results": [{{"id": 1, "rules": null}}]}}
 
   Multiple sentences (4 inputs = 4 outputs):
   Input:
@@ -81,7 +81,7 @@ zero_shot_with_table: |
   2. Category must be A or B
   3. The system is working well
   4. Email is required
-  Output: [["t1.value < 100"], ["t1.category NOT IN ('A', 'B')"], null, ["t1.email IS NULL"]]
+  Output: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}, {{"id": 2, "rules": ["t1.category NOT IN ('A', 'B')"]}}, {{"id": 3, "rules": null}}, {{"id": 4, "rules": ["t1.email IS NULL"]}}]}}
 
   Available predicates:
   {predicates_list}
@@ -100,10 +100,10 @@ with_examples: |
   1. Use t1. and t2. as tuple identifiers
   2. Apply denial semantics: "must be X" means violation when "!= X"
   3. Extract concrete values from the sentence (replace $int, $string, $values with actual values)
-  4. For SINGLE sentence: Return a list of independent rules or null; use explicit AND/OR nodes to combine predicates
-  5. For MULTIPLE sentences: Return [result1, result2, ...], where each result is a rules list or null
-  6. CRITICAL: Output array length MUST equal input sentence count - use null for non-constraints
-  7. Output ONLY the JSON array - no explanations, no markdown labels, no extra text
+  4. Return ONLY a JSON object: {{"results": [{{"id": <sentence number>, "rules": <rules list or null>}}, ...]}}
+  5. Each "rules" value is a list of independent rules or null; use explicit AND/OR nodes to combine predicates
+  6. CRITICAL: Include exactly one result for EACH input sentence, with "id" equal to the sentence number - use "rules": null for non-constraints
+  7. No explanations, no markdown labels, no extra text
 
   Predicate Format:
   - Single-tuple: t1.field_name OPERATOR constant OR t1.field_name OPERATOR t1.field_name2
@@ -119,27 +119,27 @@ with_examples: |
   Example 1 - Threshold constraint:
   Input: "Value must be at least 100"
   Analysis: Violation occurs when value < 100
-  Output: ["t1.value < 100"]
+  Output: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}]}}
 
   Example 2 - Cross-tuple consistency:
   Input: "Records with same ID must have same status"
   Analysis: Same ID + different status = violation
-  Output: [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]
+  Output: {{"results": [{{"id": 1, "rules": [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]}}]}}
 
   Example 3 - Field comparison:
   Input: "Start date must be before end date"
   Analysis: Violation when start_date >= end_date
-  Output: ["t1.start_date >= t1.end_date"]
+  Output: {{"results": [{{"id": 1, "rules": ["t1.start_date >= t1.end_date"]}}]}}
 
   Example 4 - Required field:
   Input: "Email is required"
   Analysis: Violation when email is null
-  Output: ["t1.email IS NULL"]
+  Output: {{"results": [{{"id": 1, "rules": ["t1.email IS NULL"]}}]}}
 
   Example 5 - Not a constraint:
   Input: "Users generally prefer the new system"
   Analysis: This is a preference, not an enforceable constraint
-  Output: null
+  Output: {{"results": [{{"id": 1, "rules": null}}]}}
 
   Example 6 - Multiple sentences (5 inputs = 5 outputs):
   Input:
@@ -148,7 +148,7 @@ with_examples: |
   3. Users generally prefer the new system
   4. Email is required
   5. The database is fast
-  Output: [["t1.value < 100"], ["t1.id = t2.id", "t1.status != t2.status"], null, ["t1.email IS NULL"], null]
+  Output: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}, {{"id": 2, "rules": [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]}}, {{"id": 3, "rules": null}}, {{"id": 4, "rules": ["t1.email IS NULL"]}}, {{"id": 5, "rules": null}}]}}
 
   Available predicates:
   {predicates_list}
@@ -171,10 +171,10 @@ with_examples_and_table: |
   2. Map sentence terms to table columns
   3. Apply denial semantics: "must be X" means violation when "!= X"
   4. Extract concrete values from the sentence (replace $int, $string, $values with actual values)
-  5. For SINGLE sentence: Return a list of independent rules or null; use explicit AND/OR nodes to combine predicates
-  6. For MULTIPLE sentences: Return [result1, result2, ...], where each result is a rules list or null
-  7. CRITICAL: Output array length MUST equal input sentence count - use null for non-constraints
-  8. Output ONLY the JSON array - no explanations, no markdown labels, no extra text
+  5. Return ONLY a JSON object: {{"results": [{{"id": <sentence number>, "rules": <rules list or null>}}, ...]}}
+  6. Each "rules" value is a list of independent rules or null; use explicit AND/OR nodes to combine predicates
+  7. CRITICAL: Include exactly one result for EACH input sentence, with "id" equal to the sentence number - use "rules": null for non-constraints
+  8. No explanations, no markdown labels, no extra text
 
   Predicate Format:
   - Single-tuple: t1.field_name OPERATOR constant OR t1.field_name OPERATOR t1.field_name2
@@ -189,27 +189,27 @@ with_examples_and_table: |
 
   Example 1 - Threshold constraint:
   Input: "Value must be at least 100"
-  Output: ["t1.value < 100"]
+  Output: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}]}}
 
   Example 2 - Set membership:
   Input: "Category must be A, B, or C"
-  Output: ["t1.category NOT IN ('A', 'B', 'C')"]
+  Output: {{"results": [{{"id": 1, "rules": ["t1.category NOT IN ('A', 'B', 'C')"]}}]}}
 
   Example 3 - Cross-tuple consistency:
   Input: "Records with same ID must have same status"
-  Output: [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]
+  Output: {{"results": [{{"id": 1, "rules": [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]}}]}}
 
   Example 4 - Field comparison:
   Input: "Start date must be before end date"
-  Output: ["t1.start_date >= t1.end_date"]
+  Output: {{"results": [{{"id": 1, "rules": ["t1.start_date >= t1.end_date"]}}]}}
 
   Example 5 - Required field:
   Input: "Name cannot be empty"
-  Output: ["t1.name IS NULL"]
+  Output: {{"results": [{{"id": 1, "rules": ["t1.name IS NULL"]}}]}}
 
   Example 6 - Not a constraint:
   Input: "The system performs well"
-  Output: null
+  Output: {{"results": [{{"id": 1, "rules": null}}]}}
 
   Example 7 - Multiple sentences (6 inputs = 6 outputs):
   Input:
@@ -219,7 +219,7 @@ with_examples_and_table: |
   4. Records with same ID must have same status
   5. General observation about data
   6. Name cannot be empty
-  Output: [["t1.value < 100"], ["t1.category NOT IN ('A', 'B', 'C')"], null, ["t1.id = t2.id", "t1.status != t2.status"], null, ["t1.name IS NULL"]]
+  Output: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}, {{"id": 2, "rules": ["t1.category NOT IN ('A', 'B', 'C')"]}}, {{"id": 3, "rules": null}}, {{"id": 4, "rules": [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]}}, {{"id": 5, "rules": null}}, {{"id": 6, "rules": ["t1.name IS NULL"]}}]}}
 
   Available predicates:
   {predicates_list}
@@ -241,10 +241,10 @@ zero_shot_pt: |
   Instruções:
   1. Use t1. e t2. como identificadores de tupla
   2. Extraia valores concretos da sentença (substitua $int, $string, etc.)
-  3. Para UMA sentença: retorne uma lista de regras independentes ou null; use nós AND/OR explícitos para combinar predicados
-  4. Para MÚLTIPLAS sentenças: retorne [resultado1, resultado2, ...], sendo cada resultado uma lista de regras ou null
-  5. CRÍTICO: O tamanho do array de saída DEVE ser igual ao número de sentenças de entrada - use null para não-restrições
-  6. Produza APENAS o array JSON - sem explicações, sem rótulos markdown, sem texto extra
+  3. Retorne APENAS um objeto JSON: {{"results": [{{"id": <número da sentença>, "rules": <lista de regras ou null>}}, ...]}}
+  4. Cada valor de "rules" é uma lista de regras independentes ou null; use nós AND/OR explícitos para combinar predicados
+  5. CRÍTICO: Inclua exatamente um resultado para CADA sentença de entrada, com "id" igual ao número da sentença - use "rules": null para não-restrições
+  6. Sem explicações, sem rótulos markdown, sem texto extra
 
   Formato de Predicado:
   - Tupla única: t1.nome_campo OPERADOR constante OU t1.nome_campo OPERADOR t1.nome_campo2
@@ -256,17 +256,17 @@ zero_shot_pt: |
 
   Sentença única:
   Entrada: "Registros com mesmo ID devem ter mesmo status"
-  Saída: [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]
+  Saída: {{"results": [{{"id": 1, "rules": [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]}}]}}
 
   Entrada: "Usuários geralmente preferem o sistema"
-  Saída: null
+  Saída: {{"results": [{{"id": 1, "rules": null}}]}}
 
   Múltiplas sentenças (3 entradas = 3 saídas):
   Entrada:
   1. Valor deve ser no mínimo 100
   2. Usuários geralmente preferem o sistema
   3. Email é obrigatório
-  Saída: [["t1.value < 100"], null, ["t1.email IS NULL"]]
+  Saída: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}, {{"id": 2, "rules": null}}, {{"id": 3, "rules": ["t1.email IS NULL"]}}]}}
 
   Predicados disponíveis:
   {predicates_list}
@@ -288,10 +288,10 @@ zero_shot_with_table_pt: |
   1. Use t1. e t2. como identificadores de tupla
   2. Mapeie termos da sentença para colunas da tabela
   3. Extraia valores concretos da sentença (substitua $int, $string, etc.)
-  4. Para UMA sentença: retorne uma lista de regras independentes ou null; use nós AND/OR explícitos para combinar predicados
-  5. Para MÚLTIPLAS sentenças: retorne [resultado1, resultado2, ...], sendo cada resultado uma lista de regras ou null
-  6. CRÍTICO: O tamanho do array de saída DEVE ser igual ao número de sentenças de entrada - use null para não-restrições
-  7. Produza APENAS o array JSON - sem explicações, sem rótulos markdown, sem texto extra
+  4. Retorne APENAS um objeto JSON: {{"results": [{{"id": <número da sentença>, "rules": <lista de regras ou null>}}, ...]}}
+  5. Cada valor de "rules" é uma lista de regras independentes ou null; use nós AND/OR explícitos para combinar predicados
+  6. CRÍTICO: Inclua exatamente um resultado para CADA sentença de entrada, com "id" igual ao número da sentença - use "rules": null para não-restrições
+  7. Sem explicações, sem rótulos markdown, sem texto extra
 
   Formato de Predicado:
   - Tupla única: t1.nome_campo OPERADOR constante OU t1.nome_campo OPERADOR t1.nome_campo2
@@ -303,10 +303,10 @@ zero_shot_with_table_pt: |
 
   Sentença única:
   Entrada: "Valor deve ser no mínimo 100"
-  Saída: ["t1.value < 100"]
+  Saída: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}]}}
 
   Entrada: "Este é um comentário geral"
-  Saída: null
+  Saída: {{"results": [{{"id": 1, "rules": null}}]}}
 
   Múltiplas sentenças (4 entradas = 4 saídas):
   Entrada:
@@ -314,7 +314,7 @@ zero_shot_with_table_pt: |
   2. Categoria deve ser A ou B
   3. O sistema está funcionando bem
   4. Email é obrigatório
-  Saída: [["t1.value < 100"], ["t1.category NOT IN ('A', 'B')"], null, ["t1.email IS NULL"]]
+  Saída: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}, {{"id": 2, "rules": ["t1.category NOT IN ('A', 'B')"]}}, {{"id": 3, "rules": null}}, {{"id": 4, "rules": ["t1.email IS NULL"]}}]}}
 
   Predicados disponíveis:
   {predicates_list}
@@ -333,10 +333,10 @@ with_examples_pt: |
   1. Use t1. e t2. como identificadores de tupla
   2. Aplique semântica de negação: "deve ser X" significa violação quando "!= X"
   3. Extraia valores concretos da sentença (substitua $int, $string, $values com valores reais)
-  4. Para UMA sentença: retorne uma lista de regras independentes ou null; use nós AND/OR explícitos para combinar predicados
-  5. Para MÚLTIPLAS sentenças: retorne [resultado1, resultado2, ...], sendo cada resultado uma lista de regras ou null
-  6. CRÍTICO: O tamanho do array de saída DEVE ser igual ao número de sentenças de entrada - use null para não-restrições
-  7. Produza APENAS o array JSON - sem explicações, sem rótulos markdown, sem texto extra
+  4. Retorne APENAS um objeto JSON: {{"results": [{{"id": <número da sentença>, "rules": <lista de regras ou null>}}, ...]}}
+  5. Cada valor de "rules" é uma lista de regras independentes ou null; use nós AND/OR explícitos para combinar predicados
+  6. CRÍTICO: Inclua exatamente um resultado para CADA sentença de entrada, com "id" igual ao número da sentença - use "rules": null para não-restrições
+  7. Sem explicações, sem rótulos markdown, sem texto extra
 
   Formato de Predicado:
   - Tupla única: t1.nome_campo OPERADOR constante OU t1.nome_campo OPERADOR t1.nome_campo2
@@ -352,27 +352,27 @@ with_examples_pt: |
   Exemplo 1 - Restrição de limiar:
   Entrada: "Valor deve ser no mínimo 100"
   Análise: Violação ocorre quando value < 100
-  Saída: ["t1.value < 100"]
+  Saída: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}]}}
 
   Exemplo 2 - Consistência entre tuplas:
   Entrada: "Registros com mesmo ID devem ter mesmo status"
   Análise: Mesmo ID + status diferente = violação
-  Saída: [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]
+  Saída: {{"results": [{{"id": 1, "rules": [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]}}]}}
 
   Exemplo 3 - Comparação entre campos:
   Entrada: "Data de início deve ser anterior à data de término"
   Análise: Violação quando start_date >= end_date
-  Saída: ["t1.start_date >= t1.end_date"]
+  Saída: {{"results": [{{"id": 1, "rules": ["t1.start_date >= t1.end_date"]}}]}}
 
   Exemplo 4 - Campo obrigatório:
   Entrada: "Email é obrigatório"
   Análise: Violação quando email é nulo
-  Saída: ["t1.email IS NULL"]
+  Saída: {{"results": [{{"id": 1, "rules": ["t1.email IS NULL"]}}]}}
 
   Exemplo 5 - Não é uma restrição:
   Entrada: "Usuários geralmente preferem o novo sistema"
   Análise: Isto é uma preferência, não uma restrição aplicável
-  Saída: null
+  Saída: {{"results": [{{"id": 1, "rules": null}}]}}
 
   Exemplo 6 - Múltiplas sentenças (5 entradas = 5 saídas):
   Entrada:
@@ -381,7 +381,7 @@ with_examples_pt: |
   3. Usuários geralmente preferem o novo sistema
   4. Email é obrigatório
   5. O banco de dados é rápido
-  Saída: [["t1.value < 100"], [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}], null, ["t1.email IS NULL"], null]
+  Saída: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}, {{"id": 2, "rules": [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]}}, {{"id": 3, "rules": null}}, {{"id": 4, "rules": ["t1.email IS NULL"]}}, {{"id": 5, "rules": null}}]}}
 
   Predicados disponíveis:
   {predicates_list}
@@ -404,10 +404,10 @@ with_examples_and_table_pt: |
   2. Mapeie termos da sentença para colunas da tabela
   3. Aplique semântica de negação: "deve ser X" significa violação quando "!= X"
   4. Extraia valores concretos da sentença (substitua $int, $string, $values com valores reais)
-  5. Para UMA sentença: retorne uma lista de regras independentes ou null; use nós AND/OR explícitos para combinar predicados
-  6. Para MÚLTIPLAS sentenças: retorne [resultado1, resultado2, ...], sendo cada resultado uma lista de regras ou null
-  7. CRÍTICO: O tamanho do array de saída DEVE ser igual ao número de sentenças de entrada - use null para não-restrições
-  8. Produza APENAS o array JSON - sem explicações, sem rótulos markdown, sem texto extra
+  5. Retorne APENAS um objeto JSON: {{"results": [{{"id": <número da sentença>, "rules": <lista de regras ou null>}}, ...]}}
+  6. Cada valor de "rules" é uma lista de regras independentes ou null; use nós AND/OR explícitos para combinar predicados
+  7. CRÍTICO: Inclua exatamente um resultado para CADA sentença de entrada, com "id" igual ao número da sentença - use "rules": null para não-restrições
+  8. Sem explicações, sem rótulos markdown, sem texto extra
 
   Formato de Predicado:
   - Tupla única: t1.nome_campo OPERADOR constante OU t1.nome_campo OPERADOR t1.nome_campo2
@@ -422,27 +422,27 @@ with_examples_and_table_pt: |
 
   Exemplo 1 - Restrição de limiar:
   Entrada: "Valor deve ser no mínimo 100"
-  Saída: ["t1.value < 100"]
+  Saída: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}]}}
 
   Exemplo 2 - Pertencimento a conjunto:
   Entrada: "Categoria deve ser A, B ou C"
-  Saída: ["t1.category NOT IN ('A', 'B', 'C')"]
+  Saída: {{"results": [{{"id": 1, "rules": ["t1.category NOT IN ('A', 'B', 'C')"]}}]}}
 
   Exemplo 3 - Consistência entre tuplas:
   Entrada: "Registros com mesmo ID devem ter mesmo status"
-  Saída: ["t1.id = t2.id", "t1.status != t2.status"]
+  Saída: {{"results": [{{"id": 1, "rules": [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]}}]}}
 
   Exemplo 4 - Comparação entre campos:
   Entrada: "Data de início deve ser anterior à data de término"
-  Saída: ["t1.start_date >= t1.end_date"]
+  Saída: {{"results": [{{"id": 1, "rules": ["t1.start_date >= t1.end_date"]}}]}}
 
   Exemplo 5 - Campo obrigatório:
   Entrada: "Nome não pode estar vazio"
-  Saída: ["t1.name IS NULL"]
+  Saída: {{"results": [{{"id": 1, "rules": ["t1.name IS NULL"]}}]}}
 
   Exemplo 6 - Não é uma restrição:
   Entrada: "O sistema funciona bem"
-  Saída: null
+  Saída: {{"results": [{{"id": 1, "rules": null}}]}}
 
   Exemplo 7 - Múltiplas sentenças (6 entradas = 6 saídas):
   Entrada:
@@ -452,7 +452,7 @@ with_examples_and_table_pt: |
   4. Registros com mesmo ID devem ter mesmo status
   5. Observação geral sobre os dados
   6. Nome não pode estar vazio
-  Saída: [["t1.value < 100"], ["t1.category NOT IN ('A', 'B', 'C')"], null, ["t1.id = t2.id", "t1.status != t2.status"], null, ["t1.name IS NULL"]]
+  Saída: {{"results": [{{"id": 1, "rules": ["t1.value < 100"]}}, {{"id": 2, "rules": ["t1.category NOT IN ('A', 'B', 'C')"]}}, {{"id": 3, "rules": null}}, {{"id": 4, "rules": [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]}}, {{"id": 5, "rules": null}}, {{"id": 6, "rules": ["t1.name IS NULL"]}}]}}
 
   Predicados disponíveis:
   {predicates_list}

@@ -3,10 +3,10 @@
         "_comments": "Ground truth mapping between natural language sentences and denial constraint rules",
         "structure": {
             "sentences": "Array of related sentences (current datasets are 1-to-1, future: many-to-one or one-to-many)",
-            "rules": "Array of independent rules. Each rule is a predicate string or an explicit AND/OR expression. null if no valid rule exists",
+            "rules": "Array of rules, each rule is an array of predicates. null if no valid rule exists. Predicates within a rule are order-independent (conjunction)",
             "future_examples": {
-                "multiple_sentences_one_rule": "sentences: ['sent1', 'sent2'], rules: [{'AND': [pred1, pred2]}]",
-                "one_sentence_multiple_rules": "sentences: ['sent1'], rules: [pred1, {'AND': [pred2, pred3]}]"
+                "multiple_sentences_one_rule": "sentences: ['sent1', 'sent2'], rules: [[pred1, pred2]]",
+                "one_sentence_multiple_rules": "sentences: ['sent1'], rules: [[pred1], [pred2, pred3]]"
             }
         }
     },
@@ -19,7 +19,7 @@
             "is_dq_rule": false,
             "is_applicable_dq_rule": false,
             "rules": null,
-            "_comment": "Closings and Re-openings section"
+            "_comment": "Closings and Re-openings section. we cannot check if the hazard cannot be corrected before the end of an inspection, nor about the validity of the permit, so we cannot create a rule for this sentence"
         },
         {
             "id": 2,
@@ -28,14 +28,7 @@
             ],
             "is_dq_rule": true,
             "is_applicable_dq_rule": true,
-            "rules": [
-                {
-                    "AND": [
-                        "r1.consecutive_high_scores >= 3",
-                        "r1.action NOT LIKE '%Closed by DOHMH%'"
-                    ]
-                }
-            ],
+            "rules":  null,
             "_comment": "Detects restaurants with 3+ consecutive high scores that are NOT closed"
         },
         {
@@ -56,7 +49,7 @@
             "is_dq_rule": false,
             "is_applicable_dq_rule": false,
             "rules": null,
-            "_comment": "Closings and Re-openings section"
+            "_comment": "Closings and Re-openings section. TODO this might be mapable, but there is no way we can check about the closure signs"
         },
         {
             "id": 5,
@@ -186,13 +179,11 @@
             "is_dq_rule": true,
             "is_applicable_dq_rule": true,
             "rules": [
-                {
-                    "AND": [
-                        "r1.score >= 0",
-                        "r1.score <= 13",
-                        "r1.grade != 'A'"
-                    ]
-                }
+                [
+                    "t1.score >= 0",
+                    "t1.score <= 13",
+                    "t1.grade != 'A'"
+                ]
             ],
             "_comment": "Score 0-13 must have grade A"
         },
@@ -204,13 +195,11 @@
             "is_dq_rule": true,
             "is_applicable_dq_rule": true,
             "rules": [
-                {
-                    "AND": [
-                        "r1.score >= 14",
-                        "r1.score <= 27",
-                        "r1.grade != 'B'"
-                    ]
-                }
+                [
+                    "t1.score >= 14",
+                    "t1.score <= 27",
+                    "t1.grade != 'B'"
+                ]
             ],
             "_comment": "Score 14-27 must have grade B"
         },
@@ -222,12 +211,10 @@
             "is_dq_rule": true,
             "is_applicable_dq_rule": true,
             "rules": [
-                {
-                    "AND": [
-                        "r1.score >= 28",
-                        "r1.grade != 'C'"
-                    ]
-                }
+                [
+                    "t1.score >= 28",
+                    "t1.grade != 'C'"
+                ]
             ],
             "_comment": "Score 28+ must have grade C"
         },
@@ -259,11 +246,9 @@
             "is_dq_rule": true,
             "is_applicable_dq_rule": true,
             "rules": [
-                {
-                    "AND": [
-                        "r1.days_to_next_inspection > 365"
-                    ]
-                }
+                [
+                    "t1.days_to_next_inspection > 365"
+                ]
             ],
             "_comment": "Gap to next inspection must not exceed 365 days (only applies when there is a next inspection)"
         },
@@ -275,15 +260,13 @@
             "is_dq_rule": true,
             "is_applicable_dq_rule": true,
             "rules": [
-                {
-                    "AND": [
-                        "r1.inspection_type LIKE '%Initial Inspection%'",
-                        "r1.score >= 0",
-                        "r1.score <= 13",
-                        "r1.grade = 'A'",
-                        "r1.grade_date != r1.inspection_date"
-                    ]
-                }
+                [
+                    "t1.inspection_order = 1",
+                    "t1.score >= 0",
+                    "t1.score <= 13",
+                    "t1.grade = 'A'",
+                    "t1.grade_date != t1.inspection_date"
+                ]
             ],
             "_comment": "First inspection with score 0-13 must have grade A"
         },
@@ -305,13 +288,11 @@
             "is_dq_rule": true,
             "is_applicable_dq_rule": true,
             "rules": [
-                {
-                    "AND": [
-                        "r1.inspection_type LIKE '%Re-inspection%'",
-                        "r1.grade = 'A'",
-                        "r1.grade_date != r1.inspection_date"
-                    ]
-                }
+                [
+                    "t1.inspection_type LIKE '%Re-inspection%'",
+                    "t1.grade = 'A'",
+                    "t1.grade_date != t1.inspection_date"
+                ]
             ],
             "_comment": "A grade issued on re-inspection must be posted immediately (detects when grade_date != inspection_date)"
         },
@@ -323,13 +304,11 @@
             "is_dq_rule": true,
             "is_applicable_dq_rule": true,
             "rules": [
-                {
-                    "AND": [
-                        "r1.inspection_type LIKE '%Re-inspection%'",
-                        "r1.grade IN ('B', 'C')",
-                        "r1.grade_date != r1.inspection_date"
-                    ]
-                }
+                [
+                    "t1.inspection_type LIKE '%Re-inspection%'",
+                    "t1.grade IN ('B', 'C')",
+                    "t1.grade_date != t1.inspection_date"
+                ]
             ],
             "_comment": "B or C grade on re-inspection must be posted immediately (detects when grade_date != inspection_date)"
         },
@@ -353,27 +332,9 @@
             "rules": null,
             "_comment": "Grading section"
         },
+
         {
             "id": 29,
-            "sentences": [
-                "Restaurants with A grades are inspected less often than those with B or C grades."
-            ],
-            "is_dq_rule": true,
-            "is_applicable_dq_rule": true,
-            "rules": [
-                {
-                    "AND": [
-                        "r1.camis = r2.camis",
-                        "r1.grade = 'A'",
-                        "r2.grade IN ('B', 'C')",
-                        "r1.days_to_next_inspection < r2.days_to_next_inspection"
-                    ]
-                }
-            ],
-            "_comment": "A-grade inspections should have longer gaps than B/C inspections (compare within same restaurant)"
-        },
-        {
-            "id": 30,
             "sentences": [
                 "Frequent inspections of poorer-performing establishments enable the Health Department to closely monitor their food safety practices, while giving them more opportunities to improve their grades."
             ],
@@ -383,7 +344,7 @@
             "_comment": "Grading section"
         },
         {
-            "id": 31,
+            "id": 30,
             "sentences": [
                 "The letter grade or \"Grade Pending\" card must be posted in a place where it is easily seen by people passing by."
             ],
@@ -393,7 +354,7 @@
             "_comment": "Grading section"
         },
         {
-            "id": 32,
+            "id": 31,
             "sentences": [
                 "It must be on the front window, door or an outside-facing wall."
             ],
@@ -403,7 +364,7 @@
             "_comment": "Grading section"
         },
         {
-            "id": 33,
+            "id": 32,
             "sentences": [
                 "The card must be within 5 feet from the front door or other entrance, and within 6 feet from the ground or floor."
             ],
@@ -413,7 +374,7 @@
             "_comment": "Grading section"
         },
         {
-            "id": 34,
+            "id": 33,
             "sentences": [
                 "For additional information visit http://www1.nyc.gov/site/doh/business/food-operators.page"
             ],

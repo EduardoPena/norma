@@ -75,7 +75,7 @@ understand_schema: |
     "implied_columns": ["columns needed to scope the constraint but not named"],
     "reasoning": "why these columns are relevant",
     "missing_concepts": ["concept with no column match"],
-    "reason": "why invalid (only if is_valid=false)"
+    "reason": "why invalid, or null when is_valid=true"
   }}
 
   Set is_valid=false ONLY if NO sentence concept maps to any column in the predicate list above.
@@ -197,7 +197,7 @@ select_predicates: |
     "constraint_pattern": "bound|required|functional_dependency|conditional|value_mapping|temporal|comparative",
     "is_single_row": true/false,
     "confidence": "high|medium|low",
-    "reason": "why invalid (only if is_valid=false)"
+    "reason": "why invalid, or null when is_valid=true"
   }}
 
   If you genuinely cannot find predicates, set is_valid=false and explain in "reason".
@@ -321,7 +321,7 @@ construct_constraint: |
    Rule: "A loan is a HOEPA loan if rate spread exceeds 6.5 for first-lien transactions"
    Violation: threshold condition holds BUT status is not HOEPA
    → [{{"AND": ["t1.rate_spread > 6.5", "t1.lien_status = 1", "t1.hoepa_status_name != 'HOEPA loan'"]}}]
-   Wrong: ["t1.hoepa_status IS NULL", "t1.lien_status = 1", "t1.rate_spread <= 0.065"]
+   Wrong: [{{"AND": ["t1.hoepa_status IS NULL", "t1.lien_status = 1", "t1.rate_spread <= 0.065"]}}]
    because it flips the threshold direction, changes the units, and replaces a status mismatch
    with a missing-value check that the sentence never asked for.
 
@@ -366,6 +366,24 @@ construct_constraint: |
   - $values  → IN list, e.g. ('A', 'B')
   Non-template predicates (anchors, comparisons, null checks) stay as-is.
 
+   APPLICABILITY, EXCEPTIONS, AND ENUMERATIONS:
+   Do NOT construct a denial constraint from text that only states applicability,
+   exclusions, carve-outs, definitions, or a list of transaction/entity types.
+   Those statements describe scope, not a row combination that must never exist.
+   Construct a rule only when the sentence also states an explicit contradiction:
+   a forbidden combination, a required value that is violated, or a condition whose
+   outcome/status is wrong. Do not turn excluded records into violations merely
+   because they fall outside a rule's scope, and never use IS NOT NULL as a scope
+   guard. Direct numeric bounds, duration limits, and explicit threshold breaches
+   remain concrete violations even when no outcome/status column is available.
+   If no concrete violation is stated, return null for rules.
+
+   ALTERNATIVE THRESHOLDS:
+   Preserve the logic of threshold combinations. A value exceeding the lesser of
+   two thresholds violates when it exceeds either threshold (OR); exceeding the
+   greater of two thresholds violates only when it exceeds both (AND). Do not
+   replace an explicit OR with AND, or vice versa.
+
   CONSTRUCTION PATTERNS:
 
   1) SINGLE-ROW BOUND: One or more predicates on t1 only
@@ -378,15 +396,15 @@ construct_constraint: |
      Do NOT add identifier anchors or extra scope predicates.
 
   3) REQUIRED FIELD — CONDITIONAL: Field required only under a condition
-     → ["t1.condition_col = 'VALUE'", "t1.required_field IS NULL"]
+     → [{{"AND": ["t1.condition_col = 'VALUE'", "t1.required_field IS NULL"]}}]
      Meaning: If the condition holds AND the field is missing, that is a violation.
 
   4) VALUE RANGE MAPPING: Range check + wrong outcome
-     → ["t1.metric >= 0", "t1.metric <= 100", "t1.category != 'low'"]
+     → [{{"AND": ["t1.metric >= 0", "t1.metric <= 100", "t1.category != 'low'"]}}]
      Meaning: If in range BUT outcome is wrong, violation
 
   5) FUNCTIONAL DEPENDENCY: Same key, different value
-     → ["t1.identifier = t2.identifier", "t1.attribute != t2.attribute"]
+     → [{{"AND": ["t1.identifier = t2.identifier", "t1.attribute != t2.attribute"]}}]
      Meaning: Two rows same ID but different attribute, violation
 
   6) UNIQUENESS: Same key appears more than once
@@ -394,11 +412,11 @@ construct_constraint: |
      Meaning: Two distinct rows share the same identifier, violation
 
   7) CONDITIONAL RULE: Condition + violated requirement
-     → ["t1.type = 'A'", "t1.status != 'B'"]
+     → [{{"AND": ["t1.type = 'A'", "t1.status != 'B'"]}}]
      Meaning: If condition holds BUT requirement not met, violation
 
   8) COMPARATIVE: Cross-row comparison
-     → ["t1.group = t2.group", "t1.priority > t2.priority", "t1.value >= t2.value"]
+     → [{{"AND": ["t1.group = t2.group", "t1.priority > t2.priority", "t1.value >= t2.value"]}}]
      Meaning: Same group but relationship between values is violated
 
   IS NULL PREDICATES:
@@ -414,9 +432,9 @@ construct_constraint: |
    the status field must be recorded.
 
   Correct: "Field X must be provided" → ["t1.field_x IS NULL"]
-  Correct: "Same course, same shift" → ["t1.course = t2.course", "t1.shift = t2.shift"]
+   Correct: "Same course, same shift" → [{{"AND": ["t1.course = t2.course", "t1.shift = t2.shift"]}}]
            (no IS NULL or IS NOT NULL on scope or anchor columns — ever)
-  Wrong:   ["t1.course IS NOT NULL", "t1.course = t2.course", ...]
+   Wrong:   [{{"AND": ["t1.course IS NOT NULL", "t1.course = t2.course", ...]}}]
            (IS NOT NULL added to scope column — never do this)
 
   SEMANTIC EQUIVALENCE — what matters is the violation, not exact predicates:
@@ -430,11 +448,11 @@ construct_constraint: |
   - Alternative identifiers for the same entity
 
   EXAMPLE — same rule, both correct:
-  Core only:    ["t1.entity_id = t2.entity_id", "t1.attribute != t2.attribute"]
-  With scope:   ["t1.entity_id = t2.entity_id", "t1.period = t2.period", "t1.attribute != t2.attribute"]
+   Core only:    [{{"AND": ["t1.entity_id = t2.entity_id", "t1.attribute != t2.attribute"]}}]
+   With scope:   [{{"AND": ["t1.entity_id = t2.entity_id", "t1.period = t2.period", "t1.attribute != t2.attribute"]}}]
 
   NOT equivalent — wrong violation direction:
-  ["t1.entity_id = t2.entity_id", "t1.attribute = t2.attribute"]
+   [{{"AND": ["t1.entity_id = t2.entity_id", "t1.attribute = t2.attribute"]}}]
   ← this finds matching values, the opposite of what was intended
 
   IMPORTANT NOTES:
@@ -584,17 +602,17 @@ generate_initial: |
   3) Required field — conditional: "If condition A, then X must be provided"
      → Condition predicate + IS NULL on the required field
      Example: "If type is A, field X must be recorded"
-              → ["t1.type = 'A'", "t1.field_x IS NULL"]
+              → [{{"AND": ["t1.type = 'A'", "t1.field_x IS NULL"]}}]
 
   4) Value mapping: "If X in range then Y must be Z"
      → Range check + required outcome
      Example: "Metric 0-100 → category low"
-              → ["t1.metric >= 0", "t1.metric <= 100", "t1.category != 'low'"]
+              → [{{"AND": ["t1.metric >= 0", "t1.metric <= 100", "t1.category != 'low'"]}}]
 
   5) Functional dependency: "X uniquely identifies Y"
      → Cross-row: same X but different Y
      Example: "Key determines attribute"
-              → ["t1.key = t2.key", "t1.attribute != t2.attribute"]
+              → [{{"AND": ["t1.key = t2.key", "t1.attribute != t2.attribute"]}}]
 
   6) Uniqueness: "X is unique"
      → Cross-row: duplicate X values
@@ -607,7 +625,7 @@ generate_initial: |
   8) Conditional: "If A then B must..."
      → Condition true BUT requirement not met
      Example: "If type X then status must be Y"
-              → ["t1.type = 'X'", "t1.status != 'Y'"]
+              → [{{"AND": ["t1.type = 'X'", "t1.status != 'Y'"]}}]
 
   TIPS:
   - Use ONLY predicates from the available list

@@ -148,6 +148,12 @@ class BaseExperiment:
                             "name": column_name,
                             "type": column_spec["type"],
                             "allowed_ops": list(column_spec["allowed_ops"]),
+                            **(
+                                {"description": column_spec["description"]}
+                                if isinstance(column_spec.get("description"), str)
+                                and column_spec["description"].strip()
+                                else {}
+                            ),
                         }
                         for column_name, column_spec in table_schema.items()
                     ],

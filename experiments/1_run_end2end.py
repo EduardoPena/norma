@@ -311,6 +311,7 @@ class MapperEvalFullExperiment(BaseExperiment):
         print(f"  Processing all {len(all_sentences)} sentences (mode={mode})...")
 
         t0 = time.perf_counter()
+        model_output_failures = _NA
         if implementation == "external":
             pipeline_results = self._run_external_tool(
                 all_sentences, context, variant["mapper"]
@@ -320,6 +321,15 @@ class MapperEvalFullExperiment(BaseExperiment):
                 mode, variant, predicate_space, df
             )
             pipeline_results = pipeline.process(all_sentences, context=context)
+            processing_errors = getattr(pipeline.mapper, "processing_errors", [])
+            if processing_errors:
+                raise RuntimeError(
+                    "Mapper did not complete all sentences; "
+                    f"first processing error: {processing_errors[0]}"
+                )
+            model_output_failures = len(
+                getattr(pipeline.mapper, "output_failures", [])
+            ) + len(getattr(getattr(pipeline, "classifier", None), "output_failures", []))
             # Returns List[Tuple[sentence, is_rule, predicates]]
         runtime_s = time.perf_counter() - t0
 
@@ -518,6 +528,7 @@ class MapperEvalFullExperiment(BaseExperiment):
             "clf_metrics": clf_metrics,
             "map_metrics": map_metrics,
             "runtime_s": runtime_s,
+            "model_output_failures": model_output_failures,
         }
 
     # =========================================================================
@@ -674,6 +685,8 @@ class MapperEvalFullExperiment(BaseExperiment):
                     "max_refinement_iterations", 2
                 ),
                 prompt_file=mapper_config.get("prompt_file", "multi_step_refinement"),
+                max_tokens=mapper_config.get("max_tokens"),
+                structured_output=mapper_config.get("structured_output", True),
             )
         elif implementation == "llm":
             mapper = LLMMapper(
@@ -682,6 +695,12 @@ class MapperEvalFullExperiment(BaseExperiment):
                 prompt_name=mapper_config["prompt_key"],
                 allowed_predicates=predicate_space["predicates"],
                 chunk_size=mapper_config.get("batch_size", 10),
+                filter_predicates=mapper_config.get("filter_predicates", False),
+                predicate_tables=predicate_space["tables"],
+                max_candidate_predicates=mapper_config.get("max_candidate_predicates", 1000),
+                max_relevant_columns=mapper_config.get("max_relevant_columns", 12),
+                max_tokens=mapper_config.get("max_tokens"),
+                structured_output=mapper_config.get("structured_output", True),
             )
         else:
             raise ValueError(f"Unknown mapper implementation: {implementation}")
@@ -695,6 +714,8 @@ class MapperEvalFullExperiment(BaseExperiment):
                 model_name=classifier_config["model"],
                 provider=classifier_config.get("provider"),
                 prompt_template=classifier_prompt,
+                chunk_size=classifier_config.get("batch_size", 10),
+                structured_output=classifier_config.get("structured_output", True),
             )
             return NormaPipeline(
                 mode=ProcessingMode.SENTENCE_FILTERED,
@@ -927,6 +948,7 @@ class MapperEvalFullExperiment(BaseExperiment):
             "num_sentences_gt": num_gt,
             "status": "success",
             "runtime_s": result.get("runtime_s", _NA),
+            "model_output_failures": result.get("model_output_failures", _NA),
         }
 
         if result["type"] == "document":

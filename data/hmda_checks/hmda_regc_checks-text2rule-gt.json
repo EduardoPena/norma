@@ -20,14 +20,13 @@
       ],
       "rules": [
         {
-          "AND": [
-            "FLOOR(t1.date_application_received / 10000) != t1.activity_year",
-            "FLOOR(t1.date_application_received / 10000) != t1.activity_year - 1",
-            "FLOOR(t1.date_application_received / 10000) != t1.activity_year - 2"
+          "OR": [
+            "t1.date_application_received < (t1.activity_year - 2) * 10000",
+            "t1.date_application_received >= (t1.activity_year + 1) * 10000"
           ]
         }
       ],
-      "_comment": "Ground Truth rule related to the target database"
+      "_comment": "Ground Truth rule related to the target database; date_application_received is encoded as YYYYMMDD."
     },
     {
       "id": 2,
@@ -314,7 +313,7 @@
           "AND": [
             "t1.action_taken_type IN (1, 2, 3, 4, 5, 7, 8)",
             "t1.property_type IN (1, 2)",
-            "t1.applicant_income = 'NA'"
+            "t1.applicant_income IS NULL"
           ]
         }
       ],
@@ -334,7 +333,7 @@
             "t1.co_applicant_ethnicity = 4",
             "t1.co_applicant_race_1 = 7",
             "t1.co_applicant_sex = 4",
-            "t1.applicant_income != 'NA'"
+            "t1.applicant_income IS NOT NULL"
           ]
         }
       ],
@@ -350,7 +349,7 @@
           "AND": [
             "t1.hoepa_status = 1",
             "t1.action_taken_type = 1",
-            "t1.rate_spread = 'NA'"
+            "t1.rate_spread IS NULL"
           ]
         }
       ],
@@ -367,7 +366,7 @@
             "t1.purchaser_type IN (1, 2, 3, 4)",
             "t1.lien_status IN (1, 2)",
             "t1.rate_spread > 10",
-            "t1.rate_spread != 'NA'"
+            "t1.rate_spread IS NOT NULL"
           ]
         }
       ],
@@ -386,7 +385,7 @@
             "t1.lien_status = 1",
             "t1.action_taken_type = 1",
             "t1.rate_spread > 5",
-            "t1.rate_spread != 'NA'"
+            "t1.rate_spread IS NOT NULL"
           ]
         }
       ],
@@ -400,7 +399,7 @@
       "rules": [
         {
           "AND": [
-            "t1.rate_spread != 'NA'",
+            "t1.rate_spread IS NOT NULL",
             "t1.rate_spread >= 13"
           ]
         }
@@ -546,10 +545,10 @@
             "t1.action_taken_type IN (7, 8)",
             {
               "OR": [
-                "t1.msa_md != 'NA'",
-                "t1.state_name != 'NA'",
-                "t1.county_name != 'NA'",
-                "t1.census_tract_number != 'NA'"
+                "t1.msa_md IS NOT NULL",
+                "t1.state_name IS NOT NULL",
+                "t1.county_name IS NOT NULL",
+                "t1.census_tract_number IS NOT NULL"
               ]
             }
           ]
@@ -574,7 +573,7 @@
         {
           "AND": [
             "t1.action_taken_type = 6",
-            "t1.date_application_received != 'NA'"
+            "t1.date_application_received IS NOT NULL"
           ]
         }
       ],
@@ -586,11 +585,7 @@
         "Loan type must = 1, 2, 3, or 4."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.loan_type NOT IN (1, 2, 3, 4)"
-          ]
-        }
+        "t1.loan_type NOT IN (1, 2, 3, 4)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -600,11 +595,7 @@
         "Property type must = 1, 2, or 3."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.property_type NOT IN (1, 2, 3)"
-          ]
-        }
+        "t1.property_type NOT IN (1, 2, 3)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -614,11 +605,7 @@
         "Loan purpose must = 1, 2, or 3."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.loan_purpose NOT IN (1, 2, 3)"
-          ]
-        }
+        "t1.loan_purpose NOT IN (1, 2, 3)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -643,11 +630,7 @@
         "Occupancy must = 1, 2, or 3."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.occupancy NOT IN (1, 2, 3)"
-          ]
-        }
+        "t1.occupancy NOT IN (1, 2, 3)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -657,11 +640,7 @@
         "Loan amount must be numeric and > zero."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.loan_amount <= 0"
-          ]
-        }
+        "t1.loan_amount <= 0"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -671,11 +650,7 @@
         "Preapproval must = 1, 2, or 3."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.preapproval NOT IN (1, 2, 3)"
-          ]
-        }
+        "t1.preapproval NOT IN (1, 2, 3)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -731,11 +706,7 @@
         "Action taken type must = 1, 2, 3, 4, 5, 6, 7, or 8."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.action_taken_type NOT IN (1, 2, 3, 4, 5, 6, 7, 8)"
-          ]
-        }
+        "t1.action_taken_type NOT IN (1, 2, 3, 4, 5, 6, 7, 8)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -783,7 +754,7 @@
       "rules": [
         {
           "AND": [
-            "t1.date_application_received = 'NA'",
+            "t1.date_application_received IS NULL",
             "t1.action_taken_type != 6"
           ]
         }
@@ -851,7 +822,7 @@
       "rules": [
         {
           "AND": [
-            "t1.date_application_received != 'NA'",
+            "t1.date_application_received IS NOT NULL",
             "t1.action_taken_date < t1.date_application_received"
           ]
         }
@@ -904,11 +875,7 @@
         "Applicant ethnicity must = 1, 2, 3, or 4."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.applicant_ethnicity NOT IN (1, 2, 3, 4)"
-          ]
-        }
+        "t1.applicant_ethnicity NOT IN (1, 2, 3, 4)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -918,11 +885,7 @@
         "Co-Applicant ethnicity must = 1, 2, 3, 4, or 5."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.co_applicant_ethnicity NOT IN (1, 2, 3, 4, 5)"
-          ]
-        }
+        "t1.co_applicant_ethnicity NOT IN (1, 2, 3, 4, 5)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -933,9 +896,9 @@
       ],
       "rules": [
         {
-          "OR": [
-            "t1.co_applicant_ethnicity = 5",
-            "t1.co_applicant_race_1 != 8"
+          "AND": [
+            "t1.co_applicant_ethnicity != 5",
+            "t1.co_applicant_race_1 = 8"
           ]
         }
       ],
@@ -948,9 +911,9 @@
       ],
       "rules": [
         {
-          "OR": [
-            "t1.co_applicant_ethnicity = 5",
-            "t1.co_applicant_sex != 5"
+          "AND": [
+            "t1.co_applicant_ethnicity != 5",
+            "t1.co_applicant_sex = 5"
           ]
         }
       ],
@@ -992,11 +955,7 @@
         "Applicant race field 1 must = 1, 2, 3, 4, 5, 6, or 7."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.applicant_race_1 NOT IN (1, 2, 3, 4, 5, 6, 7)"
-          ]
-        }
+        "t1.applicant_race_1 NOT IN (1, 2, 3, 4, 5, 6, 7)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -1230,11 +1189,7 @@
         "Co-Applicant race field 1 must = 1, 2, 3, 4, 5, 6, 7, or 8."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.co_applicant_race_1 NOT IN (1, 2, 3, 4, 5, 6, 7, 8)"
-          ]
-        }
+        "t1.co_applicant_race_1 NOT IN (1, 2, 3, 4, 5, 6, 7, 8)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -1245,9 +1200,9 @@
       ],
       "rules": [
         {
-          "OR": [
-            "t1.co_applicant_race_1 = 8",
-            "t1.co_applicant_ethnicity != 5"
+          "AND": [
+            "t1.co_applicant_race_1 != 8",
+            "t1.co_applicant_ethnicity = 5"
           ]
         }
       ],
@@ -1260,9 +1215,9 @@
       ],
       "rules": [
         {
-          "OR": [
-            "t1.co_applicant_race_1 = 8",
-            "t1.co_applicant_sex != 5"
+          "AND": [
+            "t1.co_applicant_race_1 != 8",
+            "t1.co_applicant_sex = 5"
           ]
         }
       ],
@@ -1498,11 +1453,7 @@
         "Applicant sex must = 1, 2, 3, or 4."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.applicant_sex NOT IN (1, 2, 3, 4)"
-          ]
-        }
+        "t1.applicant_sex NOT IN (1, 2, 3, 4)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -1512,11 +1463,7 @@
         "Co-Applicant sex must = 1, 2, 3, 4, or 5."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.co_applicant_sex NOT IN (1, 2, 3, 4, 5)"
-          ]
-        }
+        "t1.co_applicant_sex NOT IN (1, 2, 3, 4, 5)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -1527,9 +1474,9 @@
       ],
       "rules": [
         {
-          "OR": [
-            "t1.co_applicant_sex = 5",
-            "t1.co_applicant_ethnicity != 5"
+          "AND": [
+            "t1.co_applicant_sex != 5",
+            "t1.co_applicant_ethnicity = 5"
           ]
         }
       ],
@@ -1542,9 +1489,9 @@
       ],
       "rules": [
         {
-          "OR": [
-            "t1.co_applicant_sex = 5",
-            "t1.co_applicant_race_1 != 8"
+          "AND": [
+            "t1.co_applicant_sex != 5",
+            "t1.co_applicant_race_1 = 8"
           ]
         }
       ],
@@ -1559,7 +1506,7 @@
         {
           "AND": [
             "t1.applicant_income <= 0",
-            "t1.applicant_income != 'NA'"
+            "t1.applicant_income IS NOT NULL"
           ]
         }
       ],
@@ -1574,7 +1521,7 @@
         {
           "AND": [
             "t1.property_type = 3",
-            "t1.applicant_income != 'NA'"
+            "t1.applicant_income IS NOT NULL"
           ]
         }
       ],
@@ -1595,7 +1542,7 @@
             "t1.co_applicant_race_1 = 8",
             "t1.co_applicant_sex = 5",
             "t1.action_taken_type IN (1, 2, 3, 4, 5, 7, 8)",
-            "t1.applicant_income != 'NA'"
+            "t1.applicant_income IS NOT NULL"
           ]
         }
       ],
@@ -1607,11 +1554,7 @@
         "Type of purchaser must = 0, 1, 2, 3, 4, 5, 6, 7, 8, or 9."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.purchaser_type NOT IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)"
-          ]
-        }
+        "t1.purchaser_type NOT IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -1827,7 +1770,7 @@
         {
           "AND": [
             "t1.action_taken_type IN (2, 3, 4, 5, 6, 7, 8)",
-            "t1.rate_spread != 'NA'"
+            "t1.rate_spread IS NOT NULL"
           ]
         }
       ],
@@ -1842,8 +1785,13 @@
         {
           "AND": [
             "t1.lien_status = 1",
-            "t1.rate_spread != 'NA'",
-            "t1.rate_spread NOT BETWEEN 1.5 AND 99.99"
+            "t1.rate_spread IS NOT NULL",
+            {
+              "OR": [
+                "t1.rate_spread < 1.5",
+                "t1.rate_spread > 99.99"
+              ]
+            }
           ]
         }
       ],
@@ -1858,8 +1806,13 @@
         {
           "AND": [
             "t1.lien_status = 2",
-            "t1.rate_spread != 'NA'",
-            "t1.rate_spread NOT BETWEEN 3.5 AND 99.99"
+            "t1.rate_spread IS NOT NULL",
+            {
+              "OR": [
+                "t1.rate_spread < 3.5",
+                "t1.rate_spread > 99.99"
+              ]
+            }
           ]
         }
       ],
@@ -1874,7 +1827,7 @@
         {
           "AND": [
             "t1.lien_status = 3",
-            "t1.rate_spread != 'NA'"
+            "t1.rate_spread IS NOT NULL"
           ]
         }
       ],
@@ -1901,11 +1854,7 @@
         "HOEPA status must = 1 or 2."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.hoepa_status NOT IN (1, 2)"
-          ]
-        }
+        "t1.hoepa_status NOT IN (1, 2)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },
@@ -1930,11 +1879,7 @@
         "Lien status must = 1, 2, 3, or 4."
       ],
       "rules": [
-        {
-          "AND": [
-            "t1.lien_status NOT IN (1, 2, 3, 4)"
-          ]
-        }
+        "t1.lien_status NOT IN (1, 2, 3, 4)"
       ],
       "_comment": "Ground Truth rule related to the target database"
     },

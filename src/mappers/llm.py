@@ -2,8 +2,14 @@
 
 from typing import List, Dict, Any, Optional
 from src.mappers.base import BaseMapper
-from src.llm.client import get_llm_client
+from src.mappers.predicate_filter import (
+    filter_predicates_by_columns,
+    select_relevant_columns,
+    simple_predicates,
+)
+from src.llm.client import EmptyModelContentError, get_llm_client
 from src.llm.helper import PromptLoader, parse_json_response
+from src.llm.schemas import SENTENCE_RULES
 from src.predicates import Rule, RuleValidationError, normalize_rules
 
 
@@ -18,6 +24,12 @@ class LLMMapper(BaseMapper):
         prompt_template: Optional[str] = None,
         allowed_predicates: Optional[List[str]] = None,
         chunk_size: Optional[int] = None,
+        filter_predicates: bool = False,
+        predicate_tables: Optional[List[Dict[str, Any]]] = None,
+        max_candidate_predicates: int = 1000,
+        max_relevant_columns: int = 12,
+        max_tokens: Optional[int] = None,
+        structured_output: bool = True,
     ):
         """
         Args:
@@ -27,12 +39,45 @@ class LLMMapper(BaseMapper):
             prompt_template: Direct prompt string (overrides prompt_name)
             allowed_predicates: List of allowed predicates for validation
             chunk_size: Max sentences per API call
+            filter_predicates: Preserve simple templates and filter compound candidates
+            predicate_tables: Schema names/descriptions for deterministic column retrieval
+            max_candidate_predicates: Candidate limit per sentence, before simple union
+            max_relevant_columns: Maximum retrieved columns per sentence
+            max_tokens: Optional OpenRouter completion token limit
+            structured_output: Request the SENTENCE_RULES JSON Schema
         """
+        if max_candidate_predicates <= 0 or max_relevant_columns <= 0:
+            raise ValueError("Predicate candidate and column limits must be positive")
+        if max_tokens is not None and max_tokens <= 0:
+            raise ValueError("Completion token limit must be positive")
+        if filter_predicates and (not predicate_tables or not allowed_predicates):
+            raise ValueError(
+                "Predicate filtering requires schema tables and predicates"
+            )
         super().__init__(chunk_size=chunk_size)
-        self.llm = get_llm_client(model_name, provider=provider)
+        self.llm = get_llm_client(
+            model_name,
+            provider=provider,
+            max_tokens=max_tokens,
+            structured_output=structured_output,
+        )
         self.allowed_predicates = (
             set(allowed_predicates) if allowed_predicates else None
         )
+        self.filter_predicates = filter_predicates
+        self.predicate_tables = predicate_tables or []
+        self.max_candidate_predicates = max_candidate_predicates
+        self.max_relevant_columns = max_relevant_columns
+        self._simple_predicates = (
+            simple_predicates(self.allowed_predicates)
+            if filter_predicates and self.allowed_predicates
+            else set()
+        )
+        self.last_predicate_selection: List[Dict[str, Any]] = []
+        # Paper §5.2: retry malformed outputs a fixed number of times; if all
+        # attempts fail, the sentences produce no constraint (logged here).
+        self.max_output_retries = 2
+        self.output_failures: List[str] = []
 
         if prompt_template:
             self.prompt_template = prompt_template
@@ -43,29 +88,68 @@ class LLMMapper(BaseMapper):
     def _map_sentences(
         self, sentences: List[str], context: Dict[str, Any]
     ) -> List[Optional[List[Rule]]]:
-        """Map sentences to predicates using LLM."""
+        """Map sentences to predicates using LLM.
+
+        Malformed outputs are retried; if every attempt fails, each sentence of
+        the batch yields no constraint and is recorded in ``output_failures``.
+        API/infrastructure errors still propagate.
+        """
         prompt = self._build_prompt(sentences, context)
-        response = self.llm.complete(prompt)
-        return self._parse_response(response, len(sentences))
+        attempts = self.max_output_retries + 1
+        for attempt in range(1, attempts + 1):
+            try:
+                response = self.llm.complete(
+                    prompt, response_schema=SENTENCE_RULES, schema_name="sentence_rules"
+                )
+                return self._parse_response(response, len(sentences))
+            except (ValueError, EmptyModelContentError) as error:
+                last_error = str(error).split(" Response:")[0][:300]
+                print(
+                    f"Warning: malformed mapper output (attempt {attempt}/{attempts}): "
+                    f"{last_error}"
+                )
+        print(
+            f"Warning: no valid mapper output after {attempts} attempts; "
+            f"{len(sentences)} sentences yield no constraint"
+        )
+        self.output_failures.extend([last_error] * len(sentences))
+        return [None] * len(sentences)
 
     def _build_prompt(self, sentences: List[str], context: Dict[str, Any]) -> str:
         """Build mapping prompt."""
-        # Format sentences
-        if len(sentences) == 1:
-            formatted_sentences = sentences[0]
-        else:
-            formatted_sentences = "\n".join(
-                [f"{i}. {sentence}" for i, sentence in enumerate(sentences, 1)]
-            )
+        # Number every sentence: results are keyed by these ids
+        formatted_sentences = "\n".join(
+            [f"{i}. {sentence}" for i, sentence in enumerate(sentences, 1)]
+        )
 
         # Prepare context variables
         predicates_list = ""
+        self.last_predicate_selection = []
         if self.allowed_predicates:
-            predicates_list = "\n".join(
-                [f"  - {p}" for p in sorted(self.allowed_predicates)]
-            )
+            offered = self.allowed_predicates
+            if self.filter_predicates:
+                offered = set(self._simple_predicates)
+                for sentence in sentences:
+                    columns = select_relevant_columns(
+                        sentence, self.predicate_tables, self.max_relevant_columns
+                    )
+                    candidates = filter_predicates_by_columns(
+                        self.allowed_predicates,
+                        columns,
+                        sentence,
+                        self.max_candidate_predicates,
+                    )
+                    offered.update(candidates)
+                    self.last_predicate_selection.append(
+                        {"columns": columns, "candidates": len(candidates)}
+                    )
+                print(
+                    f"Predicate filtering: {len(self.allowed_predicates)} -> "
+                    f"{len(offered)} templates for {len(sentences)} sentences"
+                )
+            predicates_list = "\n".join([f"  - {p}" for p in sorted(offered)])
 
-        table_context = context.get("table_sample", "")
+        table_context = context.get("table_context", context.get("table_sample", ""))
 
         # Format template
         prompt = self.prompt_template.format(
@@ -80,67 +164,56 @@ class LLMMapper(BaseMapper):
         self, response: str, expected_count: int
     ) -> List[Optional[List[Rule]]]:
         """
-        Parse LLM response into predicates.
+        Parse LLM response into one rules list (or None) per sentence.
 
-        Expected formats:
-        - Single sentence: ["pred1", "pred2"] or null
-        - Multiple sentences: [["pred1"], null, ["pred2", "pred3"]]
-          (array with exactly expected_count elements)
-
-        Args:
-            response: LLM response
-            expected_count: Number of sentences processed
-
-        Returns:
-            List of predicate lists (or None for non-rules)
+        Expected (SENTENCE_RULES schema): ``{"results": [{"id": 1, "rules": ...}]}``
+        with ids 1..expected_count in any order. Legacy fallbacks: a positional
+        array of rules lists (batch) or a bare rules list (single sentence).
 
         Raises:
-            ValueError: If response doesn't contain expected_count results
+            ValueError: If the response is not valid JSON or does not provide
+                exactly one result per sentence (the caller retries the batch).
         """
-        try:
-            parsed = parse_json_response(response, expected_type=list)
+        parsed = parse_json_response(response, expected_type=object)
+        items = self._result_items(parsed, expected_count)
+        return [self._sentence_rules(i, item) for i, item in enumerate(items, 1)]
 
-            # Handle null response - treat as empty for all inputs
-            if parsed is None:
-                print(f"Warning: Got null response for {expected_count} sentences")
-                return [None] * expected_count
-
-            # A single result is exactly the public rules list or null.
-            if expected_count == 1:
-                return [normalize_rules(parsed)]
-
-            # Multiple sentences - MUST be batch format
-            if len(parsed) != expected_count:
+    @staticmethod
+    def _result_items(parsed: Any, expected_count: int) -> List[Any]:
+        if isinstance(parsed, dict) and isinstance(parsed.get("results"), list):
+            by_id: Dict[int, Any] = {}
+            for entry in parsed["results"]:
+                if not (
+                    isinstance(entry, dict)
+                    and isinstance(entry.get("id"), int)
+                    and "rules" in entry
+                    and entry["id"] not in by_id
+                ):
+                    raise ValueError(f"Malformed or duplicated result entry: {entry}")
+                by_id[entry["id"]] = entry["rules"]
+            if sorted(by_id) != list(range(1, expected_count + 1)):
                 raise ValueError(
-                    f"Expected {expected_count} results, got {len(parsed)}. "
-                    f"Each input sentence must have a corresponding output (use null for non-constraints). "
-                    f"Response: {response}"
+                    f"Expected result ids 1..{expected_count}, got {sorted(by_id)}"
                 )
-
-            # Validate each item in the batch
-            results = []
-            for i, item in enumerate(parsed):
-                if item is None:
-                    results.append(None)
-                elif isinstance(item, list):
-                    try:
-                        results.append(normalize_rules(item))
-                    except RuleValidationError as exc:
-                        print(f"Warning: Invalid rules at index {i}: {exc}")
-                        results.append(None)
-                else:
-                    print(
-                        f"Warning: Expected list or null at index {i}, got {type(item).__name__}: {item}"
-                    )
-                    results.append(None)
-
-            return results
-
-        except ValueError as e:
-            # Re-raise ValueError with context
-            print(f"Parse error: {e}")
-            raise
-        except Exception as e:
-            # Catch other errors and return None for all
-            print(f"Unexpected parse error: {e}")
+            return [by_id[i] for i in range(1, expected_count + 1)]
+        if parsed is None:
+            print(f"Warning: Got null response for {expected_count} sentences")
             return [None] * expected_count
+        if expected_count == 1:
+            return [parsed]
+        if isinstance(parsed, list) and len(parsed) == expected_count:
+            return parsed
+        raise ValueError(
+            f"Expected {expected_count} results; use one result per sentence "
+            "(rules null for non-constraints)"
+        )
+
+    def _sentence_rules(self, index: int, item: Any) -> Optional[List[Rule]]:
+        if item is None or item == []:
+            return None  # [] also means "not a constraint"
+        try:
+            return normalize_rules(item)
+        except (RuleValidationError, ValueError) as exc:
+            print(f"Warning: Invalid rules for sentence {index}: {exc}")
+            self.output_failures.append(f"invalid rules: {exc}")
+            return None

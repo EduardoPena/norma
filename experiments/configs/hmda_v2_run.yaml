@@ -1,0 +1,13 @@
+# Telemetry/budget config for the official HMDA round (new paper version).
+# Runner configs: experiments/configs/hmda_v2/hmda_plan_e1_e2.json, then the E3
+# plan once its components are chosen from E1/E2.
+# Datasets: HMDAZ and HMDA_CHECKS only (first 1,000,000 rows each).
+results_dir: "results/hmda_v2/telemetry"
+sample_rows: 1000000
+max_tokens: 32768         # cap (2026-10-06): above every successful output seen (max ~19k); stops runaway reasoning
+request_timeout_s: 600
+max_cost_usd: 120.0       # safety cap (raised from 100 on 2026-10-07 for E3; E1+E2 spent 63.49, E3 est. ~28)
+# Execution settings (do not change outputs; added 2026-10-06 after job 19):
+parallel_requests: 6      # concurrent LLM requests per job (sentences / batches)
+parallel_jobs: 2          # concurrent jobs, never two sharing a model
+min_free_memory_gib: 6    # start a second job only with this much RAM available

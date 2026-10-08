@@ -1,0 +1,42 @@
+experiment_name: hmda_e1_hmda_checks_qwen38maxprime
+experiment_type: classifier
+results_dir: results/hmda_v2/e1_classifiers
+datasets:
+- hmda_checks
+dataset_options:
+  hmda_checks:
+    gt_file: hmda_regc_checks-text2rule-gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+variants:
+- name: Qwen3.8-Max-Prime | No Context
+  implementation: llm
+  provider: openrouter
+  model: qwen/qwen3.8-max-prime
+  prompt_key: zero_shot
+  batch_size: 10
+  use_context: false
+- name: Qwen3.8-Max-Prime | Table Context
+  implementation: llm
+  provider: openrouter
+  model: qwen/qwen3.8-max-prime
+  prompt_key: zero_shot_with_table
+  batch_size: 10
+  use_context: true
+  num_rows_context: 3
+- name: Qwen3.8-Max-Prime | Examples
+  implementation: llm
+  provider: openrouter
+  model: qwen/qwen3.8-max-prime
+  prompt_key: with_examples
+  batch_size: 10
+  use_context: false
+- name: Qwen3.8-Max-Prime | Examples + Table Context
+  implementation: llm
+  provider: openrouter
+  model: qwen/qwen3.8-max-prime
+  prompt_key: with_examples_and_table
+  batch_size: 10
+  use_context: true
+  num_rows_context: 3

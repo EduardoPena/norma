@@ -1,0 +1,23 @@
+experiment_name: hmda_e2_hmdaz_gpt5_MultiStep
+experiment_type: mapper_gt_only
+results_dir: results/hmda/full
+datasets:
+- hmdaz
+dataset_options:
+  hmdaz:
+    gt_file: hmdaz_text2rule_gt.json
+    sample_rows: 1000000
+    drop_multi_rule_sentences: false
+variants:
+- name: MultiStep
+  use_context: false
+  num_rows_context: 3
+  mapper:
+    implementation: multi_step_refinement
+    provider: openrouter
+    model: openai/gpt-5
+    max_tokens: 8192
+    max_refinement_iterations: 2
+    prompt_file: multi_step_refinement
+    enforce_rule_gate: true
+    include_column_descriptions: false

@@ -45,6 +45,106 @@ def test_recursive_rule_parser_and_sql():
         db.close()
 
 
+def test_mapper_collapses_unary_logical_nodes_before_validation():
+    """LLM-only normalization preserves the strict public rule grammar."""
+    from src.mappers.multi_step_refinement import _normalize_constraint_list
+    from src.predicates import RuleValidationError, normalize_rules
+
+    unary_rule = [{"AND": ["t1.amount > 4"]}]
+    assert _normalize_constraint_list(unary_rule) == ["t1.amount > 4"]
+
+    try:
+        normalize_rules(unary_rule)
+    except RuleValidationError:
+        pass
+    else:
+        raise AssertionError("Public validation must reject unary logical nodes")
+
+
+def test_mapper_can_skip_configured_rule_gate():
+    """A variant can rely on deterministic validation without semantic gating."""
+    from src.mappers.multi_step_refinement import MultiStepRefinementMapper
+
+    mapper = object.__new__(MultiStepRefinementMapper)
+    mapper.enforce_rule_gate = False
+    mapper.max_refinement_iterations = 1
+    mapper._step2_understand_schema = lambda sentence: {"is_valid": True}
+    mapper._step3_select_predicates = lambda sentence, analysis: {"is_valid": True}
+    mapper._step3_5_rule_gate = lambda *args: (_ for _ in ()).throw(
+        AssertionError("Rule gate must not run")
+    )
+    mapper._step4_construct_constraint = lambda *args: ["t1.value > 1"]
+    mapper._step5_verify_constraint = lambda *args: {
+        "is_valid": True,
+        "constraint": ["t1.value > 1"],
+    }
+
+    assert mapper._process_single_sentence("A generic rule", {}) == ["t1.value > 1"]
+
+
+def test_mapper_retries_incomplete_predicate_selection():
+    """A selection that rejects without a reason gets one contract-repair retry."""
+    from src.mappers.multi_step_refinement import MultiStepRefinementMapper
+
+    class StubLLM:
+        model_name = "test-model"
+
+        def __init__(self):
+            self.responses = iter(
+                [
+                    '{"is_valid": false, "selected_predicates": []}',
+                    '{"is_valid": true, "selected_predicates": ["t1.value > $int"]}',
+                ]
+            )
+
+        def complete(self, prompt):
+            return next(self.responses)
+
+    class StubPromptLoader:
+        def load(self, prompt_file, section):
+            return "Sentence: {sentence}; columns: {relevant_columns}; predicates: {predicates_desc}"
+
+    mapper = object.__new__(MultiStepRefinementMapper)
+    mapper.llm = StubLLM()
+    mapper.prompt_loader = StubPromptLoader()
+    mapper.prompt_file = "test"
+    mapper.allowed_predicates = {"t1.value > $int"}
+    mapper._filter_predicates_by_columns = lambda columns, sentence: ["t1.value > $int"]
+    mapper._format_column_profiles_for = lambda columns: ""
+
+    result = mapper._step3_select_predicates(
+        "Value has a limit", {"relevant_columns": ["value"]}
+    )
+    assert result["is_valid"] is True
+    assert result["selected_predicates"] == ["t1.value > $int"]
+
+
+def test_mapper_schema_column_descriptions_are_optional_and_bounded():
+    """Schema descriptions are opt-in and constrained to a configured size."""
+    from src.mappers.multi_step_refinement import MultiStepRefinementMapper
+
+    mapper = object.__new__(MultiStepRefinementMapper)
+    mapper.tables = [
+        {
+            "name": "records",
+            "columns": [
+                {
+                    "name": "status_code",
+                    "type": "int",
+                    "description": "Status code for the record and its processing outcome.",
+                }
+            ],
+        }
+    ]
+    mapper.include_column_descriptions = False
+    mapper.max_column_description_chars = 20
+    assert "Status code" not in mapper._format_schema_for_llm()
+
+    mapper.include_column_descriptions = True
+    schema = mapper._format_schema_for_llm()
+    assert "status_code (int): Status code for the..." in schema
+
+
 def test_load():
     """Test predicates + data loading"""
     from src.predicates import Predicate, PredicateSpace

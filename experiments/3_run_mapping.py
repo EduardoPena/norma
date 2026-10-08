@@ -228,9 +228,9 @@ class MapperGTOnlyExperiment(BaseExperiment):
         raw_outputs = mapper.map(gt_sentences, context=context)
 
         processing_errors = getattr(mapper, "processing_errors", [])
-        if processing_errors and all(pred is None for _, pred in raw_outputs):
+        if processing_errors:
             raise RuntimeError(
-                "Mapper failed to produce any constraints; "
+                "Mapper did not complete all sentences; "
                 f"first processing error: {processing_errors[0]}"
             )
 
@@ -405,6 +405,7 @@ class MapperGTOnlyExperiment(BaseExperiment):
             "runtime_s": runtime_s,
             "implementation": implementation,
             "model": mapper_config.get("model", _NA),
+            "model_output_failures": len(getattr(mapper, "output_failures", [])),
         }
 
     # =========================================================================
@@ -422,6 +423,14 @@ class MapperGTOnlyExperiment(BaseExperiment):
                 prompt_name=mapper_config["prompt_key"],
                 allowed_predicates=predicate_space["predicates"],
                 chunk_size=mapper_config.get("batch_size", 10),
+                filter_predicates=mapper_config.get("filter_predicates", False),
+                predicate_tables=predicate_space["tables"],
+                max_candidate_predicates=mapper_config.get(
+                    "max_candidate_predicates", 1000
+                ),
+                max_relevant_columns=mapper_config.get("max_relevant_columns", 12),
+                max_tokens=mapper_config.get("max_tokens"),
+                structured_output=mapper_config.get("structured_output", True),
             )
         elif implementation == "multi_step_refinement":
             return MultiStepRefinementMapper(
@@ -435,6 +444,14 @@ class MapperGTOnlyExperiment(BaseExperiment):
                 ),
                 prompt_file=mapper_config.get("prompt_file", "multi_step_refinement"),
                 max_tokens=mapper_config.get("max_tokens"),
+                structured_output=mapper_config.get("structured_output", True),
+                enforce_rule_gate=mapper_config.get("enforce_rule_gate", True),
+                include_column_descriptions=mapper_config.get(
+                    "include_column_descriptions", False
+                ),
+                max_column_description_chars=mapper_config.get(
+                    "max_column_description_chars", 200
+                ),
             )
         else:
             raise ValueError(f"Unknown mapper implementation: {implementation}")
@@ -469,9 +486,7 @@ class MapperGTOnlyExperiment(BaseExperiment):
             gt_predicates = predicate_strings(sentence2dcs_map[sentence])
             normalized = transform_predicates(
                 pred_constraint,
-                lambda predicate: self._match_to_gt_predicate(
-                    predicate, gt_predicates
-                ),
+                lambda predicate: self._match_to_gt_predicate(predicate, gt_predicates),
             )
             mapped.append((sentence, normalized))
         return mapped
@@ -641,6 +656,7 @@ class MapperGTOnlyExperiment(BaseExperiment):
             "num_sentences_total": num_total,
             "num_sentences_gt": num_gt,
             "runtime_s": result["runtime_s"],
+            "model_output_failures": result["model_output_failures"],
             "status": "success",
             # Aggregate violation
             "agg_viol_precision": m.aggregate_violation_precision,

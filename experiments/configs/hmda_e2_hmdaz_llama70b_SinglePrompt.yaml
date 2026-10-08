@@ -1,0 +1,23 @@
+experiment_name: hmda_e2_hmdaz_llama70b_SinglePrompt
+experiment_type: mapper_gt_only
+results_dir: results/hmda/e2_mapping
+datasets:
+- hmdaz
+dataset_options:
+  hmdaz:
+    gt_file: hmdaz_text2rule_gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+variants:
+- name: Single Prompt | Llama-3.3-70B
+  use_context: false
+  mapper:
+    implementation: llm
+    provider: openrouter
+    model: meta-llama/llama-3.3-70b-instruct
+    prompt_key: with_examples
+    batch_size: 10
+    filter_predicates: true
+    max_candidate_predicates: 1000
+    max_relevant_columns: 12

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
+import os
 import re
+import threading
 
 import duckdb
 import pandas as pd
@@ -25,9 +27,19 @@ class DBExecutor:
         self.table_name = table_name
         self.tid_column = tid_column
         self.conn = duckdb.connect(":memory:")
+        # A DuckDB connection must not run queries concurrently; mappers may
+        # process sentences in parallel threads (queries take milliseconds).
+        self._lock = threading.RLock()
         self.column_type_map: Dict[str, str] = {}
 
-        self.conn.execute("SET memory_limit='10GB'")
+        # Bounded resources: a model-generated pair DC joining on a low-cardinality
+        # column can explode into ~1e11 pairs; such a query fails (logged by the
+        # caller) instead of exhausting the machine. Tunable via environment.
+        self.conn.execute(
+            f"SET memory_limit='{os.environ.get('NORMA_DUCKDB_MEMORY_LIMIT', '3GB')}'"
+        )
+        self.query_timeout_s = float(os.environ.get("NORMA_SQL_TIMEOUT_S", "300"))
+        self.max_result_rows = int(os.environ.get("NORMA_SQL_MAX_ROWS", "20000000"))
 
         if csv_path is None and df is None:
             raise ValueError("DBExecutor requires either df or csv_path")
@@ -200,6 +212,30 @@ class DBExecutor:
     def close(self) -> None:
         self.conn.close()
 
+    def _fetch_all(self, sql: str) -> list:
+        """Run ``sql`` with the connection lock, a timeout and a result-size cap."""
+        with self._lock:
+            timer = threading.Timer(self.query_timeout_s, self.conn.interrupt)
+            timer.start()
+            try:
+                cursor = self.conn.execute(sql)
+                rows: list = []
+                while True:
+                    batch = cursor.fetchmany(100000)
+                    if not batch:
+                        return rows
+                    rows.extend(batch)
+                    if len(rows) > self.max_result_rows:
+                        raise RuntimeError(
+                            f"Result exceeds {self.max_result_rows} rows; query aborted"
+                        )
+            except duckdb.InterruptException as error:
+                raise RuntimeError(
+                    f"Query exceeded {self.query_timeout_s:.0f}s and was interrupted"
+                ) from error
+            finally:
+                timer.cancel()
+
     def execute_sql(self, sql: str) -> Dict[str, Any]:
         """
         General SQL executor.
@@ -208,7 +244,7 @@ class DBExecutor:
           {"success": bool, "row_count": int|None, "rows": list[tuple]|None, "error"?: str}
         """
         try:
-            rows = self.conn.execute(sql).fetchall()
+            rows = self._fetch_all(sql)
             return {"success": True, "row_count": len(rows), "rows": rows}
         except Exception as e:
             return {"success": False, "row_count": None, "rows": None, "error": str(e)}
@@ -222,7 +258,7 @@ class DBExecutor:
            "constraint_violated": bool|None, "message"?: str, "error"?: str}
         """
         try:
-            rows = self.conn.execute(sql).fetchall()
+            rows = self._fetch_all(sql)
 
             row_count = len(rows)
             constraint_violated = row_count > 0

@@ -1,0 +1,26 @@
+experiment_name: hmda_e3_hmda_checks_C_MS
+experiment_type: mapper
+results_dir: results/hmda/e3_end2end
+datasets:
+- hmda_checks
+dataset_options:
+  hmda_checks:
+    gt_file: hmda_regc_checks-text2rule-gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+variants:
+- name: C+MS | Qwen3-32B + GPT-5
+  mode: SENTENCE_FILTERED
+  use_context: false
+  classifier:
+    implementation: llm
+    provider: openrouter
+    model: qwen/qwen3-32b
+    prompt_key: with_examples
+  mapper:
+    implementation: multi_step_refinement
+    provider: openrouter
+    max_refinement_iterations: 2
+    prompt_file: multi_step_refinement
+    model: openai/gpt-5

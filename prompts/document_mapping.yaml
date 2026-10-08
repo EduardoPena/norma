@@ -149,14 +149,14 @@ detailed: |
    "Y in {{A,B,C}}" → ["t1.Y NOT IN ('A', 'B', 'C')"]
 
   3. Cross-field dependencies:
-     "If A then B required" → ["t1.A = 'value'", "t1.B IS NULL"]
+      "If A then B required" → [{{"AND": ["t1.A = 'value'", "t1.B IS NULL"]}}]
      "Start < End" → ["t1.start >= t1.end"]
 
   4. Cross-tuple consistency:
-     "Same ID → same value" → ["t1.id = t2.id", "t1.value != t2.value"]
+      "Same ID → same value" → [{{"AND": ["t1.id = t2.id", "t1.value != t2.value"]}}]
 
   5. Uniqueness:
-     "X unique" → ["t1.X = t2.X", "t1.rowid != t2.rowid"]
+      "X unique" → [{{"AND": ["t1.X = t2.X", "t1.rowid != t2.rowid"]}}]
 
   Available predicates:
   {predicates_list}

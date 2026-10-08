@@ -1,0 +1,28 @@
+experiment_name: hmda_e3_hmda_checks_C_MS
+experiment_type: mapper
+results_dir: results/hmda_v2/e3_end2end
+datasets:
+- hmda_checks
+dataset_options:
+  hmda_checks:
+    gt_file: hmda_regc_checks-text2rule-gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+variants:
+- name: C+MS | GPT-6 Luna + Claude Opus 5.5
+  mode: SENTENCE_FILTERED
+  use_context: true
+  num_rows_context: 3
+  classifier:
+    implementation: llm
+    provider: openrouter
+    model: openai/gpt-6-luna
+    prompt_key: zero_shot_with_table
+    batch_size: 10
+  mapper:
+    implementation: multi_step_refinement
+    provider: openrouter
+    max_refinement_iterations: 2
+    prompt_file: multi_step_refinement
+    model: anthropic/claude-opus-5.5

@@ -1,0 +1,42 @@
+experiment_name: hmda_e1_hmdaz_llama70b
+experiment_type: classifier
+results_dir: results/hmda/e1_classifiers
+datasets:
+- hmdaz
+dataset_options:
+  hmdaz:
+    gt_file: hmdaz_text2rule_gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+variants:
+- name: Llama-3.3-70B | No Context
+  implementation: llm
+  provider: openrouter
+  model: meta-llama/llama-3.3-70b-instruct
+  prompt_key: zero_shot
+  batch_size: 10
+  use_context: false
+- name: Llama-3.3-70B | Table Context
+  implementation: llm
+  provider: openrouter
+  model: meta-llama/llama-3.3-70b-instruct
+  prompt_key: zero_shot_with_table
+  batch_size: 10
+  use_context: true
+  num_rows_context: 3
+- name: Llama-3.3-70B | Examples
+  implementation: llm
+  provider: openrouter
+  model: meta-llama/llama-3.3-70b-instruct
+  prompt_key: with_examples
+  batch_size: 10
+  use_context: false
+- name: Llama-3.3-70B | Examples + Table Context
+  implementation: llm
+  provider: openrouter
+  model: meta-llama/llama-3.3-70b-instruct
+  prompt_key: with_examples_and_table
+  batch_size: 10
+  use_context: true
+  num_rows_context: 3

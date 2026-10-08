@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Optional, Dict, Any
 
 from src.predicates import Rule
+from src.utils.parallel import default_parallel_requests, parallel_map
 
 
 class BaseMapper(ABC):
@@ -20,6 +21,7 @@ class BaseMapper(ABC):
             chunk_size: Max sentences per API call (None = process all at once)
         """
         self.chunk_size = chunk_size
+        self.parallel_requests = default_parallel_requests()
 
     def map(
         self, sentences: List[str], context: Optional[Dict[str, Any]] = None
@@ -44,11 +46,16 @@ class BaseMapper(ABC):
 
         # Process in chunks if chunk_size is set
         if self.chunk_size and len(sentences) > self.chunk_size:
-            all_predicates = []
-            for start_idx in range(0, len(sentences), self.chunk_size):
-                chunk = sentences[start_idx : start_idx + self.chunk_size]
-                chunk_results = self._map_sentences(chunk, context)
-                all_predicates.extend(chunk_results)
+            chunks = [
+                sentences[start : start + self.chunk_size]
+                for start in range(0, len(sentences), self.chunk_size)
+            ]
+            results = parallel_map(
+                lambda chunk: self._map_sentences(chunk, context),
+                chunks,
+                getattr(self, "parallel_requests", 1),
+            )
+            all_predicates = [rules for chunk_rules in results for rules in chunk_rules]
         else:
             all_predicates = self._map_sentences(sentences, context)
 

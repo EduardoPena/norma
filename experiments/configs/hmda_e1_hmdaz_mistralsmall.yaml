@@ -1,0 +1,42 @@
+experiment_name: hmda_e1_hmdaz_mistralsmall
+experiment_type: classifier
+results_dir: results/hmda/e1_classifiers
+datasets:
+- hmdaz
+dataset_options:
+  hmdaz:
+    gt_file: hmdaz_text2rule_gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+variants:
+- name: Mistral-Small | No Context
+  implementation: llm
+  provider: openrouter
+  model: mistralai/mistral-small-3.2-24b-instruct
+  prompt_key: zero_shot
+  batch_size: 10
+  use_context: false
+- name: Mistral-Small | Table Context
+  implementation: llm
+  provider: openrouter
+  model: mistralai/mistral-small-3.2-24b-instruct
+  prompt_key: zero_shot_with_table
+  batch_size: 10
+  use_context: true
+  num_rows_context: 3
+- name: Mistral-Small | Examples
+  implementation: llm
+  provider: openrouter
+  model: mistralai/mistral-small-3.2-24b-instruct
+  prompt_key: with_examples
+  batch_size: 10
+  use_context: false
+- name: Mistral-Small | Examples + Table Context
+  implementation: llm
+  provider: openrouter
+  model: mistralai/mistral-small-3.2-24b-instruct
+  prompt_key: with_examples_and_table
+  batch_size: 10
+  use_context: true
+  num_rows_context: 3

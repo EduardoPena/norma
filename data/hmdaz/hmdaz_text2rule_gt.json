@@ -10,6 +10,11 @@
             "multiple_sentences_one_rule": "sentences: ['sent1', 'sent2'], rules: [{'AND': [pred1, pred2]}]",
             "one_sentence_multiple_rules": "sentences: ['sent1'], rules: [pred1, {'AND': [pred2, pred3]}]"
          }
+      },
+      "annotation_policy": {
+         "projected_rules": "A rule may capture only the source branches representable by unambiguous target columns; such omissions are documented in the mapping comment.",
+         "scope_only_text": "Use null when text only defines scope, applicability, or exemptions and the dataset has no observable status or outcome whose value would make that scope a violation.",
+         "source_precedence": "When the regulatory source and an inferred rule conflict, preserve the source semantics rather than combining distinct alternatives or reversing a stated boundary."
       }
    },
    "mapping": [
@@ -41,7 +46,7 @@
                ]
             }
          ],
-         "_comment": "Ground Truth rule related to the target database"
+         "_comment": "Projected mapping: omits the first-lien personal-property case below USD 50,000 because no unambiguous target predicate was selected."
       },
       {
          "id": 3,
@@ -51,13 +56,13 @@
          "rules": [
             {
                "AND": [
-                  "t1.loan_amount > 20000",
+                  "t1.loan_amount >= 20000",
                   "t1.total_points_and_fees > 0.05 * t1.loan_amount",
                   "t1.hoepa_status_name != 'HOEPA loan'"
                ]
             }
          ],
-         "_comment": "Ground Truth rule related to the target database"
+         "_comment": "Ground Truth rule related to the target database; the source includes loans with an amount of USD 20,000."
       },
       {
          "id": 4,
@@ -72,7 +77,7 @@
                ]
             }
          ],
-         "_comment": "Ground Truth rule related to the target database"
+         "_comment": "Projected mapping: captures the representable term-over-36-months branch, but not the total-penalty-over-2-percent branch."
       },
       {
          "id": 5,
@@ -87,7 +92,7 @@
                ]
             }
          ],
-         "_comment": "Ground Truth rule related to the target database"
+         "_comment": "Projected mapping: captures the reverse-mortgage exemption but not initial-construction financing, which has no unambiguous target value."
       },
       {
          "id": 6,
@@ -142,15 +147,8 @@
          "sentences": [
             "This section applies to any consumer credit transaction that is secured by a dwelling, as defined in § 1026.2(a)(19), including any real property attached to a dwelling, other than For purposes of paragraphs (c) through (f) of this section  A reverse mortgage subject to § 1026.33 and ii) A temporary or “bridge” loan with a term of 12 months or less, such as a loan to finance the purchase of a new dwelling where the consumer plans to sell a current dwelling within 12 months or a loan to finance the initial construction of a dwelling;"
          ],
-         "rules": [
-            {
-               "AND": [
-                  "t1.reverse_mortgage_name = 'Reverse mortgage'",
-                  "t1.loan_term > 12"
-               ]
-            }
-         ],
-         "_comment": "Ground Truth rule related to the target database"
+         "rules": null,
+         "_comment": "No valid target denial constraint: the source lists separate scope exclusions, but the dataset has no applicability field for paragraphs (c) through (f)."
       },
       {
          "id": 13,

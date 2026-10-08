@@ -51,8 +51,11 @@ from typing import List, Dict, Any, Optional, Tuple
 import pandas as pd
 
 from src.mappers.base import BaseMapper
-from src.llm.client import get_llm_client
+from src.utils.parallel import parallel_map
+from src.mappers.predicate_filter import filter_predicates_by_columns
+from src.llm.client import EmptyModelContentError, get_llm_client
 from src.llm.helper import PromptLoader
+from src.llm import schemas
 from src.dbms.db_interface import DBExecutor
 from src.dbms.sql_translator import SQLTranslator
 from src.predicates import (
@@ -164,6 +167,23 @@ def extract_json(text: str) -> str:
     return repaired
 
 
+def _collapse_single_item_logical_nodes(value: Any) -> Any:
+    """Canonicalize redundant unary AND/OR nodes emitted by the LLM."""
+    if isinstance(value, list):
+        return [_collapse_single_item_logical_nodes(item) for item in value]
+    if not isinstance(value, dict) or len(value) != 1:
+        return value
+
+    operator, items = next(iter(value.items()))
+    if operator not in {"AND", "OR"} or not isinstance(items, list):
+        return value
+
+    normalized_items = [_collapse_single_item_logical_nodes(item) for item in items]
+    if len(normalized_items) == 1:
+        return normalized_items[0]
+    return {operator: normalized_items}
+
+
 def _normalize_constraint_list(constraint: Any, *, legacy: bool = False) -> Any:
     """Validate mapper output, converting the former flat conjunction when requested."""
     if constraint is None:
@@ -174,6 +194,7 @@ def _normalize_constraint_list(constraint: Any, *, legacy: bool = False) -> Any:
         and all(isinstance(predicate, str) for predicate in constraint)
     ):
         constraint = [constraint]
+    constraint = _collapse_single_item_logical_nodes(constraint)
     return normalize_rules(constraint)
 
 
@@ -260,10 +281,22 @@ class MultiStepRefinementMapper(BaseMapper):
         prompt_file: str = "multi_step_refinement_less_restrict",
         chunk_size: Optional[int] = None,
         max_tokens: Optional[int] = None,
+        enforce_rule_gate: bool = True,
+        include_column_descriptions: bool = False,
+        max_column_description_chars: int = 200,
+        structured_output: bool = True,
     ):
         super().__init__(chunk_size=chunk_size)
-        self.llm = get_llm_client(model_name, provider=provider, max_tokens=max_tokens)
+        self.llm = get_llm_client(
+            model_name,
+            provider=provider,
+            max_tokens=max_tokens,
+            structured_output=structured_output,
+        )
         self.processing_errors: List[str] = []
+        # Model-output failures (e.g. reasoning exhausted max_tokens): the
+        # sentence yields no constraint (paper §5.3) and is logged here.
+        self.output_failures: List[str] = []
         self.prompt_loader = PromptLoader()
         self.prompt_file = prompt_file
         self.predicate_space = predicate_space or {}
@@ -271,6 +304,9 @@ class MultiStepRefinementMapper(BaseMapper):
         self.max_refinement_iterations = max_refinement_iterations
         self.violation_ratio_threshold = violation_ratio_threshold
         self.max_candidate_predicates = max_candidate_predicates
+        self.enforce_rule_gate = enforce_rule_gate
+        self.include_column_descriptions = include_column_descriptions
+        self.max_column_description_chars = max(0, max_column_description_chars)
 
         self.db_executor = None
         self.sql_translator = None
@@ -501,17 +537,22 @@ class MultiStepRefinementMapper(BaseMapper):
     ) -> List[Any]:
         """Process sentences through multi-step refinement pipeline."""
         self.processing_errors = []
-        results = []
-        for sentence in sentences:
+
+        def process(sentence: str) -> Any:
+            # Sentences are independent; list.append is thread-safe and DB
+            # access is serialized inside DBExecutor.
             try:
-                constraint = self._process_single_sentence(sentence, context)
-                results.append(constraint)
+                return self._process_single_sentence(sentence, context)
+            except EmptyModelContentError as e:
+                print(f"Warning: no usable model output; sentence yields no constraint: {e}")
+                self.output_failures.append(str(e))
+                return None
             except Exception as e:
-                message = f"Error processing sentence: {e}"
-                print(message)
+                print(f"Error processing sentence: {e}")
                 self.processing_errors.append(str(e))
-                results.append(None)
-        return results
+                return None
+
+        return parallel_map(process, sentences, getattr(self, "parallel_requests", 1))
 
     def _process_single_sentence(self, sentence: str, context: Dict[str, Any]) -> Any:
         print(f"\n{'='*60}")
@@ -534,12 +575,13 @@ class MultiStepRefinementMapper(BaseMapper):
             return None
 
         # Step 3.5: Rule Gate — semantic check before paying construction cost
-        rule_gate = self._step3_5_rule_gate(
-            sentence, schema_analysis, predicate_selection
-        )
-        if not rule_gate.get("is_dc", True):
-            print(f"-> Rule gate: NOT a verifiable DC — skipping construction")
-            return None
+        if self.enforce_rule_gate:
+            rule_gate = self._step3_5_rule_gate(
+                sentence, schema_analysis, predicate_selection
+            )
+            if not rule_gate.get("is_dc", True):
+                print(f"-> Rule gate: NOT a verifiable DC — skipping construction")
+                return None
 
         # Step 4: Initial Construction
         initial_constraint = self._step4_construct_constraint(
@@ -608,7 +650,11 @@ class MultiStepRefinementMapper(BaseMapper):
             predicate_columns=predicate_columns,
         )
 
-        response = self.llm.complete(prompt)
+        response = self.llm.complete(
+            prompt,
+            response_schema=schemas.UNDERSTAND_SCHEMA,
+            schema_name="understand_schema",
+        )
 
         if self.llm.model_name.startswith("mistral-"):
             # Remove ```json and ``` from response if present
@@ -700,7 +746,11 @@ class MultiStepRefinementMapper(BaseMapper):
             column_profiles_desc=column_profiles_desc,
         )
 
-        response = self.llm.complete(prompt)
+        response = self.llm.complete(
+            prompt,
+            response_schema=schemas.SELECT_PREDICATES,
+            schema_name="select_predicates",
+        )
 
         if self.llm.model_name.startswith("mistral-"):
             # Remove ```json and ``` from response if present
@@ -709,6 +759,21 @@ class MultiStepRefinementMapper(BaseMapper):
 
         try:
             parsed = json.loads(extract_json(response))
+
+            if parsed.get("is_valid") is False and not parsed.get("reason"):
+                print("-> Step 3: Retrying incomplete invalid selection response")
+                retry_prompt = (
+                    f"{prompt}\n\n"
+                    "CORRECTION REQUIRED: Your prior JSON marked the selection invalid "
+                    "without explaining why. Return complete JSON with is_valid=true and "
+                    "selected_predicates, or is_valid=false and a non-empty reason."
+                )
+                retry_response = self.llm.complete(
+                    retry_prompt,
+                    response_schema=schemas.SELECT_PREDICATES,
+                    schema_name="select_predicates",
+                )
+                parsed = json.loads(extract_json(retry_response))
 
             selected = parsed.get("selected_predicates", [])
             invalid_preds = [p for p in selected if p not in self.allowed_predicates]
@@ -724,7 +789,11 @@ class MultiStepRefinementMapper(BaseMapper):
                     "Select only exact templates from Available predicates; omit a "
                     "predicate when no offered template expresses it."
                 )
-                retry_response = self.llm.complete(retry_prompt)
+                retry_response = self.llm.complete(
+                    retry_prompt,
+                    response_schema=schemas.SELECT_PREDICATES,
+                    schema_name="select_predicates",
+                )
                 parsed = json.loads(extract_json(retry_response))
                 selected = parsed.get("selected_predicates", [])
                 invalid_preds = [
@@ -733,9 +802,11 @@ class MultiStepRefinementMapper(BaseMapper):
 
             if invalid_preds:
                 parsed["is_valid"] = False
-                parsed["reason"] = f"Invalid predicates (not in allowed set): {invalid_preds}"
+                parsed["reason"] = (
+                    f"Invalid predicates (not in allowed set): {invalid_preds}"
+                )
 
-            if not parsed.get("is_valid") and "reason" not in parsed:
+            if not parsed.get("is_valid") and not parsed.get("reason"):
                 parsed["reason"] = "unknown"
 
             if parsed.get("is_valid"):
@@ -783,7 +854,11 @@ class MultiStepRefinementMapper(BaseMapper):
             column_profiles_desc=profiles_desc,
         )
 
-        response = self.llm.complete(prompt)
+        response = self.llm.complete(
+            prompt,
+            response_schema=schemas.RULE_GATE,
+            schema_name="rule_gate",
+        )
 
         if self.llm.model_name.startswith("mistral-"):
             # Remove ```json and ``` from response if present
@@ -842,7 +917,11 @@ class MultiStepRefinementMapper(BaseMapper):
             column_profiles_desc=profiles_desc,
         )
 
-        response = self.llm.complete(prompt)
+        response = self.llm.complete(
+            prompt,
+            response_schema=schemas.CONSTRUCT_CONSTRAINT,
+            schema_name="construct_constraint",
+        )
 
         if self.llm.model_name.startswith("mistral-"):
             # Remove ```json and ``` from response if present
@@ -1201,7 +1280,11 @@ class MultiStepRefinementMapper(BaseMapper):
             column_profiles_desc=profiles_desc,
         )
 
-        response = self.llm.complete(prompt)
+        response = self.llm.complete(
+            prompt,
+            response_schema=schemas.REFINE_CONSTRAINT,
+            schema_name="refine_constraint",
+        )
 
         if self.llm.model_name.startswith("mistral-"):
             # Remove ```json and ``` from response if present
@@ -1242,7 +1325,23 @@ class MultiStepRefinementMapper(BaseMapper):
         for table in self.tables:
             lines.append(f"\nTable: {table['name']}")
             for col in table["columns"]:
-                lines.append(f"  - {col['name']} ({col['type']})")
+                line = f"  - {col['name']} ({col['type']})"
+                description = col.get("description")
+                if (
+                    self.include_column_descriptions
+                    and isinstance(description, str)
+                    and self.max_column_description_chars > 0
+                ):
+                    compact_description = " ".join(description.split())
+                    if len(compact_description) > self.max_column_description_chars:
+                        compact_description = (
+                            compact_description[
+                                : self.max_column_description_chars
+                            ].rstrip()
+                            + "..."
+                        )
+                    line += f": {compact_description}"
+                lines.append(line)
 
         return "\n".join(lines)
 
@@ -1250,58 +1349,12 @@ class MultiStepRefinementMapper(BaseMapper):
         self, columns: List[str], sentence: str = ""
     ) -> List[str]:
         """Filter allowed predicates to those relevant for given columns."""
-        if not columns or not self.allowed_predicates:
-            return sorted(self.allowed_predicates)[: self.max_candidate_predicates]
-
-        selected_columns = set(columns)
-        column_reference = re.compile(r"\bt\d+\.([A-Za-z_][A-Za-z0-9_]*)\b")
-        relevant = [
-            pred
-            for pred in self.allowed_predicates
-            if (references := set(column_reference.findall(pred)))
-            and references <= selected_columns
-        ]
-
-        candidates = relevant if relevant else list(self.allowed_predicates)
-        sentence_tokens = set(re.findall(r"[a-z]+", sentence.lower()))
-        priority_columns = {
-            column
-            for column in selected_columns
-            if any(
-                part in sentence_tokens and len(part) >= 4 for part in column.split("_")
-            )
-        }
-
-        def has_arithmetic(predicate: str) -> bool:
-            return bool(re.search(r"\s[+*/%]\s", predicate))
-
-        simple = [
-            predicate
-            for predicate in candidates
-            if len(set(column_reference.findall(predicate))) == 1
-            and not has_arithmetic(predicate)
-        ]
-        simple_set = set(simple)
-
-        def relevance_rank(predicate: str) -> Tuple[int, int, bool, int, str]:
-            references = set(column_reference.findall(predicate))
-            outside_priority = len(references - priority_columns)
-            arithmetic_penalty = int(
-                has_arithmetic(predicate) and "percent" not in sentence_tokens
-            )
-            return (
-                outside_priority,
-                arithmetic_penalty,
-                "t2." in predicate,
-                len(references),
-                predicate,
-            )
-
-        ordered = sorted(simple) + sorted(
-            (predicate for predicate in candidates if predicate not in simple_set),
-            key=relevance_rank,
+        return filter_predicates_by_columns(
+            self.allowed_predicates,
+            columns,
+            sentence,
+            self.max_candidate_predicates,
         )
-        return ordered[: self.max_candidate_predicates]
 
     def _find_similar_columns(
         self, target: str, available: List[str], top_n: int = 3

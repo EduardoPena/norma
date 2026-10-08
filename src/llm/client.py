@@ -1,14 +1,25 @@
 """LLM client factory and implementations"""
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from functools import lru_cache
+from typing import Any, Dict, Optional, Set
+import json
 import os
+import urllib.request
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 
 class EmptyModelContentError(RuntimeError):
-    """Raised when a provider returns a completion without usable content."""
+    """Raised when a provider returns a completion without usable content.
+
+    This is a model-output failure (e.g. reasoning exhausted max_tokens), not an
+    infrastructure failure, so callers may treat the item as unanswered.
+    """
+
+
+class ProviderResponseError(RuntimeError):
+    """A 200 response without choices (upstream provider failure); retryable."""
 
 
 def _empty_content_error(response) -> EmptyModelContentError:
@@ -62,12 +73,21 @@ class LLMClient(ABC):
     """Abstract base for LLM clients"""
 
     @abstractmethod
-    def complete(self, prompt: str) -> str:
+    def complete(
+        self,
+        prompt: str,
+        response_schema: Optional[Dict[str, Any]] = None,
+        schema_name: str = "output",
+    ) -> str:
         """
         Generate completion for a prompt
 
         Args:
             prompt: Input prompt
+            response_schema: Optional JSON Schema (src.llm.schemas) for structured
+                output. Clients without structured-output support ignore it; the
+                prompts describe the same JSON format.
+            schema_name: Name sent with the schema
 
         Returns:
             Generated text
@@ -86,7 +106,7 @@ class OpenAIClient(LLMClient):
         # GPT-5 and some models only support temperature=1
         self.temperature = 1 if model_name.startswith("gpt-5") else 0.0
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, response_schema=None, schema_name="output") -> str:
         try:
             response = self.client.chat.completions.create(
                 model=self.model_name,
@@ -109,7 +129,7 @@ class MaritacaAIClient(LLMClient):
         # GPT-5 and some models only support temperature=1
         self.temperature = 1 if model_name.startswith("sabia") else 0.0
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, response_schema=None, schema_name="output") -> str:
         try:
             response = self.client.chat.completions.create(
                 model=self.model_name,
@@ -130,7 +150,7 @@ class AnthropicClient(LLMClient):
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model_name = model_name
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, response_schema=None, schema_name="output") -> str:
         try:
             response = self.client.messages.create(
                 model=self.model_name,
@@ -157,7 +177,7 @@ class MistralClient(LLMClient):
         self.client = Mistral(api_key=api_key)
         self.model_name = model_name
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, response_schema=None, schema_name="output") -> str:
         try:
             response = self.client.chat.complete(
                 model=self.model_name,
@@ -178,7 +198,7 @@ class GroqClient(LLMClient):
         self.client = OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
         self.model_name = model_name
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, response_schema=None, schema_name="output") -> str:
         try:
             response = self.client.chat.completions.create(
                 model=self.model_name,
@@ -190,10 +210,47 @@ class GroqClient(LLMClient):
             raise RuntimeError(f"Groq API error: {e}") from e
 
 
-class OpenRouterClient(LLMClient):
-    """OpenRouter client using the OpenAI-compatible API."""
+def _is_transient_api_error(error: Exception) -> bool:
+    """Rate limits, timeouts, connection drops, 5xx and empty provider responses are retryable."""
+    from openai import APIConnectionError, APIStatusError
 
-    def __init__(self, api_key: str, model_name: str, max_tokens: Optional[int] = None):
+    if isinstance(error, (APIConnectionError, ProviderResponseError)):
+        return True  # APIConnectionError includes APITimeoutError
+    if isinstance(error, APIStatusError):
+        return error.status_code in (408, 409, 429) or error.status_code >= 500
+    return False
+
+
+@lru_cache(maxsize=1)
+def _openrouter_supported_parameters() -> Dict[str, Set[str]]:
+    """Model id -> request parameters accepted by its OpenRouter endpoints."""
+    with urllib.request.urlopen(f"{OPENROUTER_BASE_URL}/models", timeout=30) as response:
+        return {
+            model["id"]: set(model.get("supported_parameters") or [])
+            for model in json.load(response)["data"]
+        }
+
+
+class OpenRouterClient(LLMClient):
+    """OpenRouter client using the OpenAI-compatible API.
+
+    Only parameters the model supports are sent (e.g. GPT-5 rejects
+    ``temperature``), which also keeps ``provider.require_parameters`` routable.
+    """
+
+    # Exponential backoff for transient API errors: 5, 10, ..., 160, then 300 s
+    # (~25 min in total; upstream rate limits on shared pools can last minutes).
+    max_transient_retries = 10
+    backoff_base_s = 5.0
+    backoff_max_s = 300.0
+
+    def __init__(
+        self,
+        api_key: str,
+        model_name: str,
+        max_tokens: Optional[int] = None,
+        structured_output: bool = True,
+    ):
         from openai import OpenAI
 
         self.client = OpenAI(
@@ -202,19 +259,77 @@ class OpenRouterClient(LLMClient):
         )
         self.model_name = model_name
         self.max_tokens = max_tokens
-        self.temperature = 1 if model_name.startswith("gpt-5") else 0.0
+        self.temperature = 0.0
+        try:
+            self.supported_parameters = _openrouter_supported_parameters().get(model_name)
+        except Exception as error:  # catalog unavailable: send parameters as before
+            print(f"Warning: could not read OpenRouter model catalog: {error}")
+            self.supported_parameters = None
+        self.structured_output = structured_output and self._supports("response_format")
+        if structured_output and not self.structured_output:
+            print(
+                f"Warning: {model_name} does not support response_format; "
+                "using prompt-only JSON output"
+            )
 
-    def complete(self, prompt: str) -> str:
+    def _supports(self, parameter: str) -> bool:
+        return self.supported_parameters is None or parameter in self.supported_parameters
+
+    def _create_with_backoff(self, request: dict):
+        import time
+
+        for retry in range(self.max_transient_retries + 1):
+            try:
+                response = self.client.chat.completions.create(**request)
+                if not getattr(response, "choices", None):
+                    raise ProviderResponseError(
+                        "Provider returned no choices: "
+                        f"{getattr(response, 'error', None) or 'no error detail'}"
+                    )
+                return response
+            except Exception as error:
+                if retry == self.max_transient_retries or not _is_transient_api_error(
+                    error
+                ):
+                    raise
+                delay = min(self.backoff_base_s * 2**retry, self.backoff_max_s)
+                print(
+                    f"OpenRouter transient error ({type(error).__name__}, "
+                    f"status={getattr(error, 'status_code', None)}) for "
+                    f"{self.model_name}; retry {retry + 1}/"
+                    f"{self.max_transient_retries} in {delay:.0f}s",
+                    flush=True,
+                )
+                time.sleep(delay)
+
+    def complete(
+        self,
+        prompt: str,
+        response_schema: Optional[Dict[str, Any]] = None,
+        schema_name: str = "output",
+    ) -> str:
         try:
             request = {
                 "model": self.model_name,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": self.temperature,
             }
-            if self.max_tokens is not None:
+            if self._supports("temperature"):
+                request["temperature"] = self.temperature
+            if self.max_tokens is not None and self._supports("max_tokens"):
                 request["max_tokens"] = self.max_tokens
+            if response_schema is not None and self.structured_output:
+                request["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": schema_name,
+                        "strict": True,
+                        "schema": response_schema,
+                    },
+                }
+                # Route only to providers that honor response_format.
+                request["extra_body"] = {"provider": {"require_parameters": True}}
             for attempt in range(3):
-                response = self.client.chat.completions.create(**request)
+                response = self._create_with_backoff(request)
                 try:
                     return _extract_openai_compatible_text(response)
                 except EmptyModelContentError as error:
@@ -223,6 +338,8 @@ class OpenRouterClient(LLMClient):
                     print(
                         f"OpenRouter returned empty content; retrying completion: {error}"
                     )
+        except EmptyModelContentError:
+            raise
         except Exception as e:
             raise RuntimeError(f"OpenRouter API error: {e}") from e
 
@@ -247,13 +364,14 @@ def _normalize_openrouter_model_name(model_name: str) -> str:
 
 
 def _get_openrouter_client(
-    model_name: str, max_tokens: Optional[int] = None
+    model_name: str, max_tokens: Optional[int] = None, structured_output: bool = True
 ) -> OpenRouterClient:
     api_key = _get_required_api_key("OPENROUTER_API_KEY")
     return OpenRouterClient(
         api_key=api_key,
         model_name=_normalize_openrouter_model_name(model_name),
         max_tokens=max_tokens,
+        structured_output=structured_output,
     )
 
 
@@ -261,6 +379,7 @@ def get_llm_client(
     model_name: str = "gpt-5-mini",
     provider: Optional[str] = None,
     max_tokens: Optional[int] = None,
+    structured_output: bool = True,
 ) -> LLMClient:
     """
     Factory to create LLM clients based on model name
@@ -269,6 +388,8 @@ def get_llm_client(
         model_name: Model identifier (e.g., "gpt-5-mini", "claude-3-5-sonnet-20241022")
         provider: Optional explicit provider override. Supported: openai,
             openrouter, maritaca, anthropic, mistral, groq.
+        structured_output: Send JSON Schemas as strict structured output
+            (OpenRouter only; other clients rely on the prompt format).
 
     Returns:
         LLMClient instance
@@ -279,7 +400,9 @@ def get_llm_client(
     provider = provider.lower() if provider else None
 
     if provider == "openrouter" or _is_openrouter_model(model_name):
-        return _get_openrouter_client(model_name, max_tokens=max_tokens)
+        return _get_openrouter_client(
+            model_name, max_tokens=max_tokens, structured_output=structured_output
+        )
 
     if provider == "openai":
         return OpenAIClient(
@@ -345,7 +468,9 @@ def get_llm_client(
         )
 
     if os.getenv("OPENROUTER_API_KEY"):
-        return _get_openrouter_client(model_name, max_tokens=max_tokens)
+        return _get_openrouter_client(
+            model_name, max_tokens=max_tokens, structured_output=structured_output
+        )
 
     raise ValueError(
         f"Unknown model: {model_name}. Set OPENROUTER_API_KEY to route arbitrary models via OpenRouter."
