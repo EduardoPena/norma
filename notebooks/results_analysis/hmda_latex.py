@@ -87,7 +87,8 @@ def _wide(df, index_col, column_key, metrics):
     return wide
 
 
-def e1_table(results, prompt_order, model_order, dataset_order, dataset_labels):
+def e1_table(results, prompt_order, model_order, dataset_order, dataset_labels,
+             group_label="HMDA", row_note="first 1,000,000 rows per dataset"):
     """E1: P/R/F1 per model x prompt strategy; dagger = recall >= 0.90 (selection criterion).
 
     ``results`` needs columns dataset, model_label, prompt_label, precision, recall, f1_score.
@@ -105,14 +106,16 @@ def e1_table(results, prompt_order, model_order, dataset_order, dataset_labels):
     }
     return latex_grouped_table(
         wide, "model_label", groups,
-        "Constraint classification on HMDA (E1): precision, recall and F$_1$ per model and "
-        "prompt strategy (first 1,000,000 rows per dataset). $^\\dagger$: recall $\\geq$ 0.90, "
+        f"Constraint classification on {group_label} (E1): precision, recall and F$_1$ per model and "
+        f"prompt strategy ({row_note}). $^\\dagger$: recall $\\geq$ 0.90, "
         "the selection criterion; bold: best value per column and dataset.",
-        "tab:hmda_e1_classification", model_order, dataset_order, dataset_labels, marks,
+        f"tab:{group_label.lower().replace(' ', '_')}_e1_classification", model_order,
+        dataset_order, dataset_labels, marks,
     )
 
 
-def e2_table(results, mapper_order, model_order, dataset_order, dataset_labels):
+def e2_table(results, mapper_order, model_order, dataset_order, dataset_labels,
+             group_label="HMDA", row_note="first 1,000,000 rows per dataset"):
     """E2: constraint extraction and aggregate violation P/R/F1 per model and mapper.
 
     ``results`` needs columns dataset, model_label, mapper and the metric columns.
@@ -130,10 +133,10 @@ def e2_table(results, mapper_order, model_order, dataset_order, dataset_labels):
     super_groups = [(mapper, len(metrics)) for mapper in mapper_order]
     return latex_grouped_table(
         wide, "model_label", groups,
-        "Sentence-level mapping on the HMDA ground-truth constraint sentences (E2): constraint "
+        f"Sentence-level mapping on the {group_label} ground-truth constraint sentences (E2): constraint "
         "extraction (exact predicate-set match) and aggregate violation detection, precision, "
-        "recall and F$_1$ (first 1,000,000 rows per dataset). Bold: best value per column and dataset.",
-        "tab:hmda_e2_mapping", model_order, dataset_order, dataset_labels,
+        f"recall and F$_1$ ({row_note}). Bold: best value per column and dataset.",
+        f"tab:{group_label.lower().replace(' ', '_')}_e2_mapping", model_order, dataset_order, dataset_labels,
         super_groups=super_groups,
     )
 
@@ -145,7 +148,8 @@ TABLE3_GROUPS = [
 ]
 
 
-def table3(results, method_order, dataset_order, dataset_labels):
+def table3(results, method_order, dataset_order, dataset_labels,
+           group_label="HMDA", row_note="first 1,000,000 rows per dataset"):
     """Paper Table 3 layout (Family | Method | 3 x P/R/F1), Norma rows only.
 
     ``results`` needs columns dataset, method and the TABLE3_GROUPS metrics.
@@ -185,10 +189,10 @@ def table3(results, method_order, dataset_order, dataset_labels):
     lines += [
         "  \\bottomrule",
         "  \\end{tabular}",
-        "  \\caption{End-to-end results of Norma on HMDA (C+MS: classifier + Multi-Step; Multi-Step "
-        "alone), first 1,000,000 rows per dataset. Bold: best result per metric and dataset. "
+        f"  \\caption{{End-to-end results of Norma on {group_label} (C+MS: classifier + Multi-Step; "
+        f"Multi-Step alone), {row_note}. Bold: best result per metric and dataset. "
         "Baselines and the Document variant were not run.}",
-        "  \\label{tab:hmda_end2end}",
+        f"  \\label{{tab:{group_label.lower().replace(' ', '_')}_end2end}}",
         "\\end{table}",
     ]
     return "\n".join(lines)

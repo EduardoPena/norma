@@ -1,4 +1,4 @@
-"""Generate the HMDA E1/E2/E3 runner configs and an ordered execution plan.
+"""Generate E1/E2/E3 runner configs (HMDA or paper datasets) and an execution plan.
 
 Hyperparameters mirror experiments/configs/*_official_openrouter_all.yaml
 (the paper protocol); only the dataset options and results_dir differ.
@@ -15,12 +15,21 @@ MANIFEST = yaml.safe_load((CONFIG_DIR / "hmda_models.yaml").read_text())
 RESULTS_ROOT = "results/hmda"
 ROW_LIMIT = 1000000
 
+# filter_predicates: only for spaces too large for a Single-Prompt context (HMDAZ).
+# Paper datasets have <= 128k rows, so ROW_LIMIT reads them whole (as in the paper).
 DATASETS = {
     "hmdaz": {"gt_file": "hmdaz_text2rule_gt.json", "filter_predicates": True},
     "hmda_checks": {
         "gt_file": "hmda_regc_checks-text2rule-gt.json",
         "filter_predicates": False,
     },
+    "hospital": {"gt_file": "hospital-holo_text2rule_gt.json", "filter_predicates": False},
+    "restaurant": {
+        "gt_file": "restaurant-inspections_text2rule_gt.json",
+        "filter_predicates": False,
+    },
+    "sisu": {"gt_file": "sisu_text2rule_gt.json", "filter_predicates": False},
+    "tax": {"gt_file": "tax_text2rule_gt.json", "filter_predicates": False},
 }
 
 # Paper prompt variants (Fig. 6): name -> (prompt_key, use_context)
@@ -163,6 +172,9 @@ def main():
     parser.add_argument(
         "--experiments", nargs="+", choices=("e1", "e2", "e3"), default=["e1", "e2", "e3"]
     )
+    parser.add_argument(
+        "--datasets", nargs="+", choices=list(DATASETS), default=["hmdaz", "hmda_checks"]
+    )
     args = parser.parse_args()
     MANIFEST = yaml.safe_load(args.models.read_text())
     RESULTS_ROOT = args.results_root
@@ -175,15 +187,15 @@ def main():
     jobs = []
     if "e1" in args.experiments:
         for model in models:  # manifest order: cheap models first
-            for dataset in DATASETS:
+            for dataset in args.datasets:
                 jobs.append(e1(dataset, model))
     if "e2" in args.experiments:
         for model in models:
-            for dataset in DATASETS:
+            for dataset in args.datasets:
                 for mapper_name in ("SinglePrompt", "MultiStep"):
                     jobs.append(e2(dataset, model, mapper_name))
     if "e3" in args.experiments:
-        for dataset in DATASETS:
+        for dataset in args.datasets:
             for variant in ("MultiStep", "C_MS"):
                 jobs.append(e3(dataset, variant))
 

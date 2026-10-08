@@ -1,0 +1,42 @@
+experiment_name: hmda_e1_tax_kimik3
+experiment_type: classifier
+results_dir: results/paper_v2/e1_classifiers
+datasets:
+- tax
+dataset_options:
+  tax:
+    gt_file: tax_text2rule_gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+variants:
+- name: Kimi K3 | No Context
+  implementation: llm
+  provider: openrouter
+  model: moonshotai/kimi-k3
+  prompt_key: zero_shot
+  batch_size: 10
+  use_context: false
+- name: Kimi K3 | Table Context
+  implementation: llm
+  provider: openrouter
+  model: moonshotai/kimi-k3
+  prompt_key: zero_shot_with_table
+  batch_size: 10
+  use_context: true
+  num_rows_context: 3
+- name: Kimi K3 | Examples
+  implementation: llm
+  provider: openrouter
+  model: moonshotai/kimi-k3
+  prompt_key: with_examples
+  batch_size: 10
+  use_context: false
+- name: Kimi K3 | Examples + Table Context
+  implementation: llm
+  provider: openrouter
+  model: moonshotai/kimi-k3
+  prompt_key: with_examples_and_table
+  batch_size: 10
+  use_context: true
+  num_rows_context: 3
