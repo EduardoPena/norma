@@ -17,7 +17,7 @@
          "source_precedence": "When the regulatory source and an inferred rule conflict, preserve the source semantics rather than combining distinct alternatives or reversing a stated boundary."
       },
       "sentence_policy": "Sentences are verbatim from the source PDF, keeping enumeration labels; an item is prefixed by the lead-in text it depends on; a trailing '; or' / ';' that only links list items may be omitted.",
-      "revision_2026_10_11": "Sentences re-aligned with the 2018 source text; trigger rules carry the coverage conditions of § 1026.32(a)(1); added ids 14-19 (one null HPML branch, HOEPA limitations on balloon payments, negative amortization and prepayment penalties, and § 1026.43(g) prepayment-penalty rules)."
+      "revision_2026_10_11": "Sentences re-aligned with the 2018 source text; trigger rules carry the coverage conditions of § 1026.32(a)(1); added ids 14-19 (one null HPML branch, HOEPA limitations on balloon payments, negative amortization and prepayment penalties, and § 1026.43(g) prepayment-penalty rules). Later the same day, id 18 (§ 1026.43(g)(1), prepayment penalties only when the APR cannot increase, the loan is a qualified mortgage and not higher-priced) was removed at the authors' request: its mapping projected away the non-representable conditions and it alone held 93% of the gold violations."
    },
    "mapping": [
       {
@@ -251,50 +251,6 @@
             }
          ],
          "_comment": "Added 2026-10-11: prepayment_penalty_term is reported (months) only when the loan has a prepayment penalty."
-      },
-      {
-         "id": 18,
-         "sentences": [
-            "(1) When permitted. A covered transaction must not include a prepayment penalty unless: (i) The prepayment penalty is otherwise permitted by law; and (ii) The transaction: (A) Has an annual percentage rate that cannot increase after consummation; (B) Is a qualified mortgage under paragraph (e)(2), (e)(4), (e)(5), (e)(6), or (f) of this section; and (C) Is not a higher-priced mortgage loan, as defined in § 1026.35(a)."
-         ],
-         "rules": [
-            {
-               "AND": [
-                  "t1.business_or_commercial_purpose = 2",
-                  "t1.open_end_line_of_credit = 2",
-                  "t1.prepayment_penalty_term > 0",
-                  {
-                     "OR": [
-                        "t1.intro_rate_period > 0",
-                        {
-                           "AND": [
-                              "t1.occupancy_type_name = 'Principal residence'",
-                              "t1.lien_status_name = 'Secured by a first lien'",
-                              "t1.conforming_loan_limit = 'C'",
-                              "t1.rate_spread >= 1.5"
-                           ]
-                        },
-                        {
-                           "AND": [
-                              "t1.occupancy_type_name = 'Principal residence'",
-                              "t1.lien_status_name = 'Secured by a first lien'",
-                              "t1.conforming_loan_limit = 'NC'",
-                              "t1.rate_spread >= 2.5"
-                           ]
-                        },
-                        {
-                           "AND": [
-                              "t1.occupancy_type_name = 'Principal residence'",
-                              "t1.lien_status_name = 'Secured by a subordinate lien'",
-                              "t1.rate_spread >= 3.5"
-                           ]
-                        }
-                     ]
-                  }
-               ]
-            }
-         ],
-         "_comment": "Added 2026-10-11. Projected mapping: covered transaction = consumer credit, not an open-end line of credit (home-equity lines are excluded by § 1026.43(a)(1)); APR that can increase = adjustable rate (intro_rate_period reported); higher-priced = § 1026.35(a) thresholds, Freddie Mac limit = conforming_loan_limit. Qualified-mortgage status and 'permitted by law' have no target columns."
       },
       {
          "id": 19,
