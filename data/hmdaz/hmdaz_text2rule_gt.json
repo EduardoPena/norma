@@ -2,7 +2,7 @@
    "_meta": {
       "_comment": "Ground truth mapping between natural language sentences and denial constraint rules - REGULATION Z",
       "dataset": "hmdaz.csv",
-      "source": "Regulation Z (12 CFR Part 1026)",
+      "source": "Regulation Z (12 CFR Part 1026, in effect 1/01/2018), §§ 1026.32, 1026.35, 1026.43 — data/hmdaz/regulation_z-2018-section_32_35_43.pdf",
       "structure": {
          "sentences": "Array of related sentences (current datasets are 1-to-1, future: many-to-one or one-to-many)",
          "rules": "Array of independent rules. Each rule is a predicate string or an explicit AND/OR expression. null if no valid rule exists",
@@ -15,24 +15,43 @@
          "projected_rules": "A rule may capture only the source branches representable by unambiguous target columns; such omissions are documented in the mapping comment.",
          "scope_only_text": "Use null when text only defines scope, applicability, or exemptions and the dataset has no observable status or outcome whose value would make that scope a violation.",
          "source_precedence": "When the regulatory source and an inferred rule conflict, preserve the source semantics rather than combining distinct alternatives or reversing a stated boundary."
-      }
+      },
+      "sentence_policy": "Sentences are verbatim from the source PDF, keeping enumeration labels; an item is prefixed by the lead-in text it depends on; a trailing '; or' / ';' that only links list items may be omitted.",
+      "revision_2026_10_11": "Sentences re-aligned with the 2018 source text; trigger rules carry the coverage conditions of § 1026.32(a)(1); added ids 14-19 (one null HPML branch, HOEPA limitations on balloon payments, negative amortization and prepayment penalties, and § 1026.43(g) prepayment-penalty rules)."
    },
    "mapping": [
       {
          "id": 1,
          "sentences": [
-            " The annual percentage rate at consummation of the transaction will exceed the average prime offer rate, as defined in § 1026.35(a)(2), for a comparable transaction by more than either (A) 6.5 percentage points for a first-lien transaction, other than as described in paragraph (a)(B) of this section; or (B) 8.5 percentage points for a subordinate-lien covered transaction."
+            "(1) The requirements of this section apply to a high-cost mortgage, which is any consumer credit transaction that is secured by the consumer's principal dwelling, other than as provided in paragraph (a)(2) of this section, and in which: (i) The annual percentage rate applicable to the transaction, as determined in accordance with paragraph (a)(3) of this section, will exceed the average prime offer rate, as defined in § 1026.35(a)(2), for a comparable transaction by more than: (A) 6.5 percentage points for a first-lien transaction, other than as described in paragraph (a)(1)(i)(B) of this section; (B) 8.5 percentage points for a first-lien transaction if the dwelling is personal property and the loan amount is less than $50,000; or (C) 8.5 percentage points for a subordinate-lien transaction."
          ],
          "rules": [
             {
                "AND": [
-                  "t1.hoepa_status_name != 'HOEPA loan'",
+                  "t1.business_or_commercial_purpose = 2",
+                  "t1.occupancy_type_name = 'Principal residence'",
+                  "t1.reverse_mortgage_name = 'Not a reverse mortgage'",
+                  "t1.hoepa_status_name = 'Not a HOEPA loan'",
                   {
                      "OR": [
                         {
                            "AND": [
                               "t1.lien_status_name = 'Secured by a first lien'",
+                              {
+                                 "OR": [
+                                    "t1.manufactured_home_secured_property_type != 2",
+                                    "t1.loan_amount >= 50000"
+                                 ]
+                              },
                               "t1.rate_spread > 6.5"
+                           ]
+                        },
+                        {
+                           "AND": [
+                              "t1.lien_status_name = 'Secured by a first lien'",
+                              "t1.manufactured_home_secured_property_type = 2",
+                              "t1.loan_amount < 50000",
+                              "t1.rate_spread > 8.5"
                            ]
                         },
                         {
@@ -46,43 +65,73 @@
                ]
             }
          ],
-         "_comment": "Projected mapping: omits the first-lien personal-property case below USD 50,000 because no unambiguous target predicate was selected."
+         "_comment": "Revised 2026-10-11: sentence verbatim from the 2018 text (now with branch (B), personal property = manufactured_home_secured_property_type 2). Coverage: consumer credit (business_or_commercial_purpose = 2), principal dwelling, not a reverse mortgage (the only (a)(2) exemption with a target column); 'Exempt' codes are not treated as known. rate_spread (APR - APOR as reported) approximates the (a)(3) APR."
       },
       {
          "id": 3,
          "sentences": [
-            " The transaction's total points and fees, as defined in paragraphs (b) and (2) of this section, will exceed 5 percent of the total loan amount for a transaction with a loan amount of $20,000 or more and the $20,000 figure shall be adjusted annually on January 1 by the annual percentage change in the Consumer Price Index that was reported on the preceding June 1;"
+            "(1) The requirements of this section apply to a high-cost mortgage, which is any consumer credit transaction that is secured by the consumer's principal dwelling, other than as provided in paragraph (a)(2) of this section, and in which: (ii) The transaction's total points and fees, as defined in paragraphs (b)(1) and (2) of this section, will exceed: (A) 5 percent of the total loan amount for a transaction with a loan amount of $20,000 or more; the $20,000 figure shall be adjusted annually on January 1 by the annual percentage change in the Consumer Price Index that was reported on the preceding June 1."
          ],
          "rules": [
             {
                "AND": [
+                  "t1.business_or_commercial_purpose = 2",
+                  "t1.occupancy_type_name = 'Principal residence'",
+                  "t1.reverse_mortgage_name = 'Not a reverse mortgage'",
+                  "t1.hoepa_status_name = 'Not a HOEPA loan'",
                   "t1.loan_amount >= 20000",
-                  "t1.total_points_and_fees > 0.05 * t1.loan_amount",
-                  "t1.hoepa_status_name != 'HOEPA loan'"
+                  "t1.total_points_and_fees > 0.05 * t1.loan_amount"
                ]
             }
          ],
-         "_comment": "Ground Truth rule related to the target database; the source includes loans with an amount of USD 20,000."
+         "_comment": "Revised 2026-10-11: sentence verbatim from the 2018 text. Uses the stated $20,000 figure (the CPI-adjusted value is not in the source). Coverage: consumer credit (business_or_commercial_purpose = 2), principal dwelling, not a reverse mortgage (the only (a)(2) exemption with a target column); 'Exempt' codes are not treated as known. rate_spread (APR - APOR as reported) approximates the (a)(3) APR."
+      },
+      {
+         "id": 13,
+         "sentences": [
+            "(1) The requirements of this section apply to a high-cost mortgage, which is any consumer credit transaction that is secured by the consumer's principal dwelling, other than as provided in paragraph (a)(2) of this section, and in which: (ii) The transaction's total points and fees, as defined in paragraphs (b)(1) and (2) of this section, will exceed: (B) The lesser of 8 percent of the total loan amount or $1,000 for a transaction with a loan amount of less than $20,000; the $1,000 and $20,000 figures shall be adjusted annually on January 1 by the annual percentage change in the Consumer Price Index that was reported on the preceding June 1."
+         ],
+         "rules": [
+            {
+               "AND": [
+                  "t1.business_or_commercial_purpose = 2",
+                  "t1.occupancy_type_name = 'Principal residence'",
+                  "t1.reverse_mortgage_name = 'Not a reverse mortgage'",
+                  "t1.hoepa_status_name = 'Not a HOEPA loan'",
+                  "t1.loan_amount < 20000",
+                  {
+                     "OR": [
+                        "t1.total_points_and_fees > 0.08 * t1.loan_amount",
+                        "t1.total_points_and_fees > 1000"
+                     ]
+                  }
+               ]
+            }
+         ],
+         "_comment": "Revised 2026-10-11: sentence verbatim from the 2018 text; exceeding the lesser of two amounts = exceeding either. Uses the stated figures (CPI adjustment not in the source). Coverage: consumer credit (business_or_commercial_purpose = 2), principal dwelling, not a reverse mortgage (the only (a)(2) exemption with a target column); 'Exempt' codes are not treated as known. rate_spread (APR - APOR as reported) approximates the (a)(3) APR."
       },
       {
          "id": 4,
          "sentences": [
-            " Under the terms of the loan contract or open-end credit agreement, the creditor can charge a prepayment penalty, as defined in paragraph (b)(6) of this section, more than 36 months after consummation or account opening, or prepayment penalties that can exceed, in total, more than 2 percent of the amount prepaid."
+            "(1) The requirements of this section apply to a high-cost mortgage, which is any consumer credit transaction that is secured by the consumer's principal dwelling, other than as provided in paragraph (a)(2) of this section, and in which: (iii) Under the terms of the loan contract or open-end credit agreement, the creditor can charge a prepayment penalty, as defined in paragraph (b)(6) of this section, more than 36 months after consummation or account opening, or prepayment penalties that can exceed, in total, more than 2 percent of the amount prepaid."
          ],
          "rules": [
             {
                "AND": [
-                  "t1.prepayment_penalty_term > 36",
-                  "t1.hoepa_status_name != 'HOEPA loan'"
+                  "t1.business_or_commercial_purpose = 2",
+                  "t1.occupancy_type_name = 'Principal residence'",
+                  "t1.reverse_mortgage_name = 'Not a reverse mortgage'",
+                  "t1.hoepa_status_name = 'Not a HOEPA loan'",
+                  "t1.prepayment_penalty_term > 36"
                ]
             }
          ],
-         "_comment": "Projected mapping: captures the representable term-over-36-months branch, but not the total-penalty-over-2-percent branch."
+         "_comment": "Projected mapping (revised 2026-10-11): captures the term-over-36-months branch; the 2-percent-of-amount-prepaid branch has no target column. Coverage: consumer credit (business_or_commercial_purpose = 2), principal dwelling, not a reverse mortgage (the only (a)(2) exemption with a target column); 'Exempt' codes are not treated as known. rate_spread (APR - APOR as reported) approximates the (a)(3) APR."
       },
       {
          "id": 5,
          "sentences": [
-            " A reverse mortgage transaction subject to § 1026.33 and  A transaction to finance the initial construction of a dwelling."
+            "(2) Exemptions. This section does not apply to the following: (i) A reverse mortgage transaction subject to § 1026.33; (ii) A transaction to finance the initial construction of a dwelling; (iii) A transaction originated by a Housing Finance Agency, where the Housing Finance Agency is the creditor for the transaction; or (iv) A transaction originated pursuant to the United States Department of Agriculture's Rural Development Section 502 Direct Loan Program."
          ],
          "rules": [
             {
@@ -92,23 +141,31 @@
                ]
             }
          ],
-         "_comment": "Projected mapping: captures the reverse-mortgage exemption but not initial-construction financing, which has no unambiguous target value."
+         "_comment": "Projected mapping (revised 2026-10-11, sentence now verbatim with the full list): an exempt reverse mortgage must not be reported as a high-cost (HOEPA) loan. Initial construction, Housing Finance Agency and USDA Section 502 Direct loans have no unambiguous target column."
       },
       {
          "id": 6,
          "sentences": [
-            " “Higher-priced mortgage loan” means a closed-end consumer credit transaction secured by the consumer's principal dwelling with an annual percentage rate that exceeds the average prime offer rate for a comparable transaction as of the date the interest rate is set  By 1.5 or more percentage points for loans secured by a first lien with a principal obligation at consummation that does not exceed the limit in effect as of the date the transaction's interest rate is set for the maximum principal obligation eligible for purchase by Freddie Mac;"
+            "(1) “Higher-priced mortgage loan” means a closed-end consumer credit transaction secured by the consumer's principal dwelling with an annual percentage rate that exceeds the average prime offer rate for a comparable transaction as of the date the interest rate is set: (i) By 1.5 or more percentage points for loans secured by a first lien with a principal obligation at consummation that does not exceed the limit in effect as of the date the transaction's interest rate is set for the maximum principal obligation eligible for purchase by Freddie Mac;"
          ],
          "rules": null,
-         "_comment": "Ground Truth rule related to the target database"
+         "_comment": "No valid target denial constraint: defines higher-priced mortgage loans, and the dataset has no higher-priced status column to contradict."
+      },
+      {
+         "id": 14,
+         "sentences": [
+            "(1) “Higher-priced mortgage loan” means a closed-end consumer credit transaction secured by the consumer's principal dwelling with an annual percentage rate that exceeds the average prime offer rate for a comparable transaction as of the date the interest rate is set: (ii) By 2.5 or more percentage points for loans secured by a first lien with a principal obligation at consummation that exceeds the limit in effect as of the date the transaction's interest rate is set for the maximum principal obligation eligible for purchase by Freddie Mac; or"
+         ],
+         "rules": null,
+         "_comment": "Added 2026-10-11 (sibling of ids 6 and 7). No valid target denial constraint: definition without a higher-priced status column."
       },
       {
          "id": 7,
          "sentences": [
-            " “Higher-priced mortgage loan” means a closed-end consumer credit transaction secured by the consumer's principal dwelling with an annual percentage rate that exceeds the average prime offer rate for a comparable transaction as of the date the interest rate is set  By 3.5 or more percentage points for loans secured by a subordinate lien."
+            "(1) “Higher-priced mortgage loan” means a closed-end consumer credit transaction secured by the consumer's principal dwelling with an annual percentage rate that exceeds the average prime offer rate for a comparable transaction as of the date the interest rate is set: (iii) By 3.5 or more percentage points for loans secured by a subordinate lien."
          ],
          "rules": null,
-         "_comment": "Ground Truth rule related to the target database"
+         "_comment": "No valid target denial constraint: definition without a higher-priced status column."
       },
       {
          "id": 8,
@@ -116,15 +173,15 @@
             "Except as provided in paragraph (b)(2) of this section, a creditor may not extend a higher-priced mortgage loan secured by a first lien on a consumer's principal dwelling unless an escrow account is established before consummation for payment of property taxes and premiums for mortgage-related insurance required by the creditor, such as insurance against loss of or damage to property, or against liability arising out of the ownership or use of the property, or insurance protecting the creditor against the consumer's default or other credit loss. For purposes of this paragraph (b), the term “escrow account” has the same meaning as under Regulation X (12 CFR 1024.17(b)), as amended."
          ],
          "rules": null,
-         "_comment": "Ground Truth rule related to the target database"
+         "_comment": "No valid target denial constraint: the dataset has no escrow-account or higher-priced status column."
       },
       {
          "id": 9,
          "sentences": [
-            " Higher-priced covered transaction means a covered transaction with an annual percentage rate that exceeds the average prime offer rate for a comparable transaction as of the date the interest rate is set by 1.5 or more percentage points for a first-lien covered transaction, other than a qualified mortgage under paragraph (e)(5), (e)(6), or (f) of this section and by 3.5 or more percentage points for a first-lien covered transaction that is a qualified mortgage under paragraph (e)(5), (e)(6), or (f) of this section; or by 3.5 or more percentage points for a subordinate-lien covered transaction."
+            "(4) Higher-priced covered transaction means a covered transaction with an annual percentage rate that exceeds the average prime offer rate for a comparable transaction as of the date the interest rate is set by 1.5 or more percentage points for a first-lien covered transaction, other than a qualified mortgage under paragraph (e)(5), (e)(6), or (f) of this section; by 3.5 or more percentage points for a first-lien covered transaction that is a qualified mortgage under paragraph (e)(5), (e)(6), or (f) of this section; or by 3.5 or more percentage points for a subordinate-lien covered transaction."
          ],
          "rules": null,
-         "_comment": "Ground Truth rule related to the target database"
+         "_comment": "No valid target denial constraint: definition without a qualified-mortgage or higher-priced status column."
       },
       {
          "id": 10,
@@ -132,45 +189,128 @@
             "A creditor shall not make a loan that is a covered transaction unless the creditor makes a reasonable and good faith determination at or before consummation that the consumer will have a reasonable ability to repay the loan according to its terms."
          ],
          "rules": null,
-         "_comment": "Ground Truth rule related to the target database"
+         "_comment": "No valid target denial constraint: a creditor's good-faith determination is not recorded in the dataset."
       },
       {
          "id": 11,
          "sentences": [
-            "Except as provided otherwise in paragraphs (d), (e), and (f) of this section, in making the repayment ability determination required under paragraph (c) of this section, a creditor must consider the following  The consumer's current or reasonably expected income or assets, other than the value of the dwelling, including any real property attached to the dwelling, that secures the loan;"
+            "(2) Basis for determination. Except as provided otherwise in paragraphs (d), (e), and (f) of this section, in making the repayment ability determination required under paragraph (c)(1) of this section, a creditor must consider the following: (i) The consumer's current or reasonably expected income or assets, other than the value of the dwelling, including any real property attached to the dwelling, that secures the loan;"
          ],
          "rules": null,
-         "_comment": "Ground Truth rule related to the target database"
+         "_comment": "No valid target denial constraint: what the creditor considered is not recorded in the dataset."
       },
       {
          "id": 12,
          "sentences": [
-            "This section applies to any consumer credit transaction that is secured by a dwelling, as defined in § 1026.2(a)(19), including any real property attached to a dwelling, other than For purposes of paragraphs (c) through (f) of this section  A reverse mortgage subject to § 1026.33 and ii) A temporary or “bridge” loan with a term of 12 months or less, such as a loan to finance the purchase of a new dwelling where the consumer plans to sell a current dwelling within 12 months or a loan to finance the initial construction of a dwelling;"
+            "(a) Scope. This section applies to any consumer credit transaction that is secured by a dwelling, as defined in § 1026.2(a)(19), including any real property attached to a dwelling, other than: (3) For purposes of paragraphs (c) through (f) of this section: (i) A reverse mortgage subject to § 1026.33; (ii) A temporary or “bridge” loan with a term of 12 months or less, such as a loan to finance the purchase of a new dwelling where the consumer plans to sell a current dwelling within 12 months or a loan to finance the initial construction of a dwelling;"
          ],
          "rules": null,
          "_comment": "No valid target denial constraint: the source lists separate scope exclusions, but the dataset has no applicability field for paragraphs (c) through (f)."
       },
       {
-         "id": 13,
+         "id": 15,
          "sentences": [
-            " The requirements of this section apply to a high-cost mortgage, which is any consumer credit transaction that is secured by the consumer's principal dwelling, other than as provided in paragraph (a)(2) of this section, and in which the transaction's total points and fees, as defined in paragraphs (b) and (2) of this section, will exceed the lesser of (i) 8 percent of the total loan amount; or (ii) $1,000, for a transaction with a loan amount of less than $20,000."
+            "(d) Limitations. A high-cost mortgage shall not include the following terms: (1) (i) Balloon payment. Except as provided by paragraphs (d)(1)(ii) and (iii) of this section, a payment schedule with a payment that is more than two times a regular periodic payment."
          ],
          "rules": [
             {
                "AND": [
-                  "t1.occupancy_type_name = 'Principal residence'",
-                  "t1.loan_amount < 20000",
-                  "t1.hoepa_status_name != 'HOEPA loan'",
+                  "t1.hoepa_status_name = 'HOEPA loan'",
+                  "t1.balloon_payment = 1"
+               ]
+            }
+         ],
+         "_comment": "Added 2026-10-11. Projected mapping: the (d)(1)(ii)-(iii) exceptions (seasonal income, short bridge loans, balloon-payment qualified mortgages, open-end repayment transition) have no target columns."
+      },
+      {
+         "id": 16,
+         "sentences": [
+            "(d) Limitations. A high-cost mortgage shall not include the following terms: (2) Negative amortization. A payment schedule with regular periodic payments that cause the principal balance to increase."
+         ],
+         "rules": [
+            {
+               "AND": [
+                  "t1.hoepa_status_name = 'HOEPA loan'",
+                  "t1.negative_amortization = 1"
+               ]
+            }
+         ],
+         "_comment": "Added 2026-10-11."
+      },
+      {
+         "id": 17,
+         "sentences": [
+            "(d) Limitations. A high-cost mortgage shall not include the following terms: (6) Prepayment penalties. A prepayment penalty, as defined in paragraph (b)(6) of this section."
+         ],
+         "rules": [
+            {
+               "AND": [
+                  "t1.hoepa_status_name = 'HOEPA loan'",
+                  "t1.prepayment_penalty_term > 0"
+               ]
+            }
+         ],
+         "_comment": "Added 2026-10-11: prepayment_penalty_term is reported (months) only when the loan has a prepayment penalty."
+      },
+      {
+         "id": 18,
+         "sentences": [
+            "(1) When permitted. A covered transaction must not include a prepayment penalty unless: (i) The prepayment penalty is otherwise permitted by law; and (ii) The transaction: (A) Has an annual percentage rate that cannot increase after consummation; (B) Is a qualified mortgage under paragraph (e)(2), (e)(4), (e)(5), (e)(6), or (f) of this section; and (C) Is not a higher-priced mortgage loan, as defined in § 1026.35(a)."
+         ],
+         "rules": [
+            {
+               "AND": [
+                  "t1.business_or_commercial_purpose = 2",
+                  "t1.open_end_line_of_credit = 2",
+                  "t1.prepayment_penalty_term > 0",
                   {
                      "OR": [
-                        "t1.total_points_and_fees > t1.loan_amount * 0.08",
-                        "t1.total_points_and_fees > 1000"
+                        "t1.intro_rate_period > 0",
+                        {
+                           "AND": [
+                              "t1.occupancy_type_name = 'Principal residence'",
+                              "t1.lien_status_name = 'Secured by a first lien'",
+                              "t1.conforming_loan_limit = 'C'",
+                              "t1.rate_spread >= 1.5"
+                           ]
+                        },
+                        {
+                           "AND": [
+                              "t1.occupancy_type_name = 'Principal residence'",
+                              "t1.lien_status_name = 'Secured by a first lien'",
+                              "t1.conforming_loan_limit = 'NC'",
+                              "t1.rate_spread >= 2.5"
+                           ]
+                        },
+                        {
+                           "AND": [
+                              "t1.occupancy_type_name = 'Principal residence'",
+                              "t1.lien_status_name = 'Secured by a subordinate lien'",
+                              "t1.rate_spread >= 3.5"
+                           ]
+                        }
                      ]
                   }
                ]
             }
          ],
-         "_comment": "Projected mapping (revised 2026-10-11): adds the stated principal-dwelling condition (occupancy_type_name). The consumer-credit condition (business_or_commercial_purpose is outside the predicate space) and the paragraph (a)(2) exemptions are not representable."
+         "_comment": "Added 2026-10-11. Projected mapping: covered transaction = consumer credit, not an open-end line of credit (home-equity lines are excluded by § 1026.43(a)(1)); APR that can increase = adjustable rate (intro_rate_period reported); higher-priced = § 1026.35(a) thresholds, Freddie Mac limit = conforming_loan_limit. Qualified-mortgage status and 'permitted by law' have no target columns."
+      },
+      {
+         "id": 19,
+         "sentences": [
+            "(2) Limits on prepayment penalties. A prepayment penalty: (i) Must not apply after the three-year period following consummation;"
+         ],
+         "rules": [
+            {
+               "AND": [
+                  "t1.business_or_commercial_purpose = 2",
+                  "t1.open_end_line_of_credit = 2",
+                  "t1.prepayment_penalty_term > 36"
+               ]
+            }
+         ],
+         "_comment": "Added 2026-10-11. Scope from § 1026.43 (covered transactions: consumer credit, not an open-end line of credit). The percentage limits of (g)(2)(ii) have no target column."
       }
    ]
 }
