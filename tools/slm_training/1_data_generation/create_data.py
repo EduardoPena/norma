@@ -171,6 +171,7 @@ def generate_synthetic_data(
     model_name: str,
     domain_adapt_rules: int = 20,
     domain_adapt_non_rules: int = 80,
+    only_datasets: list[str] | None = None,
 ) -> pd.DataFrame:
     dataset_rules: dict[str, list[str]] = {}
     dataset_non_rules: dict[str, list[str]] = {}
@@ -186,7 +187,7 @@ def generate_synthetic_data(
     # Calculate total LLM calls for progress bar
     total_calls = 0
     for dataset_name in dataframe_dicts:
-        if dataset_name != 'tax-chu':
+        if only_datasets and dataset_name not in only_datasets:
             continue
         rules = dataset_rules.get(dataset_name, [])
         non_rules = dataset_non_rules.get(dataset_name, [])
@@ -204,7 +205,7 @@ def generate_synthetic_data(
 
     with tqdm(total=total_calls, desc="Generating sentences") as pbar:
         for dataset_name, csv_df in dataframe_dicts.items():
-            if dataset_name != 'tax-chu':
+            if only_datasets and dataset_name not in only_datasets:
                 continue
             rules = dataset_rules.get(dataset_name, [])
             non_rules = dataset_non_rules.get(dataset_name, [])
@@ -268,14 +269,24 @@ def generate_synthetic_data(
 
 
 def main():
+    """Generate synthetic classification sentences from ground-truth files.
 
-    gt_file_paths = [
-        '/Users/pena/nl2c_projetcts/text2rules/data/restaurant-inspections/restaurant-inspections_text2rule_gt.json',
-        '/Users/pena/nl2c_projetcts/text2rules/data/hospital-holo/hospital-holo_text2rule_gt.json',
-        '/Users/pena/nl2c_projetcts/text2rules/data/sisu/sisu_text2rule_gt.json',
-        '/Users/pena/nl2c_projetcts/text2rules/data/tax-chu/tax-chu_text2rule_gt.json',
-    ]
+    Usage: python create_data.py --gt data/<ds>/<ds>_text2rule_gt.json [...]
+               [--prompts data_generation_prompts.yaml] [--only <ds>] [--model gpt-5-mini]
+    The CSV of each dataset is expected next to its GT file (<name>.csv).
+    """
+    import argparse
 
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument("--gt", nargs="+", required=True, help="ground-truth JSON files")
+    parser.add_argument("--prompts", default=str(Path(__file__).parent / "data_generation_prompts.yaml"))
+    parser.add_argument("--only", nargs="*", default=None, help="restrict generation to these datasets")
+    parser.add_argument("--model", default="gpt-5-mini")
+    parser.add_argument("--modes", nargs="+", default=["paraphrase"], choices=["paraphrase", "domain_adapt"])
+    parser.add_argument("--samples-per-sentence", type=int, default=3)
+    args = parser.parse_args()
+
+    gt_file_paths = args.gt
     initial_sentences_df = load_classification_data(gt_file_paths)
 
     # Save original data if it doesn't exist
@@ -290,18 +301,8 @@ def main():
                       for file in gt_file_paths]
 
     dataframe_dicts = load_csv_data(csv_file_paths, sample_size=5)
-
-    prompts_file = "/Users/pena/nl2c_projetcts/text2rules/src/data_generation/data_generation_prompts.yaml"
-
-    prompts = load_prompts(prompts_file)
-
-    model = "gpt-5-mini"
-    model = "gpt-5-mini"
-    # model = "mistral-small-2506"
-    llm = get_llm_client(model)
-
-    # generation_modes = ["paraphrase", "domain_adapt"]
-    generation_modes = ["paraphrase"]
+    prompts = load_prompts(args.prompts)
+    llm = get_llm_client(args.model)
 
     # Setup output directory
     output_dir = Path(__file__).parent.parent.parent / 'data' / 'synthetic_data'
@@ -312,12 +313,13 @@ def main():
         dataframe_dicts=dataframe_dicts,
         prompts=prompts,
         llm=llm,
-        generation_modes=generation_modes,
-        samples_generated_per_sentence=3,
+        generation_modes=args.modes,
+        samples_generated_per_sentence=args.samples_per_sentence,
         output_dir=output_dir,
-        model_name=model,
+        model_name=args.model,
         domain_adapt_rules=20,      # Generate 20 new rules per dataset
         domain_adapt_non_rules=80,  # Generate 80 new non-rules per dataset
+        only_datasets=args.only,
     )
 
     print(f"\nTotal synthetic sentences generated: {len(synthetic_df)}")

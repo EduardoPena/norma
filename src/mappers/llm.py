@@ -10,7 +10,7 @@ from src.mappers.predicate_filter import (
 from src.llm.client import EmptyModelContentError, get_llm_client
 from src.llm.helper import PromptLoader, parse_json_response
 from src.llm.schemas import SENTENCE_RULES
-from src.predicates import Rule, RuleValidationError, normalize_rules
+from src.predicates import Rule, RuleValidationError, normalize_rules, repair_rules
 
 
 class LLMMapper(BaseMapper):
@@ -78,6 +78,10 @@ class LLMMapper(BaseMapper):
         # attempts fail, the sentences produce no constraint (logged here).
         self.max_output_retries = 2
         self.output_failures: List[str] = []
+        # Rules are validated against the schema (columns and declared types);
+        # sentences with invalid rules are re-asked once with the error message.
+        self.rule_schema = {"tables": self.predicate_tables} if self.predicate_tables else None
+        self.max_rule_repairs = 1
 
         if prompt_template:
             self.prompt_template = prompt_template
@@ -101,7 +105,10 @@ class LLMMapper(BaseMapper):
                 response = self.llm.complete(
                     prompt, response_schema=SENTENCE_RULES, schema_name="sentence_rules"
                 )
-                return self._parse_response(response, len(sentences))
+                items = self._result_items(
+                    parse_json_response(response, expected_type=object), len(sentences)
+                )
+                return self._validate_items(sentences, items, context)
             except (ValueError, EmptyModelContentError) as error:
                 last_error = str(error).split(" Response:")[0][:300]
                 print(
@@ -209,11 +216,59 @@ class LLMMapper(BaseMapper):
         )
 
     def _sentence_rules(self, index: int, item: Any) -> Optional[List[Rule]]:
+        rules, error = self._check_rules(item)
+        if error:
+            print(f"Warning: Invalid rules for sentence {index}: {error}")
+            self.output_failures.append(f"invalid rules: {error}")
+        return rules
+
+    def _check_rules(self, item: Any) -> tuple:
+        """(rules, None) when valid, (None, error message) otherwise."""
         if item is None or item == []:
-            return None  # [] also means "not a constraint"
+            return None, None  # [] also means "not a constraint"
         try:
-            return normalize_rules(item)
+            return normalize_rules(repair_rules(item), getattr(self, "rule_schema", None)), None
         except (RuleValidationError, ValueError) as exc:
-            print(f"Warning: Invalid rules for sentence {index}: {exc}")
-            self.output_failures.append(f"invalid rules: {exc}")
-            return None
+            return None, str(exc)
+
+    def _validate_items(
+        self, sentences: List[str], items: List[Any], context: Dict[str, Any]
+    ) -> List[Optional[List[Rule]]]:
+        """Validate each sentence's rules; re-ask invalid sentences with the error."""
+        checked = [self._check_rules(item) for item in items]
+        for _ in range(getattr(self, "max_rule_repairs", 0)):
+            invalid = [i for i, (_, error) in enumerate(checked) if error]
+            if not invalid:
+                break
+            print(f"Re-asking {len(invalid)} sentence(s) with invalid rules")
+            subset = [sentences[i] for i in invalid]
+            notes = "\n".join(
+                f"- Sentence {n}: previous rules {items[i]!r} were rejected: {checked[i][1]}"
+                for n, i in enumerate(invalid, 1)
+            )
+            prompt = (
+                f"{self._build_prompt(subset, context)}\n\n"
+                "CORRECTION REQUIRED: fix these outputs (sentence numbers refer to the "
+                f"list above).\n{notes}\nUse only existing columns and compare each "
+                "column with constants of its type; write missing values as IS NULL."
+            )
+            try:
+                response = self.llm.complete(
+                    prompt, response_schema=SENTENCE_RULES, schema_name="sentence_rules"
+                )
+                retried = self._result_items(
+                    parse_json_response(response, expected_type=object), len(subset)
+                )
+            except (ValueError, EmptyModelContentError) as error:
+                print(f"Warning: correction attempt failed: {str(error)[:200]}")
+                break
+            for i, item in zip(invalid, retried):
+                items[i] = item
+                checked[i] = self._check_rules(item)
+        results = []
+        for index, (rules, error) in enumerate(checked, 1):
+            if error:
+                print(f"Warning: Invalid rules for sentence {index}: {error}")
+                self.output_failures.append(f"invalid rules: {error}")
+            results.append(rules)
+        return results

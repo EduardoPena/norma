@@ -111,7 +111,7 @@ class PredicateSpace:
         # Check constant instantiation
         pred = Predicate.from_string(pred_str)
         
-        # Extract the quantifier and column from the left side (e.g., "r1.grade" -> "r1", "grade")
+        # Extract the quantifier and column from the left side (e.g., "r1.score" -> "r1", "score")
         if '.' in pred.left:
             pred_quantifier, pred_column = pred.left.split('.', 1)
         else:

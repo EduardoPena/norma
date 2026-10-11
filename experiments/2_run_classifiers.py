@@ -259,7 +259,12 @@ class ClassifierExperiment(BaseExperiment):
         context = None
         if use_context:
             print(f"  Building table context (num_rows={num_rows_context})...")
-            context = self._build_context(df, dataset_name, num_rows=num_rows_context)
+            context = self._build_context(
+                df,
+                dataset_name,
+                num_rows=num_rows_context,
+                sample_strategy=variant.get("table_sample_strategy", "head"),
+            )
             context_preview = context["table_context"][:100].replace("\n", " ")
             print(f"  Context preview: {context_preview}...")
 
@@ -362,12 +367,12 @@ class ClassifierExperiment(BaseExperiment):
             raise ValueError(f"Unknown implementation: {implementation}")
 
     def _build_context(
-        self, df, dataset_name: str, num_rows: int = 3
+        self, df, dataset_name: str, num_rows: int = 3, sample_strategy: str = "head"
     ) -> Dict[str, Any]:
         """Build table context for classifiers."""
         from src.utils.table_context import TableContextBuilder
 
-        context_builder = TableContextBuilder(sample_strategy="head", num_rows=num_rows)
+        context_builder = TableContextBuilder(sample_strategy=sample_strategy, num_rows=num_rows)
         return context_builder.build(df)
 
     def _prepare_detailed_metrics(self, metrics, sentence_predictions, ground_truth):

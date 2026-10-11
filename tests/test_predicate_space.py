@@ -13,7 +13,7 @@ from src.predicates.space_builder import PredicateSpaceBuilder
 class PatternPredicateTests(unittest.TestCase):
     def test_like_and_not_like_are_accepted(self):
         self.assertEqual(
-            canonical_rule("t1.type LIKE '%Re-inspection%'"), "t1.type LIKE '%Re-inspection%'"
+            canonical_rule("t1.type LIKE '%Re-check%'"), "t1.type LIKE '%Re-check%'"
         )
         self.assertEqual(canonical_rule("t1.x NOT LIKE 'a_c'"), "t1.x NOT LIKE 'a_c'")
 
@@ -27,21 +27,21 @@ class SpaceBuilderOptionTests(unittest.TestCase):
     def build(self, **options):
         df = pd.DataFrame(
             {
-                "salary": [1000, 5000, 20000, 80000, 120000],
-                "exemption": [0, 1500, 3000, 4500, 9000],
+                "price": [1000, 5000, 20000, 80000, 120000],
+                "discount": [0, 1500, 3000, 4500, 9000],
                 "edition": [1, 2, 1, 2, 3],
                 "city": ["a", "b", "c", "a", "b"],
             }
         )
         with tempfile.TemporaryDirectory() as tmp:
-            csv = Path(tmp) / "tax.csv"
+            csv = Path(tmp) / "orders.csv"
             df.to_csv(csv, index=False)
             return set(PredicateSpaceBuilder(**options).build(str(csv), save=False)["predicates"])
 
     def test_defaults_are_unchanged(self):
         space = self.build()
         self.assertNotIn("t2.edition = $int", space)
-        self.assertNotIn("t1.exemption > t1.salary", space)
+        self.assertNotIn("t1.discount > t1.price", space)
 
     def test_second_tuple_mirrors_single_column_templates_only(self):
         space = self.build(mirror_second_tuple=True)
@@ -51,8 +51,8 @@ class SpaceBuilderOptionTests(unittest.TestCase):
 
     def test_numeric_range_overlap_adds_same_tuple_comparisons(self):
         space = self.build(numeric_range_overlap=0.3)
-        self.assertIn("t1.exemption > t1.salary", space)
-        self.assertIn("t1.salary >= t1.exemption", space)
+        self.assertIn("t1.discount > t1.price", space)
+        self.assertIn("t1.price >= t1.discount", space)
 
 
 if __name__ == "__main__":

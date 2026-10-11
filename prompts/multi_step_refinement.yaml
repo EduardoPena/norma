@@ -49,7 +49,7 @@ understand_schema: |
   Analysis: "within N units" means dates/times should be close; look for date fields or derived gaps
 
   Sentence: "If condition A holds for N consecutive records"
-  Columns: [field_value, sequence_number, consecutive_flag]
+  Columns: [field_value, row_order, consecutive_flag]
   Analysis: "consecutive" relates to ordering; sequence numbers or derived flags tracking consecutive occurrences
 
   Sentence: "Field X must be provided by the entity"
@@ -103,7 +103,7 @@ select_predicates: |
    - Add a scope, exclusion, or status predicate ONLY when that condition is
       explicitly stated in the sentence or is required by its explicit logic.
    - Do NOT infer exclusions or scope from domain knowledge, nearby regulations,
-      or customary policy (for example, reverse mortgages, business purpose, or
+      or customary policy (for example, special product types, business purpose, or
       product type) when the sentence does not state them.
 
   A denial constraint is a set of predicates that CANNOT all be true simultaneously —
@@ -111,6 +111,12 @@ select_predicates: |
   the predicate templates that together will form that constraint. Some predicates are
   complete as-is (e.g. IS NULL checks, cross-row comparisons like t1.field = t2.field
   or t1.field > t2.field), others require constant substitution in the next step.
+
+  ALTERNATIVES: the next step combines the selected templates with AND, OR and, if
+  needed, several independent rules. Select the templates for EVERY alternative
+  ("either A or B", "the lesser of X or Y", per-category thresholds), even when they
+  could not all hold at once, and the same template more than once if it needs
+  different constants. Never reject a sentence only because it needs a disjunction.
 
   STRATEGIES BY CONSTRAINT TYPE:
 
@@ -147,17 +153,17 @@ select_predicates: |
      → ["t1.type = $string", "t1.status = $string", "t1.field != $string"]
 
   6b) STATUS / CATEGORY DEFINITION: "A record is status Z if threshold condition holds"
-     Example: "A loan is high-cost if rate spread exceeds 6.5 and lien is first"
+     Example: "An order is priority if its weight exceeds 30 and its zone is 2"
      Strategy: Threshold condition true BUT status/category is wrong
-     → ["t1.rate_spread > $float", "t1.lien_status = $int", "t1.status != $string"]
+     → ["t1.weight > $float", "t1.zone = $int", "t1.status != $string"]
      Use != on the outcome/status column, not IS NULL, unless the sentence explicitly
      says the status field itself must be recorded.
 
   7) TEMPORAL/ORDERING: About time gaps, sequences, ordering
      The sentence sets a frequency or deadline — the violation is always when the
      gap EXCEEDS the limit, not when it is within it.
-     "At least once per year" → gap > 365 is the violation → t1.gap_column > $int
-     "Within 30 days" → gap > 30 is the violation → t1.gap_column > $int
+     "At least once per month" → gap > 30 is the violation → t1.gap_column > $int
+     "Within 7 days" → gap > 7 is the violation → t1.gap_column > $int
      "Every N days" → gap > N is the violation → t1.gap_column > $int
      Strategy: Select the > or >= predicate on the derived gap column, never <=.
      → ["t1.gap_column > $int"]
@@ -177,12 +183,12 @@ select_predicates: |
       exactly; do not change its operator or invent variants such as IN $values
   - Single-row constraints use only t1 (no t2 needed)
   - Cross-row constraints use both t1 and t2
-  - For derived columns (days_to_*, consecutive_*, etc.) — USE THEM!
+  - For derived columns (precomputed gaps, counters or flags) — USE THEM!
    - Preserve threshold direction exactly. "exceeds", "more than", "greater than",
       "at least" point to > or >= on the triggering condition, not the opposite.
-   - Preserve threshold units exactly. "6.5 percentage points" means 6.5, not 0.065.
+   - Preserve threshold units exactly. "2.5 percentage points" means 2.5, not 0.025.
       Only use fractional conversion when the sentence explicitly says a percentage of
-      another field, e.g. "5 percent of the loan amount" → 0.05 * loan_amount.
+      another field, e.g. "10 percent of the order total" → 0.1 * order_total.
   - Choose operators that match what the sentence detects: inequality (!=, <, >, <=, >=)
     for mismatches and threshold breaches, equality (=) for duplicates and scope anchors,
     IS NULL for missing required values only when the sentence explicitly mandates presence
@@ -201,6 +207,8 @@ select_predicates: |
   }}
 
   If you genuinely cannot find predicates, set is_valid=false and explain in "reason".
+  Missing coverage for one alternative is not a reason to reject: select the templates
+  for the parts that are expressible.
 
 # rule_gate: Semantic gate — is this sentence a verifiable denial constraint?
 rule_gate: |
@@ -255,16 +263,16 @@ rule_gate: |
   "The system will provide a minimum score for each entity"
   → is_dc: true — required field, violation: min_score IS NULL
 
-  "The frequency of evaluations depends on performance level"
+  "Membership fees are reviewed periodically according to market conditions"
   → is_dc: false — policy description, no concrete threshold to check
 
-  "Repeated issues may prompt an administrative action"
-  → is_dc: false — vague quantifier + discretionary, not falsifiable
+  "Supervisors may escalate a case when they consider it necessary"
+  → is_dc: false — discretionary decision, not falsifiable
 
   "If entity has type A, attribute X must be recorded"
   → is_dc: true — conditional required, violation: type=A AND attribute_x IS NULL
 
-  "The card must be posted within 5 feet of the entrance"
+  "Visitor badges must be worn visibly at all times"
   → is_dc: false — physical condition, not verifiable from column values
 
   "Two entities with the same identifier must have the same value for attribute Y"
@@ -318,10 +326,10 @@ construct_constraint: |
    → [{{"AND": ["t1.counter >= N", "t1.status != 'Z'"]}}]
 
    Example 4b — single row, status definition by threshold:
-   Rule: "A loan is a HOEPA loan if rate spread exceeds 6.5 for first-lien transactions"
-   Violation: threshold condition holds BUT status is not HOEPA
-   → [{{"AND": ["t1.rate_spread > 6.5", "t1.lien_status = 1", "t1.hoepa_status_name != 'HOEPA loan'"]}}]
-   Wrong: [{{"AND": ["t1.hoepa_status IS NULL", "t1.lien_status = 1", "t1.rate_spread <= 0.065"]}}]
+   Rule: "An order is a priority order if its weight exceeds 30 kg for zone-2 deliveries"
+   Violation: threshold condition holds BUT status is not priority
+   → [{{"AND": ["t1.weight > 30", "t1.zone = 2", "t1.order_status != 'Priority'"]}}]
+   Wrong: [{{"AND": ["t1.order_status IS NULL", "t1.zone = 2", "t1.weight <= 0.030"]}}]
    because it flips the threshold direction, changes the units, and replaces a status mismatch
    with a missing-value check that the sentence never asked for.
 
@@ -353,9 +361,9 @@ construct_constraint: |
    → [{{"AND": ["t1.group = t2.group", "t1.event_date > t2.event_date", "t1.sequence <= t2.sequence"]}}]
 
    Example 10 — nested OR and arithmetic:
-   Violation: wrong status AND either first-lien spread above 6.5 or subordinate spread above 8.5
-   → [{{"AND": ["t1.status != 'HOEPA loan'", {{"OR": [{{"AND": ["t1.lien = 'first'", "t1.rate_spread > 6.5"]}}, {{"AND": ["t1.lien = 'subordinate'", "t1.rate_spread > 8.5"]}}]}}]}}]
-   Arithmetic predicate example: ["t1.salary * (t1.rate / 100) > t1.salary"]
+   Violation: wrong status AND either a zone-1 weight above 20 or a zone-2 weight above 30
+   → [{{"AND": ["t1.status != 'Priority'", {{"OR": [{{"AND": ["t1.zone = 'local'", "t1.weight > 20"]}}, {{"AND": ["t1.zone = 'remote'", "t1.weight > 30"]}}]}}]}}]
+   Arithmetic predicate example: ["t1.price * (t1.discount / 100) > t1.price"]
 
   SUBSTITUTION:
   Replace placeholders with constants from the sentence:
@@ -620,7 +628,7 @@ generate_initial: |
 
   7) Temporal: "Must happen within N days" / "At least once per period"
      → Gap exceeds threshold is the violation, never use <=
-     Example: "Action within N days" → ["t1.days_to_action > N"]
+     Example: "Action within N days" → ["t1.elapsed_days > N"]
 
   8) Conditional: "If A then B must..."
      → Condition true BUT requirement not met
@@ -631,7 +639,7 @@ generate_initial: |
   - Use ONLY predicates from the available list
   - Single-row constraints: use only t1
   - Cross-row constraints: use both t1 and t2
-  - Look for derived columns (days_to_*, consecutive_*, etc.)
+  - Look for derived columns (precomputed gaps, counters or flags)
    - Use explicit AND/OR nodes whenever predicates combine
   - Only include IS NULL when the sentence explicitly states a field must be present —
     never add IS NULL or IS NOT NULL on scope or anchor columns

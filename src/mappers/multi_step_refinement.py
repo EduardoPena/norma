@@ -32,7 +32,7 @@ Usage:
     from src.mappers.multi_step_refinement import MultiStepRefinementMapper
     from src.data.loader import DatasetLoader
 
-    loader = DatasetLoader('data/hospital')
+    loader = DatasetLoader('data/<dataset>')
     df, sentences, sentence2dcs_map, predicate_space = loader.load()
 
     mapper = MultiStepRefinementMapper(
@@ -62,6 +62,7 @@ from src.predicates import (
     Rule,
     Rules,
     RuleValidationError,
+    repair_rules,
     normalize_rules,
     predicate_strings,
     transform_predicates,
@@ -184,8 +185,13 @@ def _collapse_single_item_logical_nodes(value: Any) -> Any:
     return {operator: normalized_items}
 
 
-def _normalize_constraint_list(constraint: Any, *, legacy: bool = False) -> Any:
-    """Validate mapper output, converting the former flat conjunction when requested."""
+def _normalize_constraint_list(
+    constraint: Any, *, legacy: bool = False, schema: Any = None
+) -> Any:
+    """Validate mapper output, converting the former flat conjunction when requested.
+
+    ``schema`` ({"tables": [...]}) also checks columns and declared types.
+    """
     if constraint is None:
         return None
     if (
@@ -194,48 +200,18 @@ def _normalize_constraint_list(constraint: Any, *, legacy: bool = False) -> Any:
         and all(isinstance(predicate, str) for predicate in constraint)
     ):
         constraint = [constraint]
-    constraint = _collapse_single_item_logical_nodes(constraint)
-    return normalize_rules(constraint)
-
-
-def _map_rule_predicates(value: Any, transform) -> Any:
-    return transform_predicates(value, transform)
+    constraint = repair_rules(_collapse_single_item_logical_nodes(constraint))
+    return normalize_rules(constraint, schema)
 
 
 def _predicate_strings(rules: Any) -> List[str]:
     return predicate_strings(rules)
 
 
-def _restore_percentage_point_units(sentence: str, constraint: Any) -> Any:
-    """Keep percentage-point thresholds in their original units for rate_spread-like columns."""
-    if not constraint or "percentage point" not in sentence.lower():
-        return constraint
-
-    pattern = re.compile(
-        r"(\b(?:t[12]\.)?\w*rate_spread\w*\s*(?:<=|>=|=|<|>)\s*)(-?\d+(?:\.\d+)?)"
-    )
-
-    def adjust(predicate: str) -> str:
-        def replace(match: re.Match[str]) -> str:
-            value = float(match.group(2))
-            if 0 < abs(value) < 1:
-                value *= 100
-                if value.is_integer():
-                    value_str = str(int(value))
-                else:
-                    value_str = str(value)
-                return f"{match.group(1)}{value_str}"
-            return match.group(0)
-
-        return pattern.sub(replace, predicate)
-
-    return _map_rule_predicates(constraint, adjust)
-
-
 def token_similarity(s1: str, s2: str) -> float:
     """
     Compute similarity between two column names using token-based overlap.
-    Splits on underscores so that days_to_next_inspection and days_to_action
+    Splits on underscores so that days_to_event and days_to_action
     score more meaningfully than character set overlap.
     """
     t1 = set(s1.lower().split("_"))
@@ -320,101 +296,10 @@ class MultiStepRefinementMapper(BaseMapper):
             self.sql_translator = SQLTranslator(self.db_executor)
 
         self.tables = predicate_space.get("tables", [])
+        self.rule_schema = {"tables": self.tables} if self.tables else None
         self.allowed_predicates = set(predicate_space.get("predicates", []))
         self.column_profiles = self._build_column_profiles()
         self.columns_with_predicates = self._extract_predicate_columns()
-
-    def _lookup_name_for_code(self, base_column: str, raw_value: str) -> Optional[str]:
-        """Map a coded column value to its paired *_name label when the mapping is unique in the data."""
-        if self.df is None or self.df.empty:
-            return None
-
-        name_column = f"{base_column}_name"
-        if base_column not in self.df.columns or name_column not in self.df.columns:
-            return None
-
-        try:
-            code_value = (
-                int(raw_value)
-                if re.fullmatch(r"-?\d+", raw_value)
-                else float(raw_value)
-            )
-        except ValueError:
-            return None
-
-        matches = (
-            self.df.loc[self.df[base_column] == code_value, name_column]
-            .dropna()
-            .unique()
-        )
-        if len(matches) != 1:
-            return None
-
-        mapped = matches[0]
-        return str(mapped)
-
-    def _replace_code_columns_with_names(self, constraint: Any) -> Any:
-        """Prefer *_name predicates over coded numeric enums when both columns exist."""
-        if not constraint:
-            return constraint
-
-        pattern = re.compile(r"\b(t[12])\.(\w+)\s*(=|!=)\s*(-?\d+(?:\.0+)?)\b")
-
-        def adjust(predicate: str) -> str:
-            def replace(match: re.Match[str]) -> str:
-                alias, column, operator, raw_value = match.groups()
-                mapped_name = self._lookup_name_for_code(column, raw_value)
-                if not mapped_name:
-                    return match.group(0)
-                return f"{alias}.{column}_name {operator} '{mapped_name}'"
-
-            return pattern.sub(replace, predicate)
-
-        return _map_rule_predicates(constraint, adjust)
-
-    def _restore_exceed_direction(self, sentence: str, constraint: Any) -> Any:
-        """Keep violation direction aligned with exceed/more-than language for threshold predicates."""
-        if not constraint:
-            return constraint
-
-        sentence_lower = sentence.lower()
-        if not any(
-            token in sentence_lower for token in ["exceed", "exceeds", "more than"]
-        ):
-            return constraint
-
-        pattern = re.compile(
-            r"(\b(?:t[12]\.)?(?:rate_spread|interest_rate|total_points_and_fees)\b\s*)(<=|<)(\s*.+)$"
-        )
-
-        return _map_rule_predicates(
-            constraint, lambda predicate: pattern.sub(r"\1>\3", predicate)
-        )
-
-    def _prefer_rate_spread_for_apor_rules(self, sentence: str, constraint: Any) -> Any:
-        """Prefer rate_spread over interest_rate for APOR percentage-point rules."""
-        if not constraint:
-            return constraint
-
-        sentence_lower = sentence.lower()
-        if (
-            "average prime offer rate" not in sentence_lower
-            and "comparable transaction" not in sentence_lower
-        ) or "percentage point" not in sentence_lower:
-            return constraint
-
-        pattern = re.compile(r"\b((?:t[12]\.)?)interest_rate\b")
-        return _map_rule_predicates(
-            constraint, lambda predicate: pattern.sub(r"\1rate_spread", predicate)
-        )
-
-    def _repair_constructed_constraint(self, sentence: str, constraint: Any) -> Any:
-        """Apply deterministic local repairs for common HMDA-style construction errors."""
-        constraint = self._prefer_rate_spread_for_apor_rules(sentence, constraint)
-        constraint = _restore_percentage_point_units(sentence, constraint)
-        constraint = self._restore_exceed_direction(sentence, constraint)
-        constraint = self._replace_code_columns_with_names(constraint)
-        return constraint
 
     # ========================================================================
     # Initialisation helpers
@@ -630,6 +515,45 @@ class MultiStepRefinementMapper(BaseMapper):
     # Step 2 — Schema Understanding
     # ========================================================================
 
+    def _complete_text(self, prompt: str, response_schema: Dict[str, Any], schema_name: str) -> str:
+        """LLM call for one step; a reply that is not valid JSON is re-asked once.
+
+        Structured output makes malformed JSON rare, but truncated or empty
+        replies still happen ("Expecting value", "Unterminated string").
+        """
+
+        def call(text: str) -> str:
+            response = self.llm.complete(
+                text, response_schema=response_schema, schema_name=schema_name
+            )
+            if self.llm.model_name.startswith("mistral-"):
+                response = re.sub(r"```json\s*", "", response)
+                response = re.sub(r"```\s*", "", response)
+            return response
+
+        response = call(prompt)
+        try:
+            json.loads(extract_json(response))
+            return response
+        except Exception as error:  # parse failure: retry once
+            print(f"-> {schema_name}: malformed JSON ({error}); retrying once")
+            return call(
+                f"{prompt}\n\nYour previous answer was not valid JSON ({error}). "
+                "Return only the complete JSON object."
+            )
+
+    @staticmethod
+    def _clean_column_names(columns: Any) -> List[str]:
+        """Strip table/alias prefixes and quotes; drop tokens that are not identifiers."""
+        cleaned = []
+        for column in columns if isinstance(columns, list) else []:
+            if not isinstance(column, str):
+                continue
+            name = column.strip().strip("`'\"").split(".")[-1].strip()
+            if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name) and name not in cleaned:
+                cleaned.append(name)
+        return cleaned
+
     def _step2_understand_schema(self, sentence: str) -> Dict[str, Any]:
         """Step 2: Understand relevant columns and verify they exist.
 
@@ -650,29 +574,13 @@ class MultiStepRefinementMapper(BaseMapper):
             predicate_columns=predicate_columns,
         )
 
-        response = self.llm.complete(
-            prompt,
-            response_schema=schemas.UNDERSTAND_SCHEMA,
-            schema_name="understand_schema",
-        )
-
-        if self.llm.model_name.startswith("mistral-"):
-            # Remove ```json and ``` from response if present
-            response = re.sub(r"```json\s*", "", response)
-            response = re.sub(r"```\s*", "", response)
+        response = self._complete_text(prompt, schemas.UNDERSTAND_SCHEMA, "understand_schema")
 
         print(f"-> Step 2 response: {response}...")
 
         try:
             parsed = json.loads(extract_json(response))
 
-            # Merge direct + implied into relevant_columns
-            direct = parsed.get("direct_columns", [])
-            implied = parsed.get("implied_columns", [])
-            parsed["relevant_columns"] = list(dict.fromkeys(direct + implied))
-
-            # Validate all columns actually exist in schema
-            relevant = parsed["relevant_columns"]
             available_columns = {
                 col
                 for table in self.tables
@@ -680,7 +588,40 @@ class MultiStepRefinementMapper(BaseMapper):
             }
             available_list = list(available_columns)
 
+            def relevant_of(answer: Dict[str, Any]) -> List[str]:
+                # Merge direct + implied; tolerate "table.col"/"t1.col" and junk tokens
+                return self._clean_column_names(
+                    list(answer.get("direct_columns") or [])
+                    + list(answer.get("implied_columns") or [])
+                )
+
+            relevant = relevant_of(parsed)
             missing = [col for col in relevant if col not in available_columns]
+            if missing and parsed.get("is_valid", True):
+                print(f"-> Step 2: unknown columns {missing}; retrying once with feedback")
+                hints = {
+                    col: [c for c, score in self._find_similar_columns(col, available_list, 3) if score > 0.3]
+                    for col in missing
+                }
+                retry = self._complete_text(
+                    f"{prompt}\n\nCORRECTION REQUIRED: these columns do not exist: "
+                    f"{missing}. Closest existing columns: {hints}. Use exact column "
+                    "names from the schema, without table or alias prefixes.",
+                    schemas.UNDERSTAND_SCHEMA,
+                    "understand_schema",
+                )
+                try:
+                    parsed = json.loads(extract_json(retry))
+                    relevant = relevant_of(parsed)
+                    missing = [col for col in relevant if col not in available_columns]
+                except Exception as retry_error:
+                    print(f"-> Step 2: retry unusable ({retry_error})")
+                if missing and any(col in available_columns for col in relevant):
+                    print(f"-> Step 2: dropping unknown columns {missing}")
+                    relevant = [col for col in relevant if col in available_columns]
+                    missing = []
+            parsed["relevant_columns"] = relevant
+
             if missing:
                 suggestions = {}
                 for missing_col in missing:
@@ -746,16 +687,7 @@ class MultiStepRefinementMapper(BaseMapper):
             column_profiles_desc=column_profiles_desc,
         )
 
-        response = self.llm.complete(
-            prompt,
-            response_schema=schemas.SELECT_PREDICATES,
-            schema_name="select_predicates",
-        )
-
-        if self.llm.model_name.startswith("mistral-"):
-            # Remove ```json and ``` from response if present
-            response = re.sub(r"```json\s*", "", response)
-            response = re.sub(r"```\s*", "", response)
+        response = self._complete_text(prompt, schemas.SELECT_PREDICATES, "select_predicates")
 
         try:
             parsed = json.loads(extract_json(response))
@@ -854,16 +786,7 @@ class MultiStepRefinementMapper(BaseMapper):
             column_profiles_desc=profiles_desc,
         )
 
-        response = self.llm.complete(
-            prompt,
-            response_schema=schemas.RULE_GATE,
-            schema_name="rule_gate",
-        )
-
-        if self.llm.model_name.startswith("mistral-"):
-            # Remove ```json and ``` from response if present
-            response = re.sub(r"```json\s*", "", response)
-            response = re.sub(r"```\s*", "", response)
+        response = self._complete_text(prompt, schemas.RULE_GATE, "rule_gate")
 
         try:
             parsed = json.loads(extract_json(response))
@@ -917,25 +840,25 @@ class MultiStepRefinementMapper(BaseMapper):
             column_profiles_desc=profiles_desc,
         )
 
-        response = self.llm.complete(
-            prompt,
-            response_schema=schemas.CONSTRUCT_CONSTRAINT,
-            schema_name="construct_constraint",
-        )
-
-        if self.llm.model_name.startswith("mistral-"):
-            # Remove ```json and ``` from response if present
-            response = re.sub(r"```json\s*", "", response)
-            response = re.sub(r"```\s*", "", response)
+        response = self._complete_text(prompt, schemas.CONSTRUCT_CONSTRAINT, "construct_constraint")
 
         try:
             parsed = json.loads(extract_json(response))
-            has_new_rules = "rules" in parsed
-            constraint = _normalize_constraint_list(
-                parsed.get("rules") if has_new_rules else parsed.get("constraint"),
-                legacy=not has_new_rules,
-            )
-            constraint = self._repair_constructed_constraint(sentence, constraint)
+            try:
+                constraint = self._parse_constructed(parsed)
+            except RuleValidationError as error:
+                # Invalid rule (unknown column, type mismatch, malformed node):
+                # re-ask once with the validator message instead of giving up.
+                print(f"-> Step 4: invalid rules ({error}); retrying once")
+                retry = self._complete_text(
+                    f"{prompt}\n\nCORRECTION REQUIRED: your previous rules "
+                    f"{parsed.get('rules', parsed.get('constraint'))!r} are invalid: {error}. "
+                    "Return corrected JSON.",
+                    schemas.CONSTRUCT_CONSTRAINT,
+                    "construct_constraint",
+                )
+                parsed = json.loads(extract_json(retry))
+                constraint = self._parse_constructed(parsed)
             constraint_type = parsed.get("constraint_type", "unknown")
 
             if constraint and len(constraint) > 0:
@@ -951,6 +874,14 @@ class MultiStepRefinementMapper(BaseMapper):
         except Exception as e:
             print(f"-> Step 4 error: {e}")
             return None
+
+    def _parse_constructed(self, parsed: Dict[str, Any]) -> Any:
+        has_new_rules = "rules" in parsed
+        return _normalize_constraint_list(
+            parsed.get("rules") if has_new_rules else parsed.get("constraint"),
+            legacy=not has_new_rules,
+            schema=getattr(self, "rule_schema", None),
+        )
 
     # ========================================================================
     # Step 5 — Verification  (gates G1, G2, G3)
@@ -1280,16 +1211,7 @@ class MultiStepRefinementMapper(BaseMapper):
             column_profiles_desc=profiles_desc,
         )
 
-        response = self.llm.complete(
-            prompt,
-            response_schema=schemas.REFINE_CONSTRAINT,
-            schema_name="refine_constraint",
-        )
-
-        if self.llm.model_name.startswith("mistral-"):
-            # Remove ```json and ``` from response if present
-            response = re.sub(r"```json\s*", "", response)
-            response = re.sub(r"```\s*", "", response)
+        response = self._complete_text(prompt, schemas.REFINE_CONSTRAINT, "refine_constraint")
 
         try:
             parsed = json.loads(extract_json(response))
@@ -1301,6 +1223,7 @@ class MultiStepRefinementMapper(BaseMapper):
                     else parsed.get("refined_constraint", constraint)
                 ),
                 legacy=not has_new_rules,
+                schema=getattr(self, "rule_schema", None),
             )
 
             if refined:

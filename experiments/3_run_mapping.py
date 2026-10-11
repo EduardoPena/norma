@@ -38,7 +38,7 @@ from typing import Dict, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from experiments.shared.experiment_base import BaseExperiment
+from experiments.shared.experiment_base import BaseExperiment, mapping_diagnostics
 from src.mappers.llm import LLMMapper
 from src.mappers.multi_step_refinement import MultiStepRefinementMapper
 from src.evaluation.mapping import MappingEvaluator
@@ -406,6 +406,9 @@ class MapperGTOnlyExperiment(BaseExperiment):
             "implementation": implementation,
             "model": mapper_config.get("model", _NA),
             "model_output_failures": len(getattr(mapper, "output_failures", [])),
+            "diagnostics": mapping_diagnostics(
+                map_metrics, [preds for _, preds in predictions], predicate_space
+            ),
         }
 
     # =========================================================================
@@ -599,6 +602,8 @@ class MapperGTOnlyExperiment(BaseExperiment):
                     {
                         "pairwise_syntactic_exact_match": r.strict_correct,
                         "pairwise_syntactic_predicate_jaccard": r.predicate_jaccard,
+                        "pairwise_logical_match": r.logical_match,
+                        "pred_execution_errors": r.pred_execution_errors,
                     }
                 )
                 if r.execution_exact is not None:
@@ -692,6 +697,7 @@ class MapperGTOnlyExperiment(BaseExperiment):
             "pairwise_viol_f1_std": m.pairwise_std_execution_f1,
             "pairwise_viol_jac_mean": m.pairwise_avg_execution_jaccard,
             "pairwise_viol_jac_std": m.pairwise_std_execution_jaccard,
+            **result.get("diagnostics", {}),
         }
 
     def _build_failure_dict(

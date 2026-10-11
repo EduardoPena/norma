@@ -48,7 +48,7 @@ import traceback
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from experiments.shared.experiment_base import BaseExperiment
+from experiments.shared.experiment_base import BaseExperiment, mapping_diagnostics
 from src.pipelines.norma_pipeline import NormaPipeline, ProcessingMode
 from src.classifiers.llm import LLMRuleClassifier
 from src.mappers.llm import LLMMapper
@@ -303,7 +303,11 @@ class MapperEvalFullExperiment(BaseExperiment):
         context = {}
         if use_context:
             print(f"  Building context (num_rows={num_rows_context})...")
-            context = self._build_context(df, num_rows=num_rows_context)
+            context = self._build_context(
+                df,
+                num_rows=num_rows_context,
+                sample_strategy=variant.get("table_sample_strategy", "head"),
+            )
 
         # ------------------------------------------------------------------
         # Run pipeline on ALL sentences
@@ -529,6 +533,9 @@ class MapperEvalFullExperiment(BaseExperiment):
             "map_metrics": map_metrics,
             "runtime_s": runtime_s,
             "model_output_failures": model_output_failures,
+            "diagnostics": mapping_diagnostics(
+                map_metrics, [preds for _, preds in predictions], predicate_space
+            ),
         }
 
     # =========================================================================
@@ -551,7 +558,11 @@ class MapperEvalFullExperiment(BaseExperiment):
         context = {}
         if use_context:
             print(f"  Building context (num_rows={num_rows_context})...")
-            context = self._build_context(df, num_rows=num_rows_context)
+            context = self._build_context(
+                df,
+                num_rows=num_rows_context,
+                sample_strategy=variant.get("table_sample_strategy", "head"),
+            )
 
         # Document mapper needs predicates in context
         predicates_list_str = "\n".join(predicate_space["predicates"])
@@ -739,10 +750,10 @@ class MapperEvalFullExperiment(BaseExperiment):
             mode=ProcessingMode.DOCUMENT, document_mapper=document_mapper
         )
 
-    def _build_context(self, df, num_rows: int = 3):
+    def _build_context(self, df, num_rows: int = 3, sample_strategy: str = "head"):
         from src.utils.table_context import TableContextBuilder
 
-        return TableContextBuilder(sample_strategy="head", num_rows=num_rows).build(df)
+        return TableContextBuilder(sample_strategy=sample_strategy, num_rows=num_rows).build(df)
 
     def _get_primary_csv_path(self, predicate_space: Dict) -> Optional[str]:
         if predicate_space.get("_sample_rows") is not None:
@@ -888,6 +899,8 @@ class MapperEvalFullExperiment(BaseExperiment):
                     {
                         "pairwise_syntactic_exact_match": r.strict_correct,
                         "pairwise_syntactic_predicate_jaccard": r.predicate_jaccard,
+                        "pairwise_logical_match": r.logical_match,
+                        "pred_execution_errors": r.pred_execution_errors,
                     }
                 )
                 if r.execution_exact is not None:
@@ -1052,6 +1065,7 @@ class MapperEvalFullExperiment(BaseExperiment):
                     "pairwise_violation_f1_std": m.pairwise_std_execution_f1,
                     "pairwise_violation_jaccard": m.pairwise_avg_execution_jaccard,
                     "pairwise_violation_jaccard_std": m.pairwise_std_execution_jaccard,
+                    **result.get("diagnostics", {}),
                 }
             )
 

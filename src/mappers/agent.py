@@ -472,51 +472,40 @@ class AgentMapper:
 # ============================================================================
 
 def main():
-    """Test the agent mapper with example sentences"""
-    print("=" * 80)
-    print("Agent-Based Constraint Mapper - Testing")
-    print("=" * 80)
-    
-    # Load hospital dataset
-    print("\n1. Loading hospital dataset...")
-    df = pd.read_csv('data/hospital/hospital.csv')
-    
-    with open('data/hospital/hospital_predicates.json', 'r') as f:
-        predicate_space = json.load(f)
-    
-    print(f"   Loaded {len(df)} rows, {len(df.columns)} columns")
-    print(f"   Predicate space: {len(predicate_space['predicates'])} predicates")
-    
-    # Initialize agent
-    print("\n2. Initializing agent mapper with GPT-5-mini...")
-    agent = AgentMapper(df, predicate_space, llm_model="gpt-5-mini", max_iterations=3)
-    
-    # Test sentences
-    test_sentences = [
-        "A provider number uniquely identifies a hospital name.",
-        "A hospital name uniquely determines its provider number.",
-        "A hospital name uniquely determines its ZIP code.",
-    ]
-    
-    print("\n3. Testing constraint generation...")
-    for i, sentence in enumerate(test_sentences, 1):
-        print(f"\n--- Test {i} ---")
-        print(f"Sentence: {sentence}")
-        
+    """Try the agent mapper on any dataset directory.
+
+    Usage: python -m src.mappers.agent data/<dataset> "sentence 1" ["sentence 2" ...]
+    """
+    import argparse
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument("data_dir", type=Path, help="dataset directory (<table>.csv + *_predicates.json)")
+    parser.add_argument("sentences", nargs="+", help="sentences to map")
+    parser.add_argument("--model", default="gpt-5-mini")
+    parser.add_argument("--max-iterations", type=int, default=3)
+    args = parser.parse_args()
+
+    predicate_file = next(iter(sorted(args.data_dir.glob("*_predicates.json"))))
+    predicate_space = json.loads(predicate_file.read_text())
+    table_name = predicate_space["tables"][0]["name"]
+    csv_file = args.data_dir / f"{table_name}.csv"
+    if not csv_file.exists():
+        csv_file = next(iter(sorted(args.data_dir.glob("*.csv"))))
+    df = pd.read_csv(csv_file)
+    print(f"Loaded {len(df)} rows, {len(df.columns)} columns from {csv_file}")
+    print(f"Predicate space: {len(predicate_space['predicates'])} predicates")
+
+    agent = AgentMapper(df, predicate_space, llm_model=args.model, max_iterations=args.max_iterations)
+    for i, sentence in enumerate(args.sentences, 1):
+        print(f"\n--- Sentence {i}: {sentence}")
         constraint = agent.map_sentence(sentence, verbose=True)
-        
         if constraint:
-            print(f"\n✓ Generated Constraint:")
             for pred in constraint:
                 print(f"    {pred}")
         else:
-            print(f"\n✗ Failed to generate valid constraint")
-    
-    # Clean up
+            print("    (no valid constraint)")
     agent.close()
-    print("\n" + "=" * 80)
-    print("Testing complete!")
-    print("=" * 80)
 
 
 if __name__ == "__main__":

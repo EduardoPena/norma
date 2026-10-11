@@ -8,6 +8,7 @@ from typing import Dict, List, Any, Optional
 import pandas as pd
 
 from src.predicates import normalize_rules
+from src.predicates.templates import out_of_space_counts
 
 
 def _normalize_sentence_rules(
@@ -23,6 +24,32 @@ def _normalize_sentence_rules(
     if drop_multi_rule_sentences and normalized and len(normalized) > 1:
         return None
     return normalized
+
+
+def mapping_diagnostics(map_metrics: Any, outputs: List[Any], predicate_space: Dict) -> Dict:
+    """Summary columns added in the robustness revision (2026-10-10).
+
+    - constraint_equiv_*: extraction F1 by logical normal form (exact CE unchanged);
+    - pairwise_logical_match: share of GT sentences logically equivalent to gold;
+    - num_*_execution_errors: rules whose SQL failed (their violations are empty);
+    - gold_rules_without_violations / max_gold_rule_violation_share: how much the
+      aggregate violation F1 depends on a single gold rule;
+    - out_of_space_predicates: predicted predicates no space template matches.
+    """
+    outside, total = out_of_space_counts(outputs, predicate_space.get("predicates"))
+    fields = {
+        "constraint_equiv_precision": map_metrics.constraint_equiv_precision,
+        "constraint_equiv_recall": map_metrics.constraint_equiv_recall,
+        "constraint_equiv_f1": map_metrics.constraint_equiv_f1,
+        "pairwise_logical_match": map_metrics.pairwise_logical_accuracy,
+        "num_pred_execution_errors": map_metrics.num_pred_execution_errors,
+        "num_gold_execution_errors": map_metrics.num_gold_execution_errors,
+        "gold_rules_without_violations": map_metrics.gold_rules_without_violations,
+        "max_gold_rule_violation_share": map_metrics.max_gold_rule_violation_share,
+        "out_of_space_predicates": outside,
+        "num_pred_predicates": total,
+    }
+    return {key: ("N/A" if value is None else value) for key, value in fields.items()}
 
 
 class BaseExperiment:

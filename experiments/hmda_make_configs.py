@@ -15,13 +15,15 @@ MANIFEST = yaml.safe_load((CONFIG_DIR / "hmda_models.yaml").read_text())
 RESULTS_ROOT = "results/hmda"
 ROW_LIMIT = 1000000
 
-# filter_predicates: only for spaces too large for a Single-Prompt context (HMDAZ).
+# filter_predicates: only for spaces too large for a Single-Prompt context
+# (HMDAZ: 590k templates; HMDA_CHECKS: 163k since the 2026-10-10 extension with
+# coded IN sets, column families and arithmetic, see extend_predicate_space.py).
 # Paper datasets have <= 128k rows, so ROW_LIMIT reads them whole (as in the paper).
 DATASETS = {
     "hmdaz": {"gt_file": "hmdaz_text2rule_gt.json", "filter_predicates": True},
     "hmda_checks": {
         "gt_file": "hmda_regc_checks-text2rule-gt.json",
-        "filter_predicates": False,
+        "filter_predicates": True,
     },
     "hospital": {"gt_file": "hospital-holo_text2rule_gt.json", "filter_predicates": False},
     "restaurant": {

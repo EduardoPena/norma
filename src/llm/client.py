@@ -260,6 +260,12 @@ class OpenRouterClient(LLMClient):
         self.model_name = model_name
         self.max_tokens = max_tokens
         self.temperature = 0.0
+        # Optional sampling seed (NORMA_LLM_SEED), sent only to models whose catalog
+        # entry lists "seed": reduces run-to-run variance where providers honor it.
+        # Opt-in because require_parameters would also restrict routing to
+        # providers that accept a seed.
+        seed = os.environ.get("NORMA_LLM_SEED", "").strip()
+        self.seed = int(seed) if seed else None
         try:
             self.supported_parameters = _openrouter_supported_parameters().get(model_name)
         except Exception as error:  # catalog unavailable: send parameters as before
@@ -317,6 +323,9 @@ class OpenRouterClient(LLMClient):
                 request["temperature"] = self.temperature
             if self.max_tokens is not None and self._supports("max_tokens"):
                 request["max_tokens"] = self.max_tokens
+            seed = getattr(self, "seed", None)
+            if seed is not None and "seed" in (self.supported_parameters or ()):
+                request["seed"] = seed
             if response_schema is not None and self.structured_output:
                 request["response_format"] = {
                     "type": "json_schema",

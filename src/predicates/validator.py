@@ -362,11 +362,79 @@ def _schema_columns(schema: Any) -> Optional[set[str]]:
     return {str(column) for column in schema}
 
 
+_NUMERIC_TYPES = {"int", "integer", "bigint", "float", "double", "number", "numeric", "decimal"}
+_TEXT_TYPES = {"string", "str", "text", "varchar"}
+
+
+def _schema_column_types(schema: Any) -> Optional[dict[str, str]]:
+    """Map column name -> "numeric" | "text" when the schema declares column types."""
+    if not isinstance(schema, Mapping) or not isinstance(schema.get("tables"), Sequence):
+        return None
+    types: dict[str, str] = {}
+    for table in schema["tables"]:
+        if not isinstance(table, Mapping):
+            continue
+        for column in table.get("columns", []):
+            if not isinstance(column, Mapping) or not isinstance(column.get("name"), str):
+                continue
+            declared = str(column.get("type", "")).lower()
+            if declared in _NUMERIC_TYPES:
+                types[column["name"]] = "numeric"
+            elif declared in _TEXT_TYPES:
+                types[column["name"]] = "text"
+    return types or None
+
+
+def _expression_kind(expression: Expression, types: Mapping[str, str]) -> Optional[str]:
+    if isinstance(expression, Column):
+        return types.get(expression.name)
+    if isinstance(expression, Constant):
+        return "text" if expression.is_text else "numeric"
+    if isinstance(expression, Group):
+        return _expression_kind(expression.expression, types)
+    for side in (expression.left, expression.right):
+        if _expression_kind(side, types) == "text":
+            raise RuleValidationError(
+                "Arithmetic is not allowed on text columns or constants"
+            )
+    return "numeric"
+
+
+def _check_types(predicate: PredicateNode, types: Mapping[str, str], text: str) -> None:
+    """Reject comparisons the database cannot evaluate (e.g. numeric column = 'NA')."""
+    left = _expression_kind(predicate.left, types)
+    if predicate.operator in {"IS NULL", "IS NOT NULL"}:
+        return
+    if predicate.operator in {"LIKE", "NOT LIKE"}:
+        if left == "numeric":
+            raise RuleValidationError(f"LIKE requires a text column: {text}")
+        return
+    if isinstance(predicate.right, tuple):
+        rights = {"text" if value.is_text else "numeric" for value in predicate.right}
+    else:
+        assert predicate.right is not None
+        rights = {_expression_kind(predicate.right, types)}
+    rights.discard(None)
+    if left is not None and rights and rights != {left}:
+        raise RuleValidationError(
+            f"Type mismatch: {left} expression compared with {'/'.join(sorted(rights))} "
+            f"value in {text!r} (NULL is written IS NULL, not as a text constant)"
+        )
+
+
 def parse_predicate(predicate: str, schema: Any = None) -> PredicateNode:
-    """Parse and validate one predicate string."""
+    """Parse and validate one predicate string.
+
+    ``schema`` may be a set of column names or ``{"tables": [...]}``; declared
+    column types (int/float/string) additionally enable type checking.
+    """
     if not isinstance(predicate, str):
         raise RuleValidationError("Predicate must be a string")
-    return _PredicateParser(predicate, _schema_columns(schema)).parse()
+    node = _PredicateParser(predicate, _schema_columns(schema)).parse()
+    types = _schema_column_types(schema)
+    if types:
+        _check_types(node, types, predicate)
+    return node
 
 
 def parse_rule(rule: Rule, schema: Any = None) -> ParsedRule:
@@ -398,6 +466,46 @@ def parse_rules(rules: Rules, schema: Any = None) -> Optional[tuple[ParsedRule, 
             "Rules list must contain at least one rule or be null"
         )
     return tuple(parse_rule(rule, schema) for rule in rules)
+
+
+def repair_rules(rules: Any) -> Any:
+    """Lenient clean-up of model output before validation.
+
+    Collapses unary AND/OR nodes to their only item, drops empty predicates and
+    empty logical nodes, and returns None when nothing is left. Anything that is
+    still malformed is left for ``normalize_rules`` to reject.
+    """
+
+    def repair(value: Any) -> Any:
+        if isinstance(value, str):
+            return value if value.strip() else None
+        if isinstance(value, list):
+            items = [item for item in (repair(item) for item in value) if item is not None]
+            return items or None
+        if isinstance(value, dict) and len(value) == 1:
+            operator, items = next(iter(value.items()))
+            if operator in {"AND", "OR"} and isinstance(items, list):
+                kept = [item for item in (repair(item) for item in items) if item is not None]
+                if not kept:
+                    return None
+                return kept[0] if len(kept) == 1 else {operator: kept}
+        return value
+
+    if rules is None:
+        return None
+    if not isinstance(rules, list):
+        return rules
+    repaired = []
+    for rule in rules:
+        if isinstance(rule, list):  # legacy conjunction
+            rule = [item for item in rule if not (isinstance(item, str) and not item.strip())]
+            if rule:
+                repaired.append(rule)
+            continue
+        rule = repair(rule)
+        if rule is not None:
+            repaired.append(rule)
+    return repaired or None
 
 
 def normalize_rules(rules: Any, schema: Any = None) -> Optional[list[Rule]]:

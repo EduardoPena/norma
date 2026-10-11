@@ -10,7 +10,7 @@ Supports:
 
 import pandas as pd
 from pandas.api.types import is_numeric_dtype, is_string_dtype
-from typing import Dict, Set, Optional
+from typing import Dict, Optional, Sequence, Set
 import json
 import os
 import re
@@ -28,6 +28,9 @@ class PredicateSpaceBuilder:
         enable_same_type_comparisons: bool = True,
         mirror_second_tuple: bool = False,
         numeric_range_overlap: Optional[float] = None,
+        numeric_categorical_threshold: Optional[int] = None,
+        column_families: bool = False,
+        arithmetic_ops: Optional[Sequence[str]] = None,
     ):
         """
         Args:
@@ -41,8 +44,17 @@ class PredicateSpaceBuilder:
                 (e.g. t2.edition = $int).
             numeric_range_overlap: If set, also compare numeric columns of the same
                 tuple whose value ranges overlap by at least this fraction of the
-                smaller range (e.g. salary vs. exemption amounts), which exact-value
+                smaller range (e.g. a price vs. a discount amount), which exact-value
                 overlap misses.
+            numeric_categorical_threshold: If set, numeric columns holding only
+                integers with at most this many distinct values (coded categories)
+                also get IN / NOT IN $values templates.
+            column_families: Compare columns of the same family within a tuple
+                (``race_1`` .. ``race_5``) even when they are sparse, which the
+                overlap and min-distinct checks would skip.
+            arithmetic_ops: If set (e.g. ["+", "-", "*", "/", "%"]), emit
+                ``t1.a <op> t1.b <arith> $number`` for every ordered pair of
+                distinct numeric columns.
         """
         self.table_alias = table_alias
         self.categorical_threshold = categorical_threshold
@@ -51,6 +63,9 @@ class PredicateSpaceBuilder:
         self.enable_same_type_comparisons = enable_same_type_comparisons
         self.mirror_second_tuple = mirror_second_tuple
         self.numeric_range_overlap = numeric_range_overlap
+        self.numeric_categorical_threshold = numeric_categorical_threshold
+        self.column_families = column_families
+        self.arithmetic_ops = list(arithmetic_ops) if arithmetic_ops else []
         self.t1 = f"{table_alias}1"
         self.t2 = f"{table_alias}2"
 
@@ -148,6 +163,7 @@ class PredicateSpaceBuilder:
         predicates.update(self._build_cross_column_predicates(df))
         if self.numeric_range_overlap is not None:
             predicates.update(self._build_numeric_range_predicates(df))
+        predicates.update(self.build_extension_predicates(df))
 
         if self.mirror_second_tuple:
             # Single-column templates only (constants, nulls, patterns, sets)
@@ -157,6 +173,88 @@ class PredicateSpaceBuilder:
                 if f"{self.t2}." not in p and p.count(f"{self.t1}.") == 1
             )
 
+        return predicates
+
+    def build_extension_predicates(self, df: pd.DataFrame) -> Set[str]:
+        """Templates of the optional extensions (coded IN sets, column families,
+        arithmetic); empty when none is enabled."""
+        predicates: Set[str] = set()
+        if self.numeric_categorical_threshold is not None:
+            predicates.update(self._build_numeric_categorical_predicates(df))
+        if self.column_families:
+            predicates.update(self._build_column_family_predicates(df))
+        if self.arithmetic_ops:
+            predicates.update(self._build_arithmetic_predicates(df))
+        return predicates
+
+    def coded_numeric_columns(self, df: pd.DataFrame) -> Set[str]:
+        """Numeric columns that look like coded categories: few integer values.
+
+        Columns empty in the sample give no evidence against being coded and are
+        included; a column of a family (``race_5``) is coded when a sibling is.
+        """
+        coded, empty = set(), set()
+        for col in df.columns:
+            if not is_numeric_dtype(df[col]):
+                continue
+            values = df[col].dropna()
+            if values.empty:
+                empty.add(col)
+            elif values.nunique() <= self.numeric_categorical_threshold and (
+                values == values.round()
+            ).all():
+                coded.add(col)
+        coded_families = {self.column_family(col) for col in coded} - {None}
+        for col in df.columns:
+            if is_numeric_dtype(df[col]) and self.column_family(col) in coded_families:
+                values = df[col].dropna()
+                if values.empty or (values == values.round()).all():
+                    coded.add(col)
+        return coded | empty
+
+    def _build_numeric_categorical_predicates(self, df: pd.DataFrame) -> Set[str]:
+        predicates = set()
+        for col in self.coded_numeric_columns(df):
+            predicates.add(f"{self.t1}.{col} IN $values")
+            predicates.add(f"{self.t1}.{col} NOT IN $values")
+        return predicates
+
+    @staticmethod
+    def column_family(col: str) -> Optional[str]:
+        """Family stem of an indexed column (``race_name_2`` -> ``race_name``)."""
+        match = re.fullmatch(r"(.+?)_(\d+)", col)
+        return match.group(1) if match else None
+
+    def _build_column_family_predicates(self, df: pd.DataFrame) -> Set[str]:
+        families: Dict[str, list] = {}
+        for col in df.columns:
+            stem = self.column_family(col)
+            if stem:
+                families.setdefault(stem, []).append(col)
+        predicates = set()
+        for members in families.values():
+            for i, col1 in enumerate(members):
+                for col2 in members[i + 1 :]:
+                    numeric = is_numeric_dtype(df[col1]) and is_numeric_dtype(df[col2])
+                    ops = ["=", "!=", "<", ">", "<=", ">="] if numeric else ["=", "!="]
+                    for op in ops:
+                        predicates.add(f"{self.t1}.{col1} {op} {self.t1}.{col2}")
+                        predicates.add(f"{self.t1}.{col2} {op} {self.t1}.{col1}")
+        return predicates
+
+    def _build_arithmetic_predicates(self, df: pd.DataFrame) -> Set[str]:
+        numeric = [col for col in df.columns if is_numeric_dtype(df[col])]
+        predicates = set()
+        for tuple_alias in (self.t1, self.t2) if self.mirror_second_tuple else (self.t1,):
+            for col1 in numeric:
+                for col2 in numeric:
+                    if col1 == col2:
+                        continue
+                    for op in ["=", "!=", "<", ">", "<=", ">="]:
+                        for arith in self.arithmetic_ops:
+                            predicates.add(
+                                f"{tuple_alias}.{col1} {op} {tuple_alias}.{col2} {arith} $number"
+                            )
         return predicates
 
     def _build_numeric_range_predicates(self, df: pd.DataFrame) -> Set[str]:
@@ -323,6 +421,11 @@ class PredicateSpaceBuilder:
                     "IS NULL",
                     "IS NOT NULL",
                 ]
+                if (
+                    self.numeric_categorical_threshold is not None
+                    and col in self.coded_numeric_columns(df)
+                ):
+                    allowed_ops.extend(["IN", "NOT IN"])
             else:
                 col_type = "string"
                 # Base string operations
@@ -336,6 +439,8 @@ class PredicateSpaceBuilder:
                     allowed_ops.extend(["IN", "NOT IN"])
 
             col_info = {"name": col, "type": col_type, "allowed_ops": allowed_ops}
+            if self.arithmetic_ops and col_type in {"int", "float"}:
+                col_info["allowed_arithmetic_ops"] = list(self.arithmetic_ops)
             columns.append(col_info)
         return columns
 

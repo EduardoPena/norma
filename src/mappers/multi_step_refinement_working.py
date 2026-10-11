@@ -17,7 +17,7 @@ Usage:
     from src.data.loader import DatasetLoader
 
     # Load dataset (predicate_space is built automatically)
-    loader = DatasetLoader('data/hospital')
+    loader = DatasetLoader('data/<dataset>')
     df, sentences, sentence2dcs_map, predicate_space = loader.load()
 
     mapper = MultiStepRefinementMapper(
@@ -64,7 +64,7 @@ def extract_json(text: str) -> str:
 def token_similarity(s1: str, s2: str) -> float:
     """
     Compute similarity between two column names using token-based overlap.
-    Splits on underscores so that days_to_next_inspection and days_to_action
+    Splits on underscores so that days_to_event and days_to_action
     score more meaningfully than character set overlap.
     """
     t1 = set(s1.lower().split("_"))

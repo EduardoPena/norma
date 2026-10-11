@@ -26,7 +26,7 @@ class PredicateFilterTests(unittest.TestCase):
         self.tables = [
             {
                 "columns": [
-                    {"name": "amount", "description": "Loan amount"},
+                    {"name": "amount", "description": "Order amount"},
                     {"name": "fees", "description": "Total fees"},
                     {"name": "hidden_status", "description": "Implicit classification"},
                     {"name": "other"},

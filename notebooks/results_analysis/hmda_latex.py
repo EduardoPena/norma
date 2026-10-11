@@ -1,6 +1,7 @@
-"""LaTeX (booktabs) tables for the HMDA E1/E2 results, in the style of paper Table 3.
+"""LaTeX (booktabs) tables for E1/E2/E3 results, in the style of paper Table 3.
 
-Used by the *_hmda.ipynb notebooks; reads only result DataFrames.
+Dataset-agnostic (the group label and row note come from the caller). Used by
+the *_hmda.ipynb notebooks for any dataset group; reads only result DataFrames.
 """
 
 import pandas as pd
@@ -88,7 +89,7 @@ def _wide(df, index_col, column_key, metrics):
 
 
 def e1_table(results, prompt_order, model_order, dataset_order, dataset_labels,
-             group_label="HMDA", row_note="first 1,000,000 rows per dataset"):
+             group_label="the datasets", row_note="full datasets"):
     """E1: P/R/F1 per model x prompt strategy; dagger = recall >= 0.90 (selection criterion).
 
     ``results`` needs columns dataset, model_label, prompt_label, precision, recall, f1_score.
@@ -115,7 +116,7 @@ def e1_table(results, prompt_order, model_order, dataset_order, dataset_labels,
 
 
 def e2_table(results, mapper_order, model_order, dataset_order, dataset_labels,
-             group_label="HMDA", row_note="first 1,000,000 rows per dataset"):
+             group_label="the datasets", row_note="full datasets"):
     """E2: constraint extraction and aggregate violation P/R/F1 per model and mapper.
 
     ``results`` needs columns dataset, model_label, mapper and the metric columns.
@@ -149,7 +150,7 @@ TABLE3_GROUPS = [
 
 
 def table3(results, method_order, dataset_order, dataset_labels,
-           group_label="HMDA", row_note="first 1,000,000 rows per dataset"):
+           group_label="the datasets", row_note="full datasets"):
     """Paper Table 3 layout (Family | Method | 3 x P/R/F1), Norma rows only.
 
     ``results`` needs columns dataset, method and the TABLE3_GROUPS metrics.

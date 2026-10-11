@@ -8,7 +8,15 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 from src.predicates import Predicate
-from src.predicates import Rule, Rules, canonical_rule, canonical_rules, normalize_rules
+from src.predicates import (
+    Rule,
+    Rules,
+    canonical_rule,
+    canonical_rules,
+    normalize_rules,
+    predicate_strings,
+)
+from src.predicates.equivalence import logical_form
 from src.dbms.db_interface import DBExecutor
 from src.dbms.sql_translator import SQLTranslator
 
@@ -164,6 +172,12 @@ class SentenceMappingResult:
     gold_violations: Optional[Set[int]] = None
     pred_violations: Optional[Set[int]] = None
 
+    # Same logical normal form as the gold rules (see src/predicates/equivalence.py)
+    logical_match: Optional[bool] = None
+    # Rules of this sentence whose SQL failed (counted as no violations)
+    pred_execution_errors: int = 0
+    gold_execution_errors: int = 0
+
 
 @dataclass
 class MappingMetrics:
@@ -202,6 +216,24 @@ class MappingMetrics:
     total_gold_violations: Optional[int] = None
     total_pred_violations: Optional[int] = None
     total_overlap_violations: Optional[int] = None
+
+    # Equivalence-aware extraction: one item per sentence output, compared by
+    # logical normal form (IN/OR, operand order, distributivity, rule splitting)
+    constraint_equiv_precision: Optional[float] = None
+    constraint_equiv_recall: Optional[float] = None
+    constraint_equiv_f1: Optional[float] = None
+    constraint_equiv_tp: Optional[int] = None
+    constraint_equiv_fp: Optional[int] = None
+    constraint_equiv_fn: Optional[int] = None
+    pairwise_logical_accuracy: Optional[float] = None
+
+    # Execution failures (each failing rule counts once; its violations are empty)
+    num_pred_execution_errors: Optional[int] = None
+    num_gold_execution_errors: Optional[int] = None
+
+    # How concentrated the gold violations are (aggregate F1 can hinge on one rule)
+    gold_rules_without_violations: Optional[int] = None
+    max_gold_rule_violation_share: Optional[float] = None
 
     def to_dict(self) -> Dict:
         result = {
@@ -246,6 +278,22 @@ class MappingMetrics:
                     "total_overlap_violations": self.total_overlap_violations,
                 }
             )
+        for key in (
+            "constraint_equiv_precision",
+            "constraint_equiv_recall",
+            "constraint_equiv_f1",
+            "constraint_equiv_tp",
+            "constraint_equiv_fp",
+            "constraint_equiv_fn",
+            "pairwise_logical_accuracy",
+            "num_pred_execution_errors",
+            "num_gold_execution_errors",
+            "gold_rules_without_violations",
+            "max_gold_rule_violation_share",
+        ):
+            value = getattr(self, key)
+            if value is not None:
+                result[key] = value
         return result
 
 
@@ -278,6 +326,7 @@ class MappingEvaluator:
     ):
         self.ground_truth = ground_truth
         self.df = df
+        self.execution_errors: Dict[str, str] = {}
         if df is not None or csv_path is not None:
             self.db = DBExecutor(df=df, csv_path=csv_path)
             self.translator = SQLTranslator(self.db)
@@ -321,6 +370,31 @@ class MappingEvaluator:
             "num_gold": len(gold_set),
         }
 
+    def evaluate_constraint_equivalence(
+        self, predicted_rules: List[Any], gold_rules: List[Any]
+    ) -> Dict[str, Any]:
+        """Like the exact match, but one item per sentence output, compared by
+        logical normal form; outputs too large for the normal form fall back to
+        their canonical rule tuple."""
+        gold_set = {self._logical_key(rules) for rules in gold_rules if rules}
+        pred_set = {self._logical_key(rules) for rules in predicted_rules if rules}
+        tp = len(pred_set & gold_set)
+        fp = len(pred_set - gold_set)
+        fn = len(gold_set - pred_set)
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = (
+            2 * precision * recall / (precision + recall)
+            if (precision + recall) > 0
+            else 0.0
+        )
+        return {"tp": tp, "fp": fp, "fn": fn, "precision": precision, "recall": recall, "f1": f1}
+
+    @staticmethod
+    def _logical_key(rules: Any) -> Any:
+        form = logical_form(rules)
+        return form if form is not None else ("canonical", canonical_rules(rules))
+
     def evaluate(
         self, predictions: List[Tuple[str, Any]]
     ) -> Tuple[MappingMetrics, List[SentenceMappingResult]]:
@@ -340,6 +414,13 @@ class MappingEvaluator:
 
         sentence_results = [self._evaluate_single(s, r) for s, r in predictions]
         metrics = self._compute_metrics(sentence_results, exact_match_result)
+        equivalence = self.evaluate_constraint_equivalence(pred_rules, gold_rules)
+        metrics.constraint_equiv_precision = equivalence["precision"]
+        metrics.constraint_equiv_recall = equivalence["recall"]
+        metrics.constraint_equiv_f1 = equivalence["f1"]
+        metrics.constraint_equiv_tp = equivalence["tp"]
+        metrics.constraint_equiv_fp = equivalence["fp"]
+        metrics.constraint_equiv_fn = equivalence["fn"]
         return metrics, sentence_results
 
     def evaluate_document_level(
@@ -408,15 +489,26 @@ class MappingEvaluator:
         pred_norm = set(canonical_rules(pred_rule) or ()) if pred_is_rule else set()
 
         strict_correct = (gold_norm == pred_norm) if pred_is_rule else False
-        predicate_jaccard = self._jaccard(gold_norm, pred_norm)
+        logical_match = (
+            self._logical_key(gold_rule) == self._logical_key(pred_rule)
+            if pred_is_rule
+            else False
+        )
+        # Jaccard over predicate leaves (rule trees are compared by strict_correct)
+        gold_leaves = set(predicate_strings(gold_rule))
+        pred_leaves = set(predicate_strings(pred_rule)) if pred_is_rule else set()
+        predicate_jaccard = self._jaccard(gold_leaves, pred_leaves)
 
         # Execution metrics
         exec_exact = exec_jaccard = exec_precision = exec_recall = exec_f1 = None
         gold_violations = pred_violations = None
 
+        gold_errors = pred_errors = 0
         if self.db is not None:
-            gold_violations = self._execute_rule(gold_rule)
-            pred_violations = self._execute_rule(pred_rule) if pred_is_rule else set()
+            gold_violations, gold_errors = self._execute_rule_checked(gold_rule)
+            pred_violations, pred_errors = (
+                self._execute_rule_checked(pred_rule) if pred_is_rule else (set(), 0)
+            )
 
             if gold_violations or pred_violations:
                 exec_exact = gold_violations == pred_violations
@@ -440,6 +532,9 @@ class MappingEvaluator:
             pred_rule=pred_rule,
             gold_violations=gold_violations,
             pred_violations=pred_violations,
+            logical_match=logical_match,
+            pred_execution_errors=pred_errors,
+            gold_execution_errors=gold_errors,
         )
 
     def _compute_metrics(
@@ -452,6 +547,9 @@ class MappingEvaluator:
         strict_total = len(gold_results)
         strict_accuracy = strict_correct / strict_total if strict_total else 0.0
 
+        logical_correct = sum(1 for r in gold_results if r.logical_match)
+        logical_accuracy = logical_correct / strict_total if strict_total else 0.0
+
         jaccard_scores = [
             r.predicate_jaccard for r in gold_results if r.predicate_jaccard is not None
         ]
@@ -461,6 +559,7 @@ class MappingEvaluator:
         exec_accuracy = exec_correct = exec_total = None
         avg_ej = std_ej = avg_ep = std_ep = avg_er = std_er = avg_ef = std_ef = None
         agg_vp = agg_vr = agg_vf = total_gv = total_pv = total_ov = None
+        gold_rules_without_violations = max_share = None
 
         if self.db is not None:
             exec_correct = sum(1 for r in gold_results if r.execution_exact)
@@ -510,6 +609,14 @@ class MappingEvaluator:
             agg_vf = (
                 2 * agg_vp * agg_vr / (agg_vp + agg_vr) if (agg_vp + agg_vr) else 0.0
             )
+            gold_rules_without_violations = sum(
+                1 for r in gold_results if not r.gold_violations
+            )
+            max_share = (
+                max(len(r.gold_violations or ()) for r in gold_results) / total_gv
+                if total_gv
+                else 0.0
+            )
 
         return MappingMetrics(
             constraint_exact_precision=exact_match_result["precision"],
@@ -542,6 +649,21 @@ class MappingEvaluator:
             total_gold_violations=total_gv,
             total_pred_violations=total_pv,
             total_overlap_violations=total_ov,
+            pairwise_logical_accuracy=logical_accuracy,
+            num_pred_execution_errors=(
+                sum(r.pred_execution_errors for r in gold_results)
+                if self.db is not None
+                else None
+            ),
+            num_gold_execution_errors=(
+                sum(r.gold_execution_errors for r in gold_results)
+                if self.db is not None
+                else None
+            ),
+            gold_rules_without_violations=(
+                gold_rules_without_violations if self.db is not None else None
+            ),
+            max_gold_rule_violation_share=max_share if self.db is not None else None,
         )
 
     # ------------------------------------------------------------------
@@ -559,23 +681,42 @@ class MappingEvaluator:
 
     def _execute_rule(self, rules: Any) -> Set[int]:
         """Execute a sentence output (independent rule list) and union violations."""
+        return self._execute_rule_checked(rules)[0]
+
+    def _execute_rule_checked(self, rules: Any) -> Tuple[Set[int], int]:
+        """Violations of a sentence output plus the number of rules whose SQL failed.
+
+        A failing rule contributes no violations (as before) but is now counted,
+        logged and kept in ``self.execution_errors`` instead of disappearing.
+        """
         if not rules:
-            return set()
+            return set(), 0
+        violation_ids: Set[int] = set()
+        errors = 0
         try:
-            violation_ids: Set[int] = set()
             normalized = normalize_rules(rules)
-            for rule in normalized or []:
-                result = self.translator.execute_violation(rule)
-                if not result["success"]:
-                    print(f"Warning: Rule execution failed: {result.get('error')}")
-                    continue
-                for row in result.get("rows", []):
-                    for tid in row:
-                        violation_ids.add(tid)
-            return violation_ids
         except Exception as e:
-            print(f"Warning: Exception during rule execution: {e}")
-            return set()
+            self._record_execution_error(rules, f"invalid rule: {e}")
+            return set(), 1
+        for rule in normalized or []:
+            try:
+                result = self.translator.execute_violation(rule)
+            except Exception as e:  # translator bug or unexpected DB error
+                result = {"success": False, "error": str(e)}
+            if not result["success"]:
+                errors += 1
+                self._record_execution_error(rule, result.get("error"))
+                continue
+            for row in result.get("rows", []):
+                for tid in row:
+                    violation_ids.add(tid)
+        return violation_ids, errors
+
+    def _record_execution_error(self, rule: Any, error: Any) -> None:
+        key = repr(rule)
+        if key not in self.execution_errors:
+            print(f"Warning: Rule execution failed (counted as error): {rule} -> {error}")
+            self.execution_errors[key] = str(error)
 
     @staticmethod
     def _canonical_rule_set(rule_groups: List[Any]) -> Set[str]:
