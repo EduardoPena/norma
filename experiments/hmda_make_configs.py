@@ -166,11 +166,14 @@ def e3(dataset, variant):
 
 
 def main():
-    global MANIFEST, RESULTS_ROOT
+    global MANIFEST, RESULTS_ROOT, ROW_LIMIT
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models", type=Path, default=CONFIG_DIR / "hmda_models.yaml")
     parser.add_argument("--config-dir", type=Path, default=CONFIG_DIR)
     parser.add_argument("--results-root", default=RESULTS_ROOT)
+    parser.add_argument(
+        "--row-limit", type=int, default=ROW_LIMIT, help="first N rows of each CSV"
+    )
     parser.add_argument(
         "--experiments", nargs="+", choices=("e1", "e2", "e3"), default=["e1", "e2", "e3"]
     )
@@ -180,6 +183,7 @@ def main():
     args = parser.parse_args()
     MANIFEST = yaml.safe_load(args.models.read_text())
     RESULTS_ROOT = args.results_root
+    ROW_LIMIT = args.row_limit
     args.config_dir.mkdir(parents=True, exist_ok=True)
     models = MANIFEST["models"]
 
