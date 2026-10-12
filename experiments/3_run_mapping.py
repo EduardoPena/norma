@@ -315,6 +315,11 @@ class MapperGTOnlyExperiment(BaseExperiment):
                     "gold_constraint": str(gt_sentence2dcs_map[sent]),
                     "pred_constraint": str(preds) if preds else None,
                     "pred_is_non_null": preds is not None and len(preds) > 0,
+                    **(
+                        {"violated_when": getattr(mapper, "violation_notes", {}).get(sent)}
+                        if getattr(mapper, "explain_violation", False)
+                        else {}
+                    ),
                 }
                 for sent, preds in predictions
             ],
@@ -426,6 +431,8 @@ class MapperGTOnlyExperiment(BaseExperiment):
                 prompt_name=mapper_config["prompt_key"],
                 allowed_predicates=predicate_space.get("predicates"),
                 predicate_generator=predicate_space.get("_generator"),
+                column_context=mapper_config.get("column_context", False),
+                explain_violation=mapper_config.get("explain_violation", False),
                 chunk_size=mapper_config.get("batch_size", 10),
                 filter_predicates=mapper_config.get("filter_predicates", False),
                 predicate_tables=predicate_space["tables"],

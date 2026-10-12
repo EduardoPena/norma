@@ -181,3 +181,52 @@ class LoaderAndMapperTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SinglePromptV2PromptTests(unittest.TestCase):
+    TABLES = [{"columns": [
+        {"name": "weight", "type": "float", "allowed_ops": [">"], "description": "Package weight in kg."},
+        {"name": "order_status", "type": "string", "allowed_ops": ["="], "description": "Order status label.",
+         "domain_values": ["Normal", "Priority"]},
+    ]}]
+
+    def make(self, responses, **options):
+        from src.llm import schemas
+        mapper = LLMMapper.__new__(LLMMapper)
+        mapper.max_output_retries = 0
+        mapper.max_rule_repairs = 0
+        mapper.output_failures = []
+        mapper.allowed_predicates = None
+        mapper.filter_predicates = False
+        mapper.predicate_tables = self.TABLES
+        mapper.max_relevant_columns = 5
+        mapper.rule_schema = None
+        mapper.violation_notes = {}
+        mapper.column_context = options.get("column_context", False)
+        mapper.explain_violation = options.get("explain_violation", False)
+        mapper.prompt_template = "{sentences}|{predicates_list}|{table_context}|{columns_context}"
+        mapper.llm = MagicMock()
+        mapper.llm.complete.side_effect = list(responses)
+        return mapper, schemas
+
+    def test_column_context_lists_description_and_domain(self):
+        mapper, _ = self.make([], column_context=True)
+        prompt = mapper._build_prompt(["A heavy order (weight above 30) must have Priority order status."], {})
+        context = prompt.split("|")[3]
+        self.assertIn("order_status (string): Order status label. Allowed values: ['Normal', 'Priority'].", context)
+        self.assertIn("weight (float): Package weight in kg.", context)
+
+    def test_explained_output_uses_schema_and_keeps_notes(self):
+        reply = ('{"results": [{"id": 1, "violated_when": "heavy order not marked priority", '
+                 '"rules": [{"AND": ["t1.weight > 30", "t1.order_status != \'Priority\'"]}]}]}')
+        mapper, schemas = self.make([reply], explain_violation=True)
+        rules = mapper._map_sentences(["A heavy order must be priority."], {})
+        self.assertEqual(rules, [[{"AND": ["t1.weight > 30", "t1.order_status != 'Priority'"]}]])
+        self.assertIs(mapper.llm.complete.call_args.kwargs["response_schema"], schemas.SENTENCE_RULES_EXPLAINED)
+        self.assertEqual(mapper.violation_notes, {"A heavy order must be priority.": "heavy order not marked priority"})
+
+    def test_defaults_keep_the_original_schema_and_no_context(self):
+        mapper, schemas = self.make(['{"results": [{"id": 1, "rules": ["t1.weight > 30"]}]}'])
+        mapper._map_sentences(["Weight must be at most 30."], {})
+        self.assertIs(mapper.llm.complete.call_args.kwargs["response_schema"], schemas.SENTENCE_RULES)
+        self.assertTrue(mapper.llm.complete.call_args.args[0].endswith("|"))

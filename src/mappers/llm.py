@@ -9,7 +9,7 @@ from src.mappers.predicate_filter import (
 )
 from src.llm.client import EmptyModelContentError, get_llm_client
 from src.llm.helper import PromptLoader, parse_json_response
-from src.llm.schemas import SENTENCE_RULES
+from src.llm.schemas import SENTENCE_RULES, SENTENCE_RULES_EXPLAINED
 from src.predicates import Rule, RuleValidationError, normalize_rules, repair_rules
 
 
@@ -31,6 +31,8 @@ class LLMMapper(BaseMapper):
         max_tokens: Optional[int] = None,
         structured_output: bool = True,
         predicate_generator: Optional[Any] = None,
+        column_context: bool = False,
+        explain_violation: bool = False,
     ):
         """
         Args:
@@ -49,6 +51,10 @@ class LLMMapper(BaseMapper):
             predicate_generator: v2 schema-only space (``OnDemandPredicates``): the
                 prompt offers only the templates generated for the columns selected
                 for each sentence (lexical selection, ``select_relevant_columns``)
+            column_context: Fill the prompt's ``{columns_context}`` with the
+                description and domain values of the selected columns
+            explain_violation: Ask for ``violated_when`` (the violation in plain
+                language) before the rules (SENTENCE_RULES_EXPLAINED schema)
         """
         if max_candidate_predicates <= 0 or max_relevant_columns <= 0:
             raise ValueError("Predicate candidate and column limits must be positive")
@@ -76,6 +82,9 @@ class LLMMapper(BaseMapper):
         )
         self.filter_predicates = filter_predicates
         self.predicate_generator = predicate_generator
+        self.column_context = column_context
+        self.explain_violation = explain_violation
+        self.violation_notes: Dict[str, Optional[str]] = {}
         self.predicate_tables = predicate_tables or []
         self.max_candidate_predicates = max_candidate_predicates
         self.max_relevant_columns = max_relevant_columns
@@ -114,11 +123,11 @@ class LLMMapper(BaseMapper):
         for attempt in range(1, attempts + 1):
             try:
                 response = self.llm.complete(
-                    prompt, response_schema=SENTENCE_RULES, schema_name="sentence_rules"
+                    prompt, response_schema=self._response_schema(), schema_name="sentence_rules"
                 )
-                items = self._result_items(
-                    parse_json_response(response, expected_type=object), len(sentences)
-                )
+                parsed = parse_json_response(response, expected_type=object)
+                items = self._result_items(parsed, len(sentences))
+                self._record_notes(sentences, parsed)
                 return self._validate_items(sentences, items, context)
             except (ValueError, EmptyModelContentError) as error:
                 last_error = str(error).split(" Response:")[0][:300]
@@ -132,6 +141,33 @@ class LLMMapper(BaseMapper):
         )
         self.output_failures.extend([last_error] * len(sentences))
         return [None] * len(sentences)
+
+    def _response_schema(self) -> Dict[str, Any]:
+        return SENTENCE_RULES_EXPLAINED if getattr(self, "explain_violation", False) else SENTENCE_RULES
+
+    def _record_notes(self, sentences: List[str], parsed: Any) -> None:
+        """Keep the model's plain-language violation condition per sentence."""
+        if not getattr(self, "explain_violation", False) or not isinstance(parsed, dict):
+            return
+        for entry in parsed.get("results") or []:
+            if isinstance(entry, dict) and isinstance(entry.get("id"), int) and 1 <= entry["id"] <= len(sentences):
+                self.violation_notes[sentences[entry["id"] - 1]] = entry.get("violated_when")
+
+    def _columns_context(self, columns: List[str]) -> str:
+        """Description, type and domain values of the selected columns."""
+        specs = {c["name"]: c for t in self.predicate_tables for c in t.get("columns", [])}
+        lines = []
+        for name in columns:
+            spec = specs.get(name)
+            if not spec:
+                continue
+            line = f"  - {name} ({spec.get('type', '?')})"
+            if spec.get("description"):
+                line += f": {' '.join(str(spec['description']).split())}"
+            if spec.get("domain_values") is not None:
+                line += f" Allowed values: {spec['domain_values']}."
+            lines.append(line)
+        return "\n".join(lines) if lines else "  (no column information)"
 
     def _build_prompt(self, sentences: List[str], context: Dict[str, Any]) -> str:
         """Build mapping prompt."""
@@ -192,11 +228,28 @@ class LLMMapper(BaseMapper):
 
         table_context = context.get("table_context", context.get("table_sample", ""))
 
+        columns_context = ""
+        if getattr(self, "column_context", False):
+            selected: List[str] = []
+            for entry in self.last_predicate_selection:
+                selected += [c for c in entry["columns"] if c not in selected]
+            if not selected:
+                for sentence in sentences:
+                    selected += [
+                        c
+                        for c in select_relevant_columns(
+                            sentence, self.predicate_tables, self.max_relevant_columns
+                        )
+                        if c not in selected
+                    ]
+            columns_context = self._columns_context(selected)
+
         # Format template
         prompt = self.prompt_template.format(
             sentences=formatted_sentences,
             predicates_list=predicates_list,
             table_context=table_context,
+            columns_context=columns_context,
         )
 
         return prompt
@@ -288,11 +341,11 @@ class LLMMapper(BaseMapper):
             )
             try:
                 response = self.llm.complete(
-                    prompt, response_schema=SENTENCE_RULES, schema_name="sentence_rules"
+                    prompt, response_schema=self._response_schema(), schema_name="sentence_rules"
                 )
-                retried = self._result_items(
-                    parse_json_response(response, expected_type=object), len(subset)
-                )
+                parsed_retry = parse_json_response(response, expected_type=object)
+                retried = self._result_items(parsed_retry, len(subset))
+                self._record_notes(subset, parsed_retry)
             except (ValueError, EmptyModelContentError) as error:
                 print(f"Warning: correction attempt failed: {str(error)[:200]}")
                 break

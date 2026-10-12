@@ -91,6 +91,19 @@ SENTENCE_RULES = _object(
     uses_rules=True,
 )
 
+# Single-Prompt variant: the violation is written in plain language before the rules
+SENTENCE_RULES_EXPLAINED = _object(
+    {
+        "results": {
+            "type": "array",
+            "items": _object(
+                {"id": {"type": "integer"}, "violated_when": _nullable("string"), "rules": RULES}
+            ),
+        }
+    },
+    uses_rules=True,
+)
+
 UNDERSTAND_SCHEMA = _object(
     {
         "is_valid": {"type": "boolean"},
