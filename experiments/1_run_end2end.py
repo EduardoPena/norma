@@ -565,6 +565,10 @@ class MapperEvalFullExperiment(BaseExperiment):
             )
 
         # Document mapper needs predicates in context
+        if "predicates" not in predicate_space:
+            raise ValueError(
+                "Document mode needs the full predicate list; use predicate_space: v1"
+            )
         predicates_list_str = "\n".join(predicate_space["predicates"])
         context["predicates_list"] = predicates_list_str
 
@@ -704,7 +708,8 @@ class MapperEvalFullExperiment(BaseExperiment):
                 model_name=mapper_config["model"],
                 provider=mapper_config.get("provider"),
                 prompt_name=mapper_config["prompt_key"],
-                allowed_predicates=predicate_space["predicates"],
+                allowed_predicates=predicate_space.get("predicates"),
+                predicate_generator=predicate_space.get("_generator"),
                 chunk_size=mapper_config.get("batch_size", 10),
                 filter_predicates=mapper_config.get("filter_predicates", False),
                 predicate_tables=predicate_space["tables"],

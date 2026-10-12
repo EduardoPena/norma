@@ -47,6 +47,7 @@ Usage:
 
 import json
 import re
+import threading
 from typing import List, Dict, Any, Optional, Tuple
 import pandas as pd
 
@@ -298,6 +299,23 @@ class MultiStepRefinementMapper(BaseMapper):
         self.tables = predicate_space.get("tables", [])
         self.rule_schema = {"tables": self.tables} if self.tables else None
         self.allowed_predicates = set(predicate_space.get("predicates", []))
+        # v2 schema-only space: templates are generated for the selected columns
+        self.predicate_generator = predicate_space.get("_generator")
+        if self.predicate_generator is None and int(predicate_space.get("version", 1)) >= 2:
+            if df is None:
+                raise ValueError("A v2 predicate space needs the data (df) to generate predicates")
+            from src.predicates.on_demand import OnDemandPredicates
+
+            self.predicate_generator = OnDemandPredicates(predicate_space, df)
+        if self.predicate_generator is not None:
+            self.include_column_descriptions = True
+            self.domain_values = {
+                c["name"]: c["domain_values"]
+                for t in self.tables for c in t.get("columns", []) if "domain_values" in c
+            }
+        else:
+            self.domain_values = {}
+        self._generated_lock = threading.Lock()
         self.column_profiles = self._build_column_profiles()
         self.columns_with_predicates = self._extract_predicate_columns()
 
@@ -307,6 +325,9 @@ class MultiStepRefinementMapper(BaseMapper):
 
     def _extract_predicate_columns(self) -> set:
         """Extract unique column names that appear in the predicate space."""
+        if getattr(self, "predicate_generator", None) is not None:
+            # v2: every schema column can receive generated predicates
+            return {c["name"] for t in self.tables for c in t.get("columns", [])}
         cols = set()
         for pred in self.allowed_predicates:
             matches = re.findall(r"t[12]\.(\w+)", pred)
@@ -389,9 +410,11 @@ class MultiStepRefinementMapper(BaseMapper):
                     if profile["null_count"] > 0
                     else ""
                 )
-                lines.append(
-                    f"  - {col} ({profile['type']}{null_info}): [{samples_str}]"
-                )
+                line = f"  - {col} ({profile['type']}{null_info}): [{samples_str}]"
+                domain = getattr(self, "domain_values", {}).get(col)
+                if domain is not None:
+                    line += f"; all values: {domain}"
+                lines.append(line)
 
         return "\n".join(lines) if len(lines) > 1 else ""
 
@@ -1271,7 +1294,18 @@ class MultiStepRefinementMapper(BaseMapper):
     def _filter_predicates_by_columns(
         self, columns: List[str], sentence: str = ""
     ) -> List[str]:
-        """Filter allowed predicates to those relevant for given columns."""
+        """Filter allowed predicates to those relevant for given columns.
+
+        v2: the templates are generated only for ``columns`` and added to the
+        allowed set, so the selection is validated against what was offered."""
+        generator = getattr(self, "predicate_generator", None)
+        if generator is not None:
+            generated = generator.generate(columns)
+            with self._generated_lock:
+                self.allowed_predicates.update(generated)
+            return filter_predicates_by_columns(
+                generated, columns, sentence, self.max_candidate_predicates
+            )
         return filter_predicates_by_columns(
             self.allowed_predicates,
             columns,

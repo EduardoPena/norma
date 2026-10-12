@@ -21,12 +21,18 @@ class DatasetLoader:
         gt_file: Optional[str] = None,
         stream_csv: bool = False,
         profile_rows: Optional[int] = None,
+        space_version: int = 1,
     ):
         self.data_dir = Path(data_dir)
         self.sample_rows = sample_rows
         self.gt_file = gt_file
         self.stream_csv = stream_csv
         self.profile_rows = profile_rows
+        # 1: *_predicates.json (all templates); 2: *_schema.json (schema only,
+        # predicates generated on demand, see src/predicates/on_demand.py)
+        if space_version not in (1, 2):
+            raise ValueError(f"Unknown predicate space version: {space_version}")
+        self.space_version = space_version
         self.table_files: dict[str, Path] = {}
 
     def load(
@@ -35,7 +41,9 @@ class DatasetLoader:
         if not self.data_dir.is_dir():
             raise FileNotFoundError(f"Dataset directory not found: {self.data_dir}")
 
-        predicate_path = self._single_matching_file("*_predicates.json")
+        predicate_path = self._single_matching_file(
+            "*_schema.json" if self.space_version == 2 else "*_predicates.json"
+        )
         with predicate_path.open(encoding="utf-8") as file:
             predicate_spec = json.load(file)
         predicate_space = PredicateSpace.from_spec(predicate_spec)

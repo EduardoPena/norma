@@ -73,17 +73,32 @@ class Predicate:
 
 @dataclass
 class PredicateSpace:
-    """Encapsulates all predicate space information from predicates_spec"""
+    """Encapsulates all predicate space information from predicates_spec.
+
+    Version 1 (``*_predicates.json``) lists every predicate template. Version 2
+    (``*_schema.json``, see ``space_builder_v2``) has no ``predicates``: each
+    column also carries ``allowed_arithmetic_ops``, ``description`` and
+    ``domain_values``, and ``generation`` holds the options used to generate the
+    templates of selected columns at run time (``on_demand.OnDemandPredicates``).
+    """
     quantifiers: Dict[str, str]  # {'p1': 'person', 'p2': 'person'}
-    allowed_predicates: Set[str]  # Set of allowed predicate strings
-    schema: Dict[str, Dict[str, Dict]]  # table -> column -> {type, allowed_ops}
+    allowed_predicates: Set[str]  # Set of allowed predicate strings (empty in v2)
+    schema: Dict[str, Dict[str, Dict]]  # table -> column -> {type, allowed_ops, ...}
     all_columns: Set[str]  # Flat set of all column names
+    version: int = 1
+    generation: Optional[Dict] = None
     
     @classmethod
     def from_spec(cls, predicates_spec: Dict) -> 'PredicateSpace':
         """Create PredicateSpace from predicates specification"""
         quantifiers = predicates_spec['quantifiers']
-        allowed_predicates = set(predicates_spec['predicates'])
+        version = int(predicates_spec.get('version', 1))
+        if version >= 2:
+            allowed_predicates = set()
+            extra_keys = ('allowed_arithmetic_ops', 'description', 'domain_values')
+        else:  # v1: unchanged (only type and allowed_ops reach the pipeline)
+            allowed_predicates = set(predicates_spec['predicates'])
+            extra_keys = ()
         
         # Extract schema
         schema = {}
@@ -91,7 +106,8 @@ class PredicateSpace:
             schema[table['name']] = {
                 col['name']: {
                     'type': col['type'],
-                    'allowed_ops': col['allowed_ops']
+                    'allowed_ops': col['allowed_ops'],
+                    **{key: col[key] for key in extra_keys if key in col},
                 }
                 for col in table['columns']
             }
@@ -101,7 +117,14 @@ class PredicateSpace:
         for table_cols in schema.values():
             all_columns.update(table_cols.keys())
         
-        return cls(quantifiers, allowed_predicates, schema, all_columns)
+        return cls(
+            quantifiers,
+            allowed_predicates,
+            schema,
+            all_columns,
+            version=version,
+            generation=predicates_spec.get('generation') if version >= 2 else None,
+        )
     
     def is_valid_predicate(self, pred_str: str) -> bool:
         """Check if predicate is valid"""

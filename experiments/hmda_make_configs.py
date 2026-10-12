@@ -14,6 +14,7 @@ CONFIG_DIR = Path("experiments/configs")
 MANIFEST = yaml.safe_load((CONFIG_DIR / "hmda_models.yaml").read_text())
 RESULTS_ROOT = "results/hmda"
 ROW_LIMIT = 1000000
+PREDICATE_SPACE = "v1"  # v2: *_schema.json, predicates generated for selected columns
 
 # filter_predicates: only for spaces too large for a Single-Prompt context
 # (HMDAZ: 590k templates; HMDA_CHECKS: 163k since the 2026-10-10 extension with
@@ -57,6 +58,7 @@ def dataset_options(dataset):
             "sample_rows": ROW_LIMIT,  # first N rows (pd.read_csv nrows)
             "stream_csv": True,
             "drop_multi_rule_sentences": False,
+            **({"predicate_space": PREDICATE_SPACE} if PREDICATE_SPACE != "v1" else {}),
         }
     }
 
@@ -166,13 +168,19 @@ def e3(dataset, variant):
 
 
 def main():
-    global MANIFEST, RESULTS_ROOT, ROW_LIMIT
+    global MANIFEST, RESULTS_ROOT, ROW_LIMIT, PREDICATE_SPACE
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models", type=Path, default=CONFIG_DIR / "hmda_models.yaml")
     parser.add_argument("--config-dir", type=Path, default=CONFIG_DIR)
     parser.add_argument("--results-root", default=RESULTS_ROOT)
     parser.add_argument(
         "--row-limit", type=int, default=ROW_LIMIT, help="first N rows of each CSV"
+    )
+    parser.add_argument(
+        "--predicate-space",
+        choices=("v1", "v2"),
+        default=PREDICATE_SPACE,
+        help="v1: *_predicates.json; v2: *_schema.json with on-demand predicates",
     )
     parser.add_argument(
         "--experiments", nargs="+", choices=("e1", "e2", "e3"), default=["e1", "e2", "e3"]
@@ -184,6 +192,7 @@ def main():
     MANIFEST = yaml.safe_load(args.models.read_text())
     RESULTS_ROOT = args.results_root
     ROW_LIMIT = args.row_limit
+    PREDICATE_SPACE = args.predicate_space
     args.config_dir.mkdir(parents=True, exist_ok=True)
     models = MANIFEST["models"]
 

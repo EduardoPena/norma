@@ -26,6 +26,15 @@ def _normalize_sentence_rules(
     return normalized
 
 
+def predicate_space_version(dataset_options: Dict) -> int:
+    """``dataset_options.predicate_space``: "v1" (default, all templates in
+    *_predicates.json) or "v2" (*_schema.json, templates generated on demand)."""
+    value = str(dataset_options.get("predicate_space", "v1")).lower().lstrip("v")
+    if value not in ("1", "2"):
+        raise ValueError(f"predicate_space must be v1 or v2, got {value!r}")
+    return int(value)
+
+
 def mapping_diagnostics(map_metrics: Any, outputs: List[Any], predicate_space: Dict) -> Dict:
     """Summary columns added in the robustness revision (2026-10-10).
 
@@ -36,7 +45,11 @@ def mapping_diagnostics(map_metrics: Any, outputs: List[Any], predicate_space: D
       aggregate violation F1 depends on a single gold rule;
     - out_of_space_predicates: predicted predicates no space template matches.
     """
-    outside, total = out_of_space_counts(outputs, predicate_space.get("predicates"))
+    generator = predicate_space.get("_generator")
+    if generator is not None:  # v2: space of the columns each predicate uses
+        outside, total = generator.out_of_space_counts(outputs)
+    else:
+        outside, total = out_of_space_counts(outputs, predicate_space.get("predicates"))
     fields = {
         "constraint_equiv_precision": map_metrics.constraint_equiv_precision,
         "constraint_equiv_recall": map_metrics.constraint_equiv_recall,
@@ -130,6 +143,7 @@ class BaseExperiment:
             gt_file=dataset_options.get("gt_file"),
             stream_csv=dataset_options.get("stream_csv", False),
             profile_rows=dataset_options.get("profile_rows"),
+            space_version=predicate_space_version(dataset_options),
         )
         dataframes, predicate_space, ground_truth = loader.load()
 
@@ -181,14 +195,29 @@ class BaseExperiment:
                                 and column_spec["description"].strip()
                                 else {}
                             ),
+                            **{
+                                key: column_spec[key]
+                                for key in ("allowed_arithmetic_ops", "domain_values")
+                                if key in column_spec
+                            },
                         }
                         for column_name, column_spec in table_schema.items()
                     ],
                 }
                 for table_name, table_schema in predicate_space.schema.items()
             ],
-            "predicates": sorted(predicate_space.allowed_predicates),
         }
+        if predicate_space.version >= 2:
+            # Schema-only space: predicates are generated for selected columns
+            predicate_space_dict["version"] = predicate_space.version
+            predicate_space_dict["generation"] = dict(predicate_space.generation or {})
+        else:
+            predicate_space_dict["predicates"] = sorted(predicate_space.allowed_predicates)
+
+        if predicate_space.version >= 2:
+            from src.predicates.on_demand import OnDemandPredicates
+
+            predicate_space_dict["_generator"] = OnDemandPredicates(predicate_space_dict, df)
 
         return df, sentences, sentence2dcs_map, predicate_space_dict
 

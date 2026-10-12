@@ -156,3 +156,13 @@ REFINE_CONSTRAINT = _object(
     },
     uses_rules=True,
 )
+
+# Column descriptions for the v2 schema files (src/predicates/space_builder_v2.py)
+COLUMN_DESCRIPTIONS = _object(
+    {
+        "columns": {
+            "type": "array",
+            "items": _object({"name": {"type": "string"}, "description": {"type": "string"}}),
+        }
+    }
+)

@@ -30,6 +30,7 @@ class LLMMapper(BaseMapper):
         max_relevant_columns: int = 12,
         max_tokens: Optional[int] = None,
         structured_output: bool = True,
+        predicate_generator: Optional[Any] = None,
     ):
         """
         Args:
@@ -45,12 +46,21 @@ class LLMMapper(BaseMapper):
             max_relevant_columns: Maximum retrieved columns per sentence
             max_tokens: Optional OpenRouter completion token limit
             structured_output: Request the SENTENCE_RULES JSON Schema
+            predicate_generator: v2 schema-only space (``OnDemandPredicates``): the
+                prompt offers only the templates generated for the columns selected
+                for each sentence (lexical selection, ``select_relevant_columns``)
         """
         if max_candidate_predicates <= 0 or max_relevant_columns <= 0:
             raise ValueError("Predicate candidate and column limits must be positive")
         if max_tokens is not None and max_tokens <= 0:
             raise ValueError("Completion token limit must be positive")
-        if filter_predicates and (not predicate_tables or not allowed_predicates):
+        if predicate_generator is not None and not predicate_tables:
+            raise ValueError("A v2 predicate space needs the schema tables")
+        if (
+            predicate_generator is None
+            and filter_predicates
+            and (not predicate_tables or not allowed_predicates)
+        ):
             raise ValueError(
                 "Predicate filtering requires schema tables and predicates"
             )
@@ -65,6 +75,7 @@ class LLMMapper(BaseMapper):
             set(allowed_predicates) if allowed_predicates else None
         )
         self.filter_predicates = filter_predicates
+        self.predicate_generator = predicate_generator
         self.predicate_tables = predicate_tables or []
         self.max_candidate_predicates = max_candidate_predicates
         self.max_relevant_columns = max_relevant_columns
@@ -132,7 +143,30 @@ class LLMMapper(BaseMapper):
         # Prepare context variables
         predicates_list = ""
         self.last_predicate_selection = []
-        if self.allowed_predicates:
+        generator = getattr(self, "predicate_generator", None)
+        if generator is not None:
+            # v2: generate templates only for the columns selected per sentence
+            offered: set = set()
+            for sentence in sentences:
+                columns = select_relevant_columns(
+                    sentence, self.predicate_tables, self.max_relevant_columns
+                )
+                candidates = filter_predicates_by_columns(
+                    generator.generate(columns),
+                    columns,
+                    sentence,
+                    self.max_candidate_predicates,
+                )
+                offered.update(candidates)
+                self.last_predicate_selection.append(
+                    {"columns": columns, "candidates": len(candidates)}
+                )
+            print(
+                f"Predicate generation (v2): {len(offered)} templates for "
+                f"{len(sentences)} sentences"
+            )
+            predicates_list = "\n".join([f"  - {p}" for p in sorted(offered)])
+        elif self.allowed_predicates:
             offered = self.allowed_predicates
             if self.filter_predicates:
                 offered = set(self._simple_predicates)

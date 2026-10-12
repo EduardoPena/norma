@@ -197,6 +197,10 @@ class DocumentMapperExperiment(BaseExperiment):
             context = self._build_context(df, num_rows=num_rows_context)
 
         # Document mapper needs the predicate list in context
+        if "predicates" not in predicate_space:
+            raise ValueError(
+                "Document mode needs the full predicate list; use predicate_space: v1"
+            )
         predicates_list_str = "\n".join(predicate_space["predicates"])
         context["predicates_list"] = predicates_list_str
 
