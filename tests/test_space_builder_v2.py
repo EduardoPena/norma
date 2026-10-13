@@ -230,3 +230,48 @@ class SinglePromptV2PromptTests(unittest.TestCase):
         mapper._map_sentences(["Weight must be at most 30."], {})
         self.assertIs(mapper.llm.complete.call_args.kwargs["response_schema"], schemas.SENTENCE_RULES)
         self.assertTrue(mapper.llm.complete.call_args.args[0].endswith("|"))
+
+
+class ColumnRetrievalTests(unittest.TestCase):
+    TABLES = [{"columns": [
+        {"name": "hoepa_status", "type": "int", "description": "Whether the loan is a HOEPA loan."},
+        {"name": "balloon_payment", "type": "int", "description": "Balloon payment indicator."},
+        {"name": "city", "type": "string", "description": "City of the property."},
+    ]}]
+
+    @staticmethod
+    def embedder(texts):
+        # toy embedding: "high-cost"/"HOEPA" -> axis 0, "balloon" -> axis 1, otherwise axis 2
+        def vec(t):
+            t = t.lower()
+            return [float("hoepa" in t or "high-cost" in t), float("balloon" in t), 0.1]
+        return [vec(t) for t in texts]
+
+    def test_semantic_finds_columns_the_lexical_selector_misses(self):
+        from src.mappers.column_retrieval import ColumnSelector
+        sentence = "A high-cost mortgage shall not include a balloon payment."
+        lexical = ColumnSelector(self.TABLES, "lexical").select(sentence, 2)
+        semantic = ColumnSelector(self.TABLES, "semantic", embedder=self.embedder).select(sentence, 2)
+        hybrid = ColumnSelector(self.TABLES, "hybrid", embedder=self.embedder).select(sentence, 2)
+        self.assertNotIn("hoepa_status", lexical)
+        self.assertEqual(set(semantic), {"hoepa_status", "balloon_payment"})
+        self.assertIn("balloon_payment", hybrid)
+
+    def test_mapper_uses_the_selector(self):
+        from src.mappers.column_retrieval import ColumnSelector
+        mapper = LLMMapper.__new__(LLMMapper)
+        mapper.predicate_tables = self.TABLES
+        mapper.max_relevant_columns = 2
+        mapper.column_selector = ColumnSelector(self.TABLES, "semantic", embedder=self.embedder)
+        self.assertIn("hoepa_status", mapper._select_columns("A high-cost mortgage must ..."))
+
+    def test_constructor_builds_the_selector_after_the_tables(self):
+        from unittest.mock import patch
+        from src.mappers.column_retrieval import ColumnSelector
+        with patch("src.mappers.llm.get_llm_client"), patch(
+            "src.mappers.column_retrieval.OpenRouterEmbedder", return_value=self.embedder
+        ):
+            mapper = LLMMapper(model_name="m", predicate_tables=self.TABLES, column_retrieval="semantic",
+                               max_relevant_columns=2)
+        self.assertIsInstance(mapper.column_selector, ColumnSelector)
+        self.assertIn("hoepa_status", mapper._select_columns("A high-cost mortgage must ..."))

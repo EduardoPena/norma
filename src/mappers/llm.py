@@ -33,6 +33,8 @@ class LLMMapper(BaseMapper):
         predicate_generator: Optional[Any] = None,
         column_context: bool = False,
         explain_violation: bool = False,
+        column_retrieval: str = "lexical",
+        embedding_model: Optional[str] = None,
     ):
         """
         Args:
@@ -55,6 +57,9 @@ class LLMMapper(BaseMapper):
                 description and domain values of the selected columns
             explain_violation: Ask for ``violated_when`` (the violation in plain
                 language) before the rules (SENTENCE_RULES_EXPLAINED schema)
+            column_retrieval: How columns are selected per sentence: "lexical"
+                (default), "semantic" (embeddings) or "hybrid" (both, fused)
+            embedding_model: OpenRouter embedding model for semantic/hybrid retrieval
         """
         if max_candidate_predicates <= 0 or max_relevant_columns <= 0:
             raise ValueError("Predicate candidate and column limits must be positive")
@@ -86,6 +91,15 @@ class LLMMapper(BaseMapper):
         self.explain_violation = explain_violation
         self.violation_notes: Dict[str, Optional[str]] = {}
         self.predicate_tables = predicate_tables or []
+        self.column_selector = None
+        if column_retrieval != "lexical":
+            from src.mappers.column_retrieval import DEFAULT_EMBEDDING_MODEL, ColumnSelector
+
+            self.column_selector = ColumnSelector(
+                self.predicate_tables,
+                column_retrieval,
+                embedding_model=embedding_model or DEFAULT_EMBEDDING_MODEL,
+            )
         self.max_candidate_predicates = max_candidate_predicates
         self.max_relevant_columns = max_relevant_columns
         self._simple_predicates = (
@@ -153,6 +167,12 @@ class LLMMapper(BaseMapper):
             if isinstance(entry, dict) and isinstance(entry.get("id"), int) and 1 <= entry["id"] <= len(sentences):
                 self.violation_notes[sentences[entry["id"] - 1]] = entry.get("violated_when")
 
+    def _select_columns(self, sentence: str) -> List[str]:
+        selector = getattr(self, "column_selector", None)
+        if selector is not None:
+            return selector.select(sentence, self.max_relevant_columns)
+        return select_relevant_columns(sentence, self.predicate_tables, self.max_relevant_columns)
+
     def _columns_context(self, columns: List[str]) -> str:
         """Description, type and domain values of the selected columns."""
         specs = {c["name"]: c for t in self.predicate_tables for c in t.get("columns", [])}
@@ -184,9 +204,7 @@ class LLMMapper(BaseMapper):
             # v2: generate templates only for the columns selected per sentence
             offered: set = set()
             for sentence in sentences:
-                columns = select_relevant_columns(
-                    sentence, self.predicate_tables, self.max_relevant_columns
-                )
+                columns = self._select_columns(sentence)
                 candidates = filter_predicates_by_columns(
                     generator.generate(columns),
                     columns,
@@ -207,9 +225,7 @@ class LLMMapper(BaseMapper):
             if self.filter_predicates:
                 offered = set(self._simple_predicates)
                 for sentence in sentences:
-                    columns = select_relevant_columns(
-                        sentence, self.predicate_tables, self.max_relevant_columns
-                    )
+                    columns = self._select_columns(sentence)
                     candidates = filter_predicates_by_columns(
                         self.allowed_predicates,
                         columns,
@@ -237,9 +253,7 @@ class LLMMapper(BaseMapper):
                 for sentence in sentences:
                     selected += [
                         c
-                        for c in select_relevant_columns(
-                            sentence, self.predicate_tables, self.max_relevant_columns
-                        )
+                        for c in self._select_columns(sentence)
                         if c not in selected
                     ]
             columns_context = self._columns_context(selected)

@@ -712,6 +712,8 @@ class MapperEvalFullExperiment(BaseExperiment):
                 predicate_generator=predicate_space.get("_generator"),
                 column_context=mapper_config.get("column_context", False),
                 explain_violation=mapper_config.get("explain_violation", False),
+                column_retrieval=mapper_config.get("column_retrieval", "lexical"),
+                embedding_model=mapper_config.get("embedding_model"),
                 chunk_size=mapper_config.get("batch_size", 10),
                 filter_predicates=mapper_config.get("filter_predicates", False),
                 predicate_tables=predicate_space["tables"],
