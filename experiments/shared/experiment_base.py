@@ -38,7 +38,10 @@ def predicate_space_version(dataset_options: Dict) -> int:
 def mapping_diagnostics(map_metrics: Any, outputs: List[Any], predicate_space: Dict) -> Dict:
     """Summary columns added in the robustness revision (2026-10-10).
 
-    - constraint_equiv_*: extraction F1 by logical normal form (exact CE unchanged);
+    - constraint_equiv_*: extraction F1 by logical normal form, with equality
+      literals of data-verified 1:1 column pairs unified (exact CE unchanged);
+    - violation_identical_*: gold rules (with >= 1 violation) whose prediction
+      flags exactly the same rows (execution equivalence);
     - pairwise_logical_match: share of GT sentences logically equivalent to gold;
     - num_*_execution_errors: rules whose SQL failed (their violations are empty);
     - gold_rules_without_violations / max_gold_rule_violation_share: how much the
@@ -59,6 +62,9 @@ def mapping_diagnostics(map_metrics: Any, outputs: List[Any], predicate_space: D
         "num_gold_execution_errors": map_metrics.num_gold_execution_errors,
         "gold_rules_without_violations": map_metrics.gold_rules_without_violations,
         "max_gold_rule_violation_share": map_metrics.max_gold_rule_violation_share,
+        "violation_identical_rate": map_metrics.violation_identical_rate,
+        "violation_identical_rules": map_metrics.violation_identical_rules,
+        "violation_identical_total": map_metrics.violation_identical_total,
         "out_of_space_predicates": outside,
         "num_pred_predicates": total,
     }

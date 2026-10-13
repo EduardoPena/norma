@@ -218,3 +218,42 @@ class SeedTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ValueAliasTests(unittest.TestCase):
+    """Code/label equivalence is found in the data, not from column names."""
+
+    def frame(self):
+        return pd.DataFrame({
+            "kind": [1, 1, 2, 2, 3, 3, 1, 2],  # code 3 has no label
+            "descr": ["red", "red", "blue", "blue", None, None, "red", "blue"],
+            "flag": [1, 2, 1, 2, 1, 2, 2, 1],  # 2 distinct values, unrelated to kind
+            "size": [1, 1, 1, 2, 2, 2, 1, 2],  # 2 distinct values, unrelated to flag
+        })
+
+    def test_equality_aliased_and_inequality_only_without_null_gaps(self):
+        from src.evaluation.value_aliases import ValueAliases
+        from src.predicates.equivalence import logically_equivalent
+        aliases = ValueAliases(self.frame())
+        self.assertTrue(logically_equivalent(["t1.kind = 1"], ["t1.descr = 'red'"], aliases))
+        self.assertTrue(logically_equivalent(["t1.kind IN (1, 2)"], [{"OR": ["t1.descr = 'red'", "t1.descr = 'blue'"]}], aliases))
+        # code 3 rows have a NULL label: "descr != 'red'" skips them, "kind != 1" does not
+        self.assertFalse(logically_equivalent(["t1.kind != 1"], ["t1.descr != 'red'"], aliases))
+        self.assertFalse(logically_equivalent(["t1.flag = 1"], ["t1.size = 1"], aliases))
+        self.assertFalse(logically_equivalent(["t1.kind = 1"], ["t1.descr = 'red'"]))  # without data
+
+    def test_evaluator_uses_aliases_and_reports_execution_equivalence(self):
+        df = self.frame()
+        gt = {"s1": [{"AND": ["t1.descr = 'red'", "t1.flag = 2"]}], "s2": ["t1.size = 2"], "s3": ["t1.kind = 9"]}
+        evaluator = MappingEvaluator(gt, df=df)
+        metrics, rows = evaluator.evaluate([
+            ("s1", [{"AND": ["t1.kind = 1", "t1.flag = 2"]}]),  # same rule, code instead of label
+            ("s2", ["t1.size >= 2"]),  # different syntax, same rows
+            ("s3", None),  # gold has no violations: not judged by execution
+        ])
+        self.assertEqual(metrics.constraint_exact_tp, 0)
+        self.assertEqual(metrics.constraint_equiv_tp, 1)
+        self.assertEqual([r.logical_match for r in rows], [True, False, False])
+        self.assertEqual((metrics.violation_identical_rules, metrics.violation_identical_total), (2, 2))
+        self.assertEqual(metrics.violation_identical_rate, 1.0)
+        evaluator.close()

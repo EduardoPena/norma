@@ -15,8 +15,10 @@ disjunctive normal form over normalized literals:
 - AND/OR are flattened and distributed (DNF), duplicates and absorbed terms
   (``A OR (A AND B)`` = ``A``) are removed.
 
-It does not use data or domain knowledge: ``x >= 1 AND x <= 4`` and
-``x IN (1,2,3,4)`` stay different even for integer codes.
+It does not use domain knowledge: ``x >= 1 AND x <= 4`` and ``x IN (1,2,3,4)``
+stay different even for integer codes. Optionally, ``aliases`` (see
+``src/evaluation/value_aliases.py``) unify equality literals of data-verified
+1:1 column pairs, e.g. a code and its label column.
 """
 
 from __future__ import annotations
@@ -94,7 +96,21 @@ def _is_constant(expression: Any) -> bool:
     return False
 
 
-def _comparison(left: Any, operator: str, right: Any) -> Literal:
+def _aliased(left: Any, operator: str, right: Any, aliases: Any) -> Optional[Literal]:
+    """Alias form of ``column op constant`` (either side), if the aliases know it."""
+    if aliases is None or operator not in {"=", "!="}:
+        return None
+    if isinstance(left, Constant) and isinstance(right, Column):
+        left, right = right, left
+    if isinstance(left, Column) and isinstance(right, Constant):
+        return aliases.canonical(left.alias, left.name, operator, _canonical_constant(right))
+    return None
+
+
+def _comparison(left: Any, operator: str, right: Any, aliases: Any = None) -> Literal:
+    aliased = _aliased(left, operator, right, aliases)
+    if aliased is not None:
+        return aliased
     left_text, right_text = _expression(left), _expression(right)
     left_const, right_const = _is_constant(left), _is_constant(right)
     flip = (left_const and not right_const) or (
@@ -105,13 +121,13 @@ def _comparison(left: Any, operator: str, right: Any) -> Literal:
     return f"{left_text} {operator} {right_text}"
 
 
-def _predicate_form(predicate: PredicateNode) -> LogicalForm:
+def _predicate_form(predicate: PredicateNode, aliases: Any = None) -> LogicalForm:
     left = predicate.left
     if predicate.operator in {"IS NULL", "IS NOT NULL"}:
         return frozenset({frozenset({f"{_expression(left)} {predicate.operator}"})})
     if predicate.operator in {"IN", "NOT IN"}:
         assert isinstance(predicate.right, tuple)
-        literals = {_comparison(left, "=" if predicate.operator == "IN" else "!=", value)
+        literals = {_comparison(left, "=" if predicate.operator == "IN" else "!=", value, aliases)
                     for value in predicate.right}
         if predicate.operator == "IN":
             return frozenset(frozenset({literal}) for literal in literals)
@@ -120,7 +136,7 @@ def _predicate_form(predicate: PredicateNode) -> LogicalForm:
         return frozenset({frozenset({
             f"{_expression(left)} {predicate.operator} {_expression(predicate.right)}"
         })})
-    return frozenset({frozenset({_comparison(left, predicate.operator, predicate.right)})})
+    return frozenset({frozenset({_comparison(left, predicate.operator, predicate.right, aliases)})})
 
 
 def _absorb(terms: set[Term]) -> LogicalForm:
@@ -133,11 +149,11 @@ def _absorb(terms: set[Term]) -> LogicalForm:
     return frozenset(kept)
 
 
-def _rule_form(rule: Any) -> LogicalForm:
+def _rule_form(rule: Any, aliases: Any = None) -> LogicalForm:
     if isinstance(rule, PredicateNode):
-        return _predicate_form(rule)
+        return _predicate_form(rule, aliases)
     assert isinstance(rule, LogicalNode)
-    children = [_rule_form(item) for item in rule.items]
+    children = [_rule_form(item, aliases) for item in rule.items]
     if rule.operator == "OR":
         return _absorb(set().union(*children))
     terms: set[Term] = {frozenset()}
@@ -148,7 +164,7 @@ def _rule_form(rule: Any) -> LogicalForm:
     return _absorb(terms)
 
 
-def logical_form(rules: Any) -> Optional[LogicalForm]:
+def logical_form(rules: Any, aliases: Any = None) -> Optional[LogicalForm]:
     """DNF of a sentence output (independent rules = disjunction); None if empty/too large."""
     parsed = parse_rules(rules)
     if not parsed:
@@ -156,7 +172,7 @@ def logical_form(rules: Any) -> Optional[LogicalForm]:
     try:
         terms: set[Term] = set()
         for rule in parsed:
-            terms |= _rule_form(rule)
+            terms |= _rule_form(rule, aliases)
             if len(terms) > MAX_TERMS:
                 raise _TooLarge
         return _absorb(terms)
@@ -164,7 +180,8 @@ def logical_form(rules: Any) -> Optional[LogicalForm]:
         return None
 
 
-def logically_equivalent(left: Any, right: Any) -> bool:
-    """True when both outputs have the same normal form (no data needed)."""
-    left_form, right_form = logical_form(left), logical_form(right)
+def logically_equivalent(left: Any, right: Any, aliases: Any = None) -> bool:
+    """True when both outputs have the same normal form (no data needed unless
+    ``aliases`` are given)."""
+    left_form, right_form = logical_form(left, aliases), logical_form(right, aliases)
     return left_form is not None and left_form == right_form

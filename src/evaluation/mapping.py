@@ -235,6 +235,12 @@ class MappingMetrics:
     gold_rules_without_violations: Optional[int] = None
     max_gold_rule_violation_share: Optional[float] = None
 
+    # Execution equivalence: gold rules with >= 1 violation whose prediction
+    # flags exactly the same rows (rules without violations cannot be judged)
+    violation_identical_rules: Optional[int] = None
+    violation_identical_total: Optional[int] = None
+    violation_identical_rate: Optional[float] = None
+
     def to_dict(self) -> Dict:
         result = {
             "constraint_exact_precision": self.constraint_exact_precision,
@@ -290,6 +296,9 @@ class MappingMetrics:
             "num_gold_execution_errors",
             "gold_rules_without_violations",
             "max_gold_rule_violation_share",
+            "violation_identical_rules",
+            "violation_identical_total",
+            "violation_identical_rate",
         ):
             value = getattr(self, key)
             if value is not None:
@@ -326,6 +335,7 @@ class MappingEvaluator:
     ):
         self.ground_truth = ground_truth
         self.df = df
+        self._aliases = None  # data-verified code/label aliases, built on first use
         self.execution_errors: Dict[str, str] = {}
         if df is not None or csv_path is not None:
             self.db = DBExecutor(df=df, csv_path=csv_path)
@@ -390,9 +400,18 @@ class MappingEvaluator:
         )
         return {"tp": tp, "fp": fp, "fn": fn, "precision": precision, "recall": recall, "f1": f1}
 
-    @staticmethod
-    def _logical_key(rules: Any) -> Any:
-        form = logical_form(rules)
+    @property
+    def value_aliases(self):
+        """Equality-literal aliases of 1:1 column pairs, verified on the
+        evaluation data (None without a DataFrame)."""
+        if self._aliases is None and isinstance(self.df, pd.DataFrame):
+            from src.evaluation.value_aliases import ValueAliases
+
+            self._aliases = ValueAliases(self.df)
+        return self._aliases
+
+    def _logical_key(self, rules: Any) -> Any:
+        form = logical_form(rules, self.value_aliases)
         return form if form is not None else ("canonical", canonical_rules(rules))
 
     def evaluate(
@@ -560,6 +579,8 @@ class MappingEvaluator:
         avg_ej = std_ej = avg_ep = std_ep = avg_er = std_er = avg_ef = std_ef = None
         agg_vp = agg_vr = agg_vf = total_gv = total_pv = total_ov = None
         gold_rules_without_violations = max_share = None
+        judged = None
+        identical = None
 
         if self.db is not None:
             exec_correct = sum(1 for r in gold_results if r.execution_exact)
@@ -617,6 +638,8 @@ class MappingEvaluator:
                 if total_gv
                 else 0.0
             )
+            judged = [r for r in gold_results if r.gold_violations]
+            identical = sum(1 for r in judged if r.pred_violations == r.gold_violations)
 
         return MappingMetrics(
             constraint_exact_precision=exact_match_result["precision"],
@@ -664,6 +687,11 @@ class MappingEvaluator:
                 gold_rules_without_violations if self.db is not None else None
             ),
             max_gold_rule_violation_share=max_share if self.db is not None else None,
+            violation_identical_rules=identical,
+            violation_identical_total=len(judged) if judged is not None else None,
+            violation_identical_rate=(
+                identical / len(judged) if judged else (0.0 if judged is not None else None)
+            ),
         )
 
     # ------------------------------------------------------------------
