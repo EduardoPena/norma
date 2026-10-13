@@ -275,3 +275,48 @@ class ColumnRetrievalTests(unittest.TestCase):
                                max_relevant_columns=2)
         self.assertIsInstance(mapper.column_selector, ColumnSelector)
         self.assertIn("hoepa_status", mapper._select_columns("A high-cost mortgage must ..."))
+
+
+class GlossaryTests(unittest.TestCase):
+    GLOSSARY = {"_meta": {"source": "test"}, "columns": {
+        "hoepa_status": {"definition": "Whether the covered loan is a high-cost mortgage",
+                         "codes": {"1": "High-cost mortgage", "2": "Not a high-cost mortgage"}}}}
+
+    def test_applies_to_column_and_label_column(self):
+        from src.data.glossary import apply_glossary
+        tables = [{"columns": [{"name": "hoepa_status", "description": "Coded HOEPA status."},
+                               {"name": "hoepa_status_name"}, {"name": "city", "description": "City."}]}]
+        self.assertEqual(apply_glossary(tables, self.GLOSSARY), 2)
+        code, label, city = tables[0]["columns"]
+        self.assertTrue(code["description"].startswith("Coded HOEPA status. Official definition: Whether the covered loan is a high-cost mortgage."))
+        self.assertIn("Codes: 1 = High-cost mortgage; 2 = Not a high-cost mortgage.", code["description"])
+        self.assertTrue(label["description"].startswith("Text label of hoepa_status."))
+        self.assertEqual(city["description"], "City.")
+        self.assertNotIn("glossary", city)
+
+    def test_load_glossary_from_folder(self):
+        from src.data.glossary import load_glossary
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIsNone(load_glossary(tmp))
+            (Path(tmp) / "x_glossary.json").write_text(json.dumps(self.GLOSSARY))
+            self.assertEqual(load_glossary(tmp)["_meta"]["source"], "test")
+
+    def test_merge_is_idempotent(self):
+        from src.data.glossary import apply_glossary
+        tables = [{"columns": [{"name": "hoepa_status", "description": "Coded HOEPA status."}]}]
+        apply_glossary(tables, self.GLOSSARY)
+        once = tables[0]["columns"][0]["description"]
+        apply_glossary(tables, self.GLOSSARY)
+        self.assertEqual(tables[0]["columns"][0]["description"], once)
+        self.assertEqual(once.count("Official definition"), 1)
+
+    def test_single_prompt_uses_descriptions_by_default_with_v2(self):
+        from unittest.mock import patch
+        with patch("src.mappers.llm.get_llm_client"):
+            v2 = LLMMapper(model_name="m", predicate_tables=[{"columns": []}], predicate_generator=object())
+            v1 = LLMMapper(model_name="m")
+            off = LLMMapper(model_name="m", predicate_tables=[{"columns": []}], predicate_generator=object(),
+                            column_context=False)
+        self.assertTrue(v2.column_context)
+        self.assertFalse(v1.column_context)
+        self.assertFalse(off.column_context)

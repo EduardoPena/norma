@@ -31,7 +31,7 @@ class LLMMapper(BaseMapper):
         max_tokens: Optional[int] = None,
         structured_output: bool = True,
         predicate_generator: Optional[Any] = None,
-        column_context: bool = False,
+        column_context: Optional[bool] = None,
         explain_violation: bool = False,
         column_retrieval: str = "lexical",
         embedding_model: Optional[str] = None,
@@ -54,7 +54,8 @@ class LLMMapper(BaseMapper):
                 prompt offers only the templates generated for the columns selected
                 for each sentence (lexical selection, ``select_relevant_columns``)
             column_context: Fill the prompt's ``{columns_context}`` with the
-                description and domain values of the selected columns
+                description and domain values of the selected columns; by default
+                on with a v2 space (descriptions come from the schema file)
             explain_violation: Ask for ``violated_when`` (the violation in plain
                 language) before the rules (SENTENCE_RULES_EXPLAINED schema)
             column_retrieval: How columns are selected per sentence: "lexical"
@@ -87,7 +88,9 @@ class LLMMapper(BaseMapper):
         )
         self.filter_predicates = filter_predicates
         self.predicate_generator = predicate_generator
-        self.column_context = column_context
+        self.column_context = (
+            column_context if column_context is not None else predicate_generator is not None
+        )
         self.explain_violation = explain_violation
         self.violation_notes: Dict[str, Optional[str]] = {}
         self.predicate_tables = predicate_tables or []

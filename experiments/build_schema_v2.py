@@ -43,6 +43,8 @@ def main():
     parser.add_argument("--column-families", action="store_true")
     parser.add_argument("--arithmetic-ops", nargs="*", default=[])
     parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--glossary", action="store_true",
+                        help="merge data/<ds>/*_glossary.json into the column descriptions")
     args = parser.parse_args()
 
     builder = SchemaBuilderV2(
@@ -90,6 +92,17 @@ def main():
         table_name=table_name,
         quantifiers=quantifiers,
     )
+    if args.glossary:
+        from src.data.glossary import apply_glossary, load_glossary
+
+        glossary = load_glossary(args.data_dir)
+        if glossary is None:
+            parser.error(f"--glossary: no *_glossary.json in {args.data_dir}")
+        count = apply_glossary(spec["tables"], glossary)
+        meta = glossary.get("_meta", {})
+        spec["glossary"] = {"source": meta.get("source"), "retrieved": meta.get("retrieved"), "columns": count}
+        output.write_text(json.dumps(spec, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"glossary merged into {count} column descriptions")
     columns = spec["tables"][0]["columns"]
     print(f"{output}: {len(columns)} columns, "
           f"{sum('domain_values' in c for c in columns)} with domain_values, "
