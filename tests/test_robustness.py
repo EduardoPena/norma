@@ -215,6 +215,20 @@ class SeedTests(unittest.TestCase):
         client.complete("p")
         self.assertNotIn("seed", create.call_args.kwargs)
 
+    def test_json_object_mode_puts_schema_in_prompt(self):
+        schema = {"type": "object", "properties": {"x": {"type": "string"}}}
+        client, create = self.make({"response_format"})
+        client.structured_output, client.json_object_mode = True, True
+        client.complete("p", response_schema=schema)
+        request = create.call_args.kwargs
+        self.assertEqual(request["response_format"], {"type": "json_object"})
+        self.assertIn('"properties"', request["messages"][0]["content"])
+        client, create = self.make({"response_format"})
+        client.structured_output, client.json_object_mode = True, False
+        client.complete("p", response_schema=schema)
+        self.assertEqual(create.call_args.kwargs["response_format"]["type"], "json_schema")
+        self.assertEqual(create.call_args.kwargs["messages"][0]["content"], "p")
+
 
 if __name__ == "__main__":
     unittest.main()

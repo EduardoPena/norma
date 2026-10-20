@@ -272,6 +272,16 @@ class OpenRouterClient(LLMClient):
             print(f"Warning: could not read OpenRouter model catalog: {error}")
             self.supported_parameters = None
         self.structured_output = structured_output and self._supports("response_format")
+        # Optional JSON-mode fallback (NORMA_JSON_OBJECT_MODELS, comma-separated
+        # model ids) for models whose strict json_schema decoding is unreliable:
+        # the schema goes into the prompt, response_format is json_object, and
+        # callers validate the output as they do for prompt-only JSON.
+        json_object_models = {
+            model.strip()
+            for model in os.environ.get("NORMA_JSON_OBJECT_MODELS", "").split(",")
+            if model.strip()
+        }
+        self.json_object_mode = self.structured_output and model_name in json_object_models
         if structured_output and not self.structured_output:
             print(
                 f"Warning: {model_name} does not support response_format; "
@@ -326,7 +336,14 @@ class OpenRouterClient(LLMClient):
             seed = getattr(self, "seed", None)
             if seed is not None and "seed" in (self.supported_parameters or ()):
                 request["seed"] = seed
-            if response_schema is not None and self.structured_output:
+            if response_schema is not None and getattr(self, "json_object_mode", False):
+                request["messages"][0]["content"] = (
+                    f"{prompt}\n\nRespond with ONLY a JSON object that matches this "
+                    f"JSON schema:\n{json.dumps(response_schema)}"
+                )
+                request["response_format"] = {"type": "json_object"}
+                request["extra_body"] = {"provider": {"require_parameters": True}}
+            elif response_schema is not None and self.structured_output:
                 request["response_format"] = {
                     "type": "json_schema",
                     "json_schema": {

@@ -194,6 +194,7 @@ def run_isolated(args, output: Path, jobs, config: dict) -> int:
     env = {
         **os.environ,
         "NORMA_PARALLEL_REQUESTS": str(config.get("parallel_requests", 1)),
+        "NORMA_JSON_OBJECT_MODELS": ",".join(config.get("json_object_models") or []),
         "PYTHONUNBUFFERED": "1",  # live per-job logs (tail -f)
     }
     log_dir = output / "job_logs"
@@ -301,6 +302,9 @@ def main() -> int:
         return 2
     os.environ.setdefault(
         "NORMA_PARALLEL_REQUESTS", str(config.get("parallel_requests", 1))
+    )
+    os.environ.setdefault(
+        "NORMA_JSON_OBJECT_MODELS", ",".join(config.get("json_object_models") or [])
     )
     if args.only_job:
         jobs = [job for job in jobs if job[2].stem == args.only_job]

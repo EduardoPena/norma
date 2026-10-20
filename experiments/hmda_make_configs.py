@@ -15,6 +15,8 @@ MANIFEST = yaml.safe_load((CONFIG_DIR / "hmda_models.yaml").read_text())
 RESULTS_ROOT = "results/hmda"
 ROW_LIMIT = 1000000
 PREDICATE_SPACE = "v1"  # v2: *_schema.json, predicates generated for selected columns
+SP_VARIANT = "paper"  # "v2": with_examples_v2 prompt, batch 3, violated_when, semantic columns
+EMBEDDING_MODEL = "openai/text-embedding-3-large"
 
 # filter_predicates: only for spaces too large for a Single-Prompt context
 # (HMDAZ: 590k templates; HMDA_CHECKS: 163k since the 2026-10-10 extension with
@@ -64,6 +66,22 @@ def dataset_options(dataset):
 
 
 def single_prompt(dataset, slug):
+    if SP_VARIANT == "v2":
+        # Improved Single-Prompt (validated 2026-10-11/13): column context from the
+        # v2 schema descriptions, violation semantics, plain-language violated_when
+        # before the rules, smaller batches and semantic column retrieval.
+        return {
+            "implementation": "llm",
+            "provider": "openrouter",
+            "model": slug,
+            "prompt_key": "with_examples_v2",
+            "batch_size": 3,
+            "explain_violation": True,
+            "column_retrieval": "semantic",
+            "embedding_model": EMBEDDING_MODEL,
+            "max_candidate_predicates": 1000,
+            "max_relevant_columns": 12,
+        }
     mapper = {
         "implementation": "llm",
         "provider": "openrouter",
@@ -168,7 +186,7 @@ def e3(dataset, variant):
 
 
 def main():
-    global MANIFEST, RESULTS_ROOT, ROW_LIMIT, PREDICATE_SPACE
+    global MANIFEST, RESULTS_ROOT, ROW_LIMIT, PREDICATE_SPACE, SP_VARIANT
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models", type=Path, default=CONFIG_DIR / "hmda_models.yaml")
     parser.add_argument("--config-dir", type=Path, default=CONFIG_DIR)
@@ -183,6 +201,12 @@ def main():
         help="v1: *_predicates.json; v2: *_schema.json with on-demand predicates",
     )
     parser.add_argument(
+        "--sp-variant",
+        choices=("paper", "v2"),
+        default=SP_VARIANT,
+        help="paper: with_examples, batch 10; v2: improved Single-Prompt",
+    )
+    parser.add_argument(
         "--experiments", nargs="+", choices=("e1", "e2", "e3"), default=["e1", "e2", "e3"]
     )
     parser.add_argument(
@@ -193,6 +217,7 @@ def main():
     RESULTS_ROOT = args.results_root
     ROW_LIMIT = args.row_limit
     PREDICATE_SPACE = args.predicate_space
+    SP_VARIANT = args.sp_variant
     args.config_dir.mkdir(parents=True, exist_ok=True)
     models = MANIFEST["models"]
 

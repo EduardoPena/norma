@@ -77,6 +77,15 @@ def check_component(
             allowed_predicates=["t1.amount > <const>", "t1.amount <= <const>"],
             max_tokens=max_tokens,
         )
+    elif kind == "mapper_v2":  # improved Single-Prompt: with_examples_v2 + violated_when
+        component = LLMMapper(
+            model_name=model,
+            provider="openrouter",
+            prompt_name="with_examples_v2",
+            allowed_predicates=["t1.amount > <const>", "t1.amount <= <const>"],
+            max_tokens=max_tokens,
+            explain_violation=True,
+        )
     else:  # multistep: the five Multi-Step step schemas
         component = SimpleNamespace(
             llm=get_llm_client(model, provider="openrouter", max_tokens=max_tokens)
@@ -225,7 +234,7 @@ def main() -> int:
             records.append({"model": model, "status": "unavailable"})
             write_json(output / "results.json", records)
             continue
-        for kind in ("classifier", "mapper", "multistep"):
+        for kind in ("classifier", "mapper", "mapper_v2", "multistep"):
             record = check_component(model, kind, args.max_tokens, output)
             records.append(record)
             write_json(output / "results.json", records)
@@ -253,6 +262,7 @@ def write_report(report_dir, output, manifest, paper_models, records) -> None:
                 "in_catalog": info["available"],
                 "classifier_check": checks.get("classifier", {}).get("status", "not_run"),
                 "mapper_check": checks.get("mapper", {}).get("status", "not_run"),
+                "mapper_v2_check": checks.get("mapper_v2", {}).get("status", "not_run"),
                 "multistep_check": checks.get("multistep", {}).get("status", "not_run"),
                 "multistep_steps": checks.get("multistep", {}).get("steps"),
                 "classifier_latency_s": checks.get("classifier", {}).get("latency_s"),
@@ -273,12 +283,12 @@ def write_report(report_dir, output, manifest, paper_models, records) -> None:
         "",
         f"Raw attempts: `{output}/attempts.jsonl`. Checks use the experiment code "
         "path with strict structured output (LLMRuleClassifier `with_examples` -> CLASSIFICATION schema; LLMMapper "
-        "`with_examples` -> SENTENCE_RULES schema, rules validated by `normalize_rules`; "
+        "`with_examples` -> SENTENCE_RULES schema and `with_examples_v2` -> SENTENCE_RULES_EXPLAINED, rules validated by `normalize_rules`; "
         "Multi-Step: each of the 5 step schemas, response validated with jsonschema).",
         "",
-        "| Paper model | OpenRouter slug | In catalog | Classifier | Mapper (JSON) "
+        "| Paper model | OpenRouter slug | In catalog | Classifier | Mapper (JSON) | Mapper v2 "
         "| Multi-Step (5 schemas) | Latency clf / map / ms (s) | Note |",
-        "|---|---|---|---|---|---|---|---|",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for row in rows:
         latencies = " / ".join(
@@ -287,7 +297,7 @@ def write_report(report_dir, output, manifest, paper_models, records) -> None:
         )
         lines.append(
             f"| {row['paper_model']} | `{row['slug']}` | {row['in_catalog']} "
-            f"| {row['classifier_check']} | {row['mapper_check']} "
+            f"| {row['classifier_check']} | {row['mapper_check']} | {row['mapper_v2_check']} "
             f"| {row['multistep_check']} | {latencies} "
             f"| {row['substitution_note']} |"
         )

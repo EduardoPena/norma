@@ -1,0 +1,48 @@
+# Official round v3 (2026-10-13): post-improvement re-run of the Norma paper
+# experiments for the VLDB resubmission, 4 paper datasets + 2 HMDA datasets.
+# Models chosen by the authors to lower cost (USD per million tokens, input/output,
+# OpenRouter at selection time). Order = execution order (cheapest first).
+models:
+  - key: gpt6luna
+    paper_name: GPT-6 Luna
+    slug: openai/gpt-6-luna
+    note: Kept from round v2 (0.10 / 0.50). No temperature parameter (reasoning model).
+  - key: deepseekv4flash
+    paper_name: DeepSeek-V4-Flash
+    slug: deepseek/deepseek-v4-flash
+    note: Kept from round v2 (0.09 / 0.18).
+  - key: mistrallarge4
+    paper_name: Mistral Large 4
+    slug: mistralai/mistral-large-4-0
+    note: >-
+      Replaces MiniMax-M3 (0.68 / 2.09), at the authors' request on 2026-10-14.
+      MiniMax-M3 (itself the replacement for Kimi K2.6, which looped on whitespace
+      under strict json_schema decoding) returned empty Single-Prompt v2 outputs for
+      107 of 156 sentences in E2; its E1/E2 results are kept in results/v3/superseded.
+      Candidates checked with the extended health check (incl. Single-Prompt v2):
+      MiMo-V2.6-Pro, Nemotron 3 Ultra and Seed 2.1 Turbo each failed one Multi-Step
+      schema; Mistral Large 4 passed every check.
+  - key: qwen38a95b
+    paper_name: Qwen3.8-2.4T-A95B
+    slug: qwen/qwen3.8-2.4t-a95b
+    note: Replaces Qwen3.8-Max-Prime (2.00 / 6.00 vs 4.00 / 12.00).
+  - key: gpt6sol
+    paper_name: GPT-6 Sol
+    slug: openai/gpt-6-sol
+    note: Kept from round v2 (2.00 / 10.00).
+  - key: sonnet55
+    paper_name: Claude Sonnet 5.5
+    slug: anthropic/claude-sonnet-5.5
+    note: Replaces Claude Opus 5.5 (2.00 / 10.00 vs 4.00 / 20.00).
+# E3 components, chosen on 2026-10-14 from the v3 E1/E2 with the paper criteria:
+# - classifier: recall >= 0.90 on all six datasets, then max mean F1 -> Qwen3.8 +
+#   Examples (0.694; qualified: Qwen Examples, Luna Examples 0.687, Qwen No Context 0.680);
+# - mapper: best Multi-Step on CE and AV. No model leads both (Qwen CE 0.683,
+#   Mistral Large 4 AV 0.797), so the mean of the two decides: GPT-6 Sol 0.728,
+#   Mistral Large 4 0.724, Sonnet 0.722, Qwen 0.708.
+#   Re-checked on 2026-10-15 after MiniMax-M3 -> Mistral Large 4: unchanged
+#   (Mistral Large 4 does not reach recall 0.90 on HMDAZ in E1).
+end2end:
+  classifier: qwen38a95b
+  classifier_prompt: with_examples   # "Examples"
+  mapper: gpt6sol
