@@ -1,0 +1,183 @@
+Execution artifacts: results/v3/telemetry/20261013_215731_662134
+
+================================================================================
+GT-ONLY MAPPER EVALUATION: hmda_e2_tax_sonnet55_MultiStep
+================================================================================
+
+Results directory: results/v3/e2_mapping/hmda_e2_tax_sonnet55_multistep_20261014_130450
+Timestamp:         20261014_130450
+
+Scope: GT constraint sentences only (rules != null)
+No classifier — pure mapping quality measurement.
+
+Metrics computed over GT sentences:
+  Syntactic:   exact match, predicate Jaccard
+  Pairwise:    violation exact match, P/R/F1/Jaccard
+  Aggregate:   pooled violation P/R/F1
+================================================================================
+
+Config YAML saved to: results/v3/e2_mapping/hmda_e2_tax_sonnet55_multistep_20261014_130450/config.yaml
+Execution config saved to: results/v3/e2_mapping/hmda_e2_tax_sonnet55_multistep_20261014_130450/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: tax
+--------------------------------------------------------------------------------
+Loading tax...
+Total sentences in document: 126
+GT constraint sentences:     6  ← only these are fed to the mapper
+Non-constraint sentences:    120  ← skipped
+
+
+[1/1] Variant: Multi-Step | Claude Sonnet 5.5
+  Implementation: multi_step_refinement
+  Model:          anthropic/claude-sonnet-5.5
+  Creating mapper (multi_step_refinement)...
+  Mapping 6 GT sentences...
+
+============================================================
+Processing: Each person is uniquely identified by area code and phone number....
+
+============================================================
+Processing: Two persons with the same ZIP code must live in the same state....
+
+============================================================
+Processing: If a person lives in Denver, their state must be Colorado....
+
+============================================================
+============================================================
+Processing: Within the same ZIP code, one person cannot earn less but have a higher tax rate...
+
+============================================================
+Processing: A person single tax exemption cannot be greater than his salary....
+
+Processing: Within the same state, a person with lower salary cannot have higher tax rate....
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","salary"],"implied_columns":["maritalstatus"],"reasoning":"The sentence compares the single tax exemption (singleexemp) with the person's salary (salary), so both are direct columns. 'Single' in 'single tax exemption' is already captured by the singleexemp column, but maritalstatus (S/M) is a possibly related scoping column, so it is included as implied given the instruction to be inclusive.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'salary', 'maritalstatus']
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip","state"],"implied_columns":[],"reasoning":"The sentence says that persons sharing the same ZIP code must live in the same state. This is a functional dependency from zip to state. The ZIP code concept maps to the zip column and the state concept maps to the state column. Both columns have predicates defined. No other columns are needed to scope the constraint.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['zip', 'state']
+-> Step 2 response: {"is_valid":true,"direct_columns":["state","salary","rate"],"implied_columns":[],"reasoning":"The constraint compares salary and tax rate between persons within the same state. 'state' is the grouping column, 'salary' is the 'lower salary' value, and 'rate' is the tax rate column (described as a likely tax rate in the tax table). No other columns are needed, since the comparison is only among people in the same state.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['state', 'salary', 'rate']
+-> Step 3: Considering 36 predicate candidates
+-> Step 3: Considering 74 predicate candidates
+-> Step 3: Considering 58 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip","salary","rate"],"implied_columns":[],"reasoning":"The constraint groups by ZIP code (zip), compares earnings (salary) between persons, and compares tax rate (rate). It says one person cannot earn less yet have a higher rate within the same zip. Other columns such as city or state are not needed to scope the constraint.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['zip', 'salary', 'rate']
+-> Step 3: Considering 78 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["areacode","phone"],"implied_columns":["fname","lname"],"reasoning":"The sentence says a person is uniquely identified by area code and phone number, so areacode and phone are the key columns. The person is represented by name columns (fname, lname), which are the attributes that must be functionally determined by the areacode+phone key. They are included as implied columns since there is no explicit person ID column.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['areacode', 'phone', 'fname', 'lname']
+-> Step 3: Considering 64 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state"],"implied_columns":[],"reasoning":"The sentence is a conditional: if the person lives in Denver (city column), then state must be Colorado (state column, abbreviated CO). Both columns are in the predicate list. Zip and areacode could correlate with location but are not named or required by the constraint.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['city', 'state']
+-> Step 3: Considering 40 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.state != t2.state']
+-> Step 3: Selected 1 predicates: ['t1.singleexemp > t1.salary']
+-> Step 3: Selected 3 predicates: ['t1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']
+-> Step 3: Selected 3 predicates: ['t1.zip = t2.zip', 't1.salary < t2.salary', 't1.rate > t2.rate']
+-> Step 3: Selected 2 predicates: ['t1.areacode = t2.areacode', 't1.phone = t2.phone']
+-> Step 3: Selected 2 predicates: ['t1.city = $string', 't1.state != $string']
+-> Step 3.5 [GATE]: PASS — Functional dependency zip -> state: a violation is a pair of tuples with the same zip but different state, i.e. t1.zip = t2.zip AND t1.state != t2.state. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — Comparative rule within a group: violation occurs when two rows share the same state, t1.salary < t2.salary, and t1.rate > t2.rate, which is checkable directly from the data. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 3.5 [GATE]: PASS — Comparative rule within a ZIP group: a violation is two tuples with the same zip where t1.salary < t2.salary and t1.rate > t2.rate, which is directly expressible from the data. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 3.5 [GATE]: PASS — Comparative rule within a single row: a violation occurs when a person's singleexemp value is greater than their salary (t1.singleexemp > t1.salary), which is directly checkable from column values. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 3 columns
+-> Step 3.5 [GATE]: PASS — Uniqueness/functional dependency: two rows with the same areacode and phone must refer to the same person, so a violation is two tuples with equal areacode and phone but different person identity (e.g., differing fname or lname). (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 4 columns
+-> Step 3.5 [GATE]: PASS — Value mapping with a concrete violation: a row where city = 'Denver' AND state != 'Colorado' cannot exist. (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.state != t2.state']}]
+   Two records that share the same ZIP code but list different states violate the constraint.
+
+-> Verification iteration 1/2
+-> Step 5: Found 7 violations
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']}]
+   Two rows in the same state where the row with the lower salary has a strictly higher tax rate than the row with the higher salary.
+
+-> Verification iteration 1/2
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.salary < t2.salary', 't1.rate > t2.rate']}]
+   Two people in the same ZIP code where one has a lower salary but a higher tax rate than the other is a violation.
+
+-> Verification iteration 1/2
+-> Step 4: Constructed comparative with 1 rule(s)
+   ['t1.singleexemp > t1.salary']
+   A record is a violation when the person's single tax exemption is greater than their salary.
+
+-> Verification iteration 1/2
+-> Step 5: Found 362 violations
+-> Step 5: Found 1 violations
+-> Step 5: Found 89 violations
+-> Step 4: Constructed uniqueness with 1 rule(s)
+   [{'AND': ['t1.areacode = t2.areacode', 't1.phone = t2.phone']}]
+   Two different records that share both the same area code and the same phone number are a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 2 violations
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ["t1.city = 'DENVER'", "t1.state != 'CO'"]}]
+   A record with city DENVER whose state is anything other than CO is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 8 violations
+  Evaluating pairwise quality (6 GT sentences)...
+  Evaluating aggregate violation (GT sentences pooled)...
+  Saving outputs...
+  Saved detailed results: tax_Multi-Step_|_Claude_Sonnet_5.5_detailed.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 13.18s  (6 GT sentences)
+
+  ── AGGREGATE VIOLATION DISCOVERY (GT sentences pooled) ───────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     Gold violations:      468
+     Predicted violations: 468
+     Overlap violations:   468
+
+  ── CONSTRAINT EXACT MATCH (GT sentences) ─────────────────────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     TP: 6  FP: 0  FN: 0
+     Predicted: 6, Gold: 6
+
+  ── PAIRWISE SYNTACTIC QUALITY (n=6) ──────────────────────────────
+     Exact Match:       1.000 (6/6)
+     Predicate Jaccard: 1.000 (±0.000)
+
+  ── PAIRWISE VIOLATION DISCOVERY ───────────────────────────────────────
+     Exact Match:       1.000 (6/6)
+     Precision:         1.000 (±0.000)
+     Recall:            1.000 (±0.000)
+     F1:                1.000 (±0.000)
+     Violation Jaccard: 1.000 (±0.000)
+
+  INSIGHT: Syntactic vs Violation Gap = 0.000
+  Variant completed
+
+==================================================================================================================================
+COMPARISON TABLE  —  GT sentences only, no classifier
+==================================================================================================================================
+  Variant                                       Impl       Model                  AggViol F1   ConstExact F1   SynExact   SynJacc    ViolF1     ViolJacc   Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Multi-Step | Claude Sonnet 5.5                multi_step_refinement anthropic/claude-sonnet-5.5 1.000        1.000           1.000      1.000      1.000      1.000      13.18     
+
+  Best Aggregate Violation F1:   Multi-Step | Claude Sonnet 5.5 (1.000)
+  Best Constraint Exact F1:      Multi-Step | Claude Sonnet 5.5 (1.000)
+  Best Syntactic Exact Match:    Multi-Step | Claude Sonnet 5.5 (1.000)
+  Best Pairwise Violation F1:    Multi-Step | Claude Sonnet 5.5 (1.000)
+  Fastest:                       Multi-Step | Claude Sonnet 5.5 (13.18s)
+==================================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3/e2_mapping/hmda_e2_tax_sonnet55_multistep_20261014_130450

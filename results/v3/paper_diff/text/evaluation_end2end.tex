@@ -1,0 +1,170 @@
+\subsection{End-to-End Evaluation and Comparison}
+\label{sec:endtoend}
+
+We \DIFdelbegin \DIFdel{report three variants of }%DIFDELCMD < \system%%%
+\DIFdel{\: (1) the full pipeline, which combines the first-stage constraint classifier with the MultiStep mapper (Classifier+MultiStep), (2) the MultiStep mapper alone, which skips the initial classification stage (MultiStep), and (3) the document-level mapper (Document).
+}%DIFDELCMD < 
+
+%DIFDELCMD < %%%
+\DIFdel{We }\DIFdelend now evaluate the full Text-to-Constraints pipeline end-to-end and compare \system\ against the baselines from Section~\ref{sec:baselines}. For \system, we use the default components selected in the previous experiments\DIFdelbegin \DIFdel{.
+%DIF < :\emph{Qwen3-32B} with \emph{Examples} for constraint classification, and\emph{GPT-5} with \emph{Multi-Step} for both sentence-level mapping and
+%DIF < document-level mapping. 
+We report three }\DIFdelend \DIFaddbegin \DIFadd{: }\emph{\DIFadd{Qwen3.8-2.4T-A95B}} \DIFadd{with }\emph{\DIFadd{Examples}} \DIFadd{for constraint classification and }\emph{\DIFadd{GPT-6 Sol}} \DIFadd{with }\emph{\DIFadd{Multi-Step}} \DIFadd{for mapping.
+We report two }\DIFaddend variants of \system\DIFdelbegin \DIFdel{\: }\DIFdelend \DIFaddbegin \DIFadd{: }\DIFaddend (1) the full pipeline, which combines the first-stage constraint classifier with the \DIFdelbegin \DIFdel{MultiStep mapper (Classifier}\DIFdelend \DIFaddbegin \DIFadd{Multi-Step mapper (C}\DIFaddend +\DIFdelbegin \DIFdel{MultiStep), }\DIFdelend \DIFaddbegin \DIFadd{MS), and }\DIFaddend (2) the \DIFdelbegin \DIFdel{MultiStep }\DIFdelend \DIFaddbegin \DIFadd{Multi-Step }\DIFaddend mapper alone, which skips the initial classification stage \DIFdelbegin \DIFdel{(MultiStep), and (3) the document-level mapper (Document}\DIFdelend \DIFaddbegin \DIFadd{and relies on its own rule filter (Multi-Step}\DIFaddend ).
+As baselines, we include (i) the best result from DC discovery, following the procedure previously described, and (ii) an adaptation of the Text-to-SQL tool XiYan-SQL, as described before. \DIFaddbegin \DIFadd{Baseline results on the four original datasets are those of our previous evaluation, which used the same data and gold constraints; the baselines were not run on the HMDA datasets.
+}\DIFaddend Table~\ref{tab:main_results} shows the results \DIFdelbegin \DIFdel{of these approaches on all four }\DIFdelend \DIFaddbegin \DIFadd{on all six }\DIFaddend datasets using the three metrics introduced in Section~\ref{sec:metrics}: constraint classification, constraint extraction, and violation detection.
+
+\begin{table}[!ht]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \DIFdelbeginFL %DIFDELCMD < \resizebox{\columnwidth}{!}{% 
+%DIFDELCMD <   \begin{tabular}{llccccccccc}
+%DIFDELCMD <     \toprule
+%DIFDELCMD <     \textbf{Family} & \textbf{Method} & \multicolumn{3}{c}{Constr. Classification} & \multicolumn{3}{c}{Constr. Extraction} & \multicolumn{3}{c}{Viol. Discovery} \\
+%DIFDELCMD <     \cmidrule(lr){3-5}  \cmidrule(lr){6-8}  \cmidrule(lr){9-11}
+%DIFDELCMD <      &  & P & R & F$_1$ & P & R & F$_1$ & P & R & F$_1$ \\
+%DIFDELCMD <     \midrule
+%DIFDELCMD <     \addlinespace[2pt]
+%DIFDELCMD <     \multicolumn{11}{c}{\textbf{Hospital}} \\
+%DIFDELCMD <     \addlinespace[1pt]
+%DIFDELCMD <     \multirow{3}{*}{\system} & ~~C+MS & 0.83 & 1.00 & \textbf{0.91} & 0.94 & 1.00 & 0.97 & 1.00 & 1.00 & \textbf{1.00} \\
+%DIFDELCMD <      & ~~Multi-Step & 0.50 & 1.00 & 0.67 & 0.68 & 1.00 & 0.81 & 0.96 & 1.00 & 0.98 \\
+%DIFDELCMD <      & ~~Document & n/a & n/a & n/a & 1.00 & 1.00 & \textbf{1.00} & 1.00 & 1.00 & \textbf{1.00} \\
+%DIFDELCMD <     \cmidrule(l){2-11}
+%DIFDELCMD <     \multirow{1}{*}{Profiling} & ~~DC Discovery & n/a & n/a & n/a & 0.00 & 0.00 & 0.00 & 0.83 & 1.00 & 0.91 \\
+%DIFDELCMD <     \cmidrule(l){2-11}
+%DIFDELCMD <     \multirow{1}{*}{Text2SQL} & ~~XiYan-SQL & 0.50 & 1.00 & 0.67 & 0.60 & 1.00 & 0.75 & 0.83 & 1.00 & 0.91 \\
+%DIFDELCMD <     \midrule
+%DIFDELCMD <     \addlinespace[2pt]
+%DIFDELCMD <     \multicolumn{11}{c}{\textbf{Restaurant}} \\
+%DIFDELCMD <     \addlinespace[1pt]
+%DIFDELCMD <     \multirow{3}{*}{\system} & ~~C+MS & 0.86 & 0.86 & \textbf{0.86} & 0.57 & 0.57 & \textbf{0.57} & 1.00 & 1.00 & \textbf{1.00} \\
+%DIFDELCMD <      & ~~Multi-Step & 0.86 & 0.86 & \textbf{0.86} & 0.57 & 0.57 & \textbf{0.57} & 1.00 & 1.00 & \textbf{1.00} \\
+%DIFDELCMD <      & ~~Document & n/a & n/a & n/a & 0.24 & 0.57 & 0.33 & 1.00 & 0.01 & 0.02 \\
+%DIFDELCMD <     \cmidrule(l){2-11}
+%DIFDELCMD <     \multirow{1}{*}{Profiling} & ~~DC Discovery & n/a & n/a & n/a & 0.00 & 0.00 & 0.00 & 0.77 & 0.87 & 0.82 \\
+%DIFDELCMD <     \cmidrule(l){2-11}
+%DIFDELCMD <     \multirow{1}{*}{Text2SQL} & ~~XiYan-SQL & 0.86 & 0.75 & 0.80 & 0.17 & 0.12 & 0.14 & 0.45 & 0.64 & 0.52 \\
+%DIFDELCMD <     \midrule
+%DIFDELCMD <     \addlinespace[2pt]
+%DIFDELCMD <     \multicolumn{11}{c}{\textbf{SISU}} \\
+%DIFDELCMD <     \addlinespace[1pt]
+%DIFDELCMD <     \multirow{3}{*}{\system} & ~~C+MS & 1.00 & 0.94 & \textbf{0.97} & 0.50 & 0.53 & \textbf{0.51} & 1.00 & 0.98 & \textbf{0.99} \\
+%DIFDELCMD <      & ~~Multi-Step & 0.89 & 0.94 & 0.91 & 0.50 & 0.47 & 0.48 & 0.90 & 0.98 & 0.94 \\
+%DIFDELCMD <      & ~~Document & n/a & n/a & n/a & 0.39 & 0.41 & 0.40 & 0.02 & 0.95 & 0.03 \\
+%DIFDELCMD <     \cmidrule(l){2-11}
+%DIFDELCMD <     \multirow{1}{*}{Profiling} & ~~DC Discovery & n/a & n/a & n/a & 0.00 & 0.00 & 0.00 & 0.00 & 0.99 & 0.01 \\
+%DIFDELCMD <     \cmidrule(l){2-11}
+%DIFDELCMD <     \multirow{1}{*}{Text2SQL} & ~~XiYan-SQL & 1.00 & 0.65 & 0.79 & 0.45 & 0.29 & 0.36 & 0.00 & 1.00 & 0.01 \\
+%DIFDELCMD <     \midrule
+%DIFDELCMD <     \addlinespace[2pt]
+%DIFDELCMD <     \multicolumn{11}{c}{\textbf{Tax}} \\
+%DIFDELCMD <     \addlinespace[1pt]
+%DIFDELCMD <     \multirow{3}{*}{\system} & ~~C+MS & 1.00 & 0.83 & \textbf{0.91} & 1.00 & 0.83 & \textbf{0.91} & 1.00 & 0.81 & \textbf{0.89} \\
+%DIFDELCMD <      & ~~Multi-Step & 0.50 & 0.83 & 0.62 & 0.56 & 0.83 & 0.67 & 1.00 & 0.81 & \textbf{0.89} \\
+%DIFDELCMD <      & ~~Document & n/a & n/a & n/a & 0.22 & 0.67 & 0.33 & 1.00 & 0.79 & 0.88 \\
+%DIFDELCMD <     \cmidrule(l){2-11}
+%DIFDELCMD <     \multirow{1}{*}{Profiling} & ~~DC Discovery & n/a & n/a & n/a & 0.00 & 0.00 & 0.00 & 0.00 & 0.94 & 0.01 \\
+%DIFDELCMD <     \cmidrule(l){2-11}
+%DIFDELCMD <     \multirow{1}{*}{Text2SQL} & ~~XiYan-SQL & 0.40 & 1.00 & 0.57 & 0.29 & 0.67 & 0.40 & 0.01 & 1.00 & 0.02 \\
+%DIFDELCMD <     \bottomrule
+%DIFDELCMD <   \end{tabular}
+%DIFDELCMD <   }%%%
+\DIFdelendFL \DIFaddbeginFL \resizebox{\columnwidth}{!}{%
+  \input{figures/results/v3_table3_end2end}
+  }\DIFaddendFL %
+\caption{End-to-end comparison of \system\ \DIFdelbeginFL \DIFdelFL{Modes: }\DIFdelendFL \DIFaddbeginFL \DIFaddFL{modes, }\DIFaddendFL Classifier+Multi-Step (C+MS) \DIFdelbeginFL \DIFdelFL{, Multi-Step }\DIFdelendFL and \DIFdelbeginFL \DIFdelFL{Document}\DIFdelendFL \DIFaddbeginFL \DIFaddFL{Multi-Step}\DIFaddendFL , and the baselines across \DIFdelbeginFL \DIFdelFL{four
+}\DIFdelendFL \DIFaddbeginFL \DIFaddFL{six
+}\DIFaddendFL datasets. \textbf{Profiling} denotes DC discovery from data alone, and
+\textbf{Text2SQL} denotes XiYan-SQL adapted to generate violation queries from
+regulatory sentences\DIFaddbeginFL \DIFaddFL{; their results on the four original datasets come from our
+previous evaluation, and -- marks configurations not run}\DIFaddendFL . n/a indicates that the metric is not applicable; bold
+marks the best \DIFdelbeginFL \DIFdelFL{result }\DIFdelendFL \DIFaddbeginFL \DIFaddFL{F$_1$ }\DIFaddendFL for each metric and dataset.}
+  \label{tab:main_results}
+\end{table}
+
+\DIFdelbegin \DIFdel{A first result is that using the classifier often improves the sentence-level pipeline}\DIFdelend \DIFaddbegin \system\DIFadd{\ is the only approach that produces gold constraints on every dataset.
+Constraint extraction F$_1$ is 1.00 on Hospital and Tax, 0.67 on Restaurant,
+0.53--0.59 on SISU, 0.58--0.59 on HMDA Checks, and 0.24--0.40 on HMDAZ, against
+at most 0.75 for XiYan-SQL and zero for DC discovery on the original datasets.
+Classification is also strong, with F$_1$ between 0.75 and 0.92 for C+MS. The
+pipeline therefore extends to the two HMDA datasets, with up to 135 columns and
+1M rows, against at most 56 columns and 128k rows in the original ones. On
+HMDA Checks, the 92 constraint edits are classified with F$_1$ 0.92 and more than
+half of them are extracted exactly.
+}
+
+\DIFadd{The classifier mainly improves precision}\DIFaddend . Compared with \emph{Multi-Step} \DIFdelbegin \DIFdel{, }\DIFdelend \DIFaddbegin \DIFadd{alone,
+}\DIFaddend \emph{\DIFdelbegin \DIFdel{Classifier}\DIFdelend \DIFaddbegin \DIFadd{C}\DIFaddend +\DIFdelbegin \DIFdel{Multi-Step}\DIFdelend \DIFaddbegin \DIFadd{MS}\DIFaddend } \DIFdelbegin \DIFdel{is is consistently as good as or better than }\emph{\DIFdel{Multi-Step}}%DIFAUXCMD
+\DIFdel{.In Hospital, }\DIFdelend \DIFaddbegin \DIFadd{raises classification precision on Hospital (0.83 vs.\ 0.71), SISU
+(0.84 vs.\ 0.75), and HMDA Checks (0.94 vs.\ 0.92), and it reduces the
+non-constraint sentences that reach a DC (3 vs.\ 6 on Hospital, 3 vs.\ 5 on SISU,
+5 vs.\ 7 on HMDA Checks). With the current backbones, however, the gain is
+smaller than in our previous evaluation. The Multi-Step rule filter already
+rejects most non-constraint sentences, and on Restaurant, Tax, and HMDAZ both
+variants make the same classification decisions. On HMDAZ, C+MS is worse on
+extraction and violations (0.24 vs.\ 0.40 and 0.56 vs.\ 0.72). The two variants
+map five common sentences and differ on one each: the classifier drops the
+balloon-payment limitation, which Multi-Step maps exactly, and keeps the
+points-and-fees trigger, which the Multi-Step filter rejects. The two runs also
+write different DCs for the APR trigger (per-rule violation F$_1$ 0.17 vs.\
+0.35). Part of the gap is therefore run-to-run variation of a single execution.
+}
+
+\DIFadd{The violation results expose two failure modes that are specific to the
+end-to-end setting, where non-constraint sentences can also reach the mapper.
+On Tax, every gold constraint is extracted exactly (F$_1$ 1.00), yet aggregate
+violation F$_1$ falls to 0.15. Four of the 120 non-constraint sentences are
+accepted by the classifier and the rule filter and mapped to DCs. These
+sentences were written to resemble constraints (e.g., ``The sample data shows
+exemption values ranging from \$0 to \$6,600, all falling well within respective
+salary figures''), and the resulting DCs flag 5.6k tuples against 468 gold
+violations. On }\DIFaddend SISU, \DIFaddbegin \DIFadd{the C+MS run maps one gold sentence with an additional
+two-tuple rule that identifies students by exam registration instead of national
+ID, flagging 6.9k tuples (aggregate F$_1$ 0.13 vs.\ 0.94 for Multi-Step, whose
+DC for the same sentence uses the national ID). Both cases show that a single broad DC dominates the tuple-level
+aggregate. On HMDA Checks, the aggregate (0.10) again reflects the two date-range
+edits discussed in Section~\ref{sec:constraintextraction}. The per-rule view is
+more informative there: 83\% of the gold rules with violations are reproduced
+exactly (execution equivalence 0.83 for both variants), }\DIFaddend and \DIFdelbegin \DIFdel{Tax, it improves constraint classification , constraint extraction , and , in some cases, violation detection. This indicates that filtering sentences before mapping  improves the overall robustness of the pipeline. 
+%DIF < Restaurant is the only dataset on which \emph{Classifier+Multi-Step} and \emph{Multi-Step} are identical, suggesting that the main challenge there lies in constraint construction rather than sentence selection.
+A second result is that sentence-level mapping is more reliable
+than document-level mapping.
+The document variant is competitive only on
+Hospital and , to a lesser extent,on Tax. On Restaurant and SISU, by contrast, its performance drops sharply on both constraint extraction and violation
+discovery, while the sentence-level pipeline remains strong. These results are
+consistent with the earlier ablations: once constraints become more complex and require more precise composition of predicates and literals, sentence-level processing and step-by-step mapping become relevant}\DIFdelend \DIFaddbegin \DIFadd{the mean per-rule
+violation F$_1$ is 0.80--0.83}\DIFaddend .
+
+The baselines are competitive only on narrower parts of the experiments, that is, on specific aspects of the evaluation. The profiling baseline can recover meaningful violation signals when the data distribution strongly reflects the target rules, but it does not recover the gold
+constraint set itself, with constraint-extraction F$_1$ equal to zero on all datasets. XiYan-SQL is competitive on Hospital, \DIFdelbegin \DIFdel{where it obtains high extraction recall and strong violation recovery, }\DIFdelend but its behavior is much less reliable on the remaining datasets. On SISU and Tax in particular, it achieves very high recall for violations but near-zero precision, indicating \DIFaddbegin \DIFadd{that }\DIFaddend it returns queries pointing to overly broad violation sets.
+
+Finally, the dataset characteristics matter when interpreting the aggregate
+violation results. \DIFdelbegin \DIFdel{Hospital contains a very high fraction of
+tuples that
+already participate in at least one gold violation, which makes aggregate violation scores easier to overestimate: methods }\DIFdelend \DIFaddbegin \DIFadd{In four of the six datasets, a single gold rule flags most of
+the gold-violating tuples (96\% on Hospital, 99\% on Restaurant, 78\% on Tax, and
+99\% on HMDA Checks). The aggregate then mostly measures whether that rule is
+recovered. Methods }\DIFaddend that return broad violation sets can still \DIFdelbegin \DIFdel{obtain high overlap with the ground-truth violations. Restaurant has a similar effect, although less extreme. This helps explain why }\DIFdelend \DIFaddbegin \DIFadd{overlap strongly
+with the gold violations, as with }\DIFaddend the profiling baseline \DIFdelbegin \DIFdel{obtained relatively strong violation scores }\DIFdelend on Hospital and
+Restaurant\DIFdelbegin \DIFdel{, despite failing on exact constraint extraction}\DIFdelend \DIFaddbegin \DIFadd{. Conversely, a correct pipeline can be penalized by one broad false
+positive, as on Tax. We therefore recommend reading the aggregate together with
+the per-rule metrics of Section~\ref{sec:metrics}}\DIFaddend .
+Overall, \DIFdelbegin \DIFdel{however, }\DIFdelend \system\ is the only approach that remains \DIFdelbegin \DIFdel{consistently strong across all four datasetsand
+all three evaluation dimensions. }%DIFDELCMD < 
+
+%DIFDELCMD < %%%
+\DIFdel{These results reinforce the design of }%DIFDELCMD < \system%%%
+\DIFdel{: combining sentence-level filtering with structured, multi-step prompting allows the system to isolate relevant text and construct constraints incrementally, which is critical for handling complex regulatory requirements}\DIFdelend \DIFaddbegin \DIFadd{strong on classification and extraction across all six datasets. The violation metric remains sensitive to individual broad DCs}\DIFaddend .
+\altic{[R1-O9] Responder à usabilidade do output: com uma constraint por sentença, o conjunto retornado pode ser grande. Discutir como o usuário tria isso, p.ex. ranqueamento por nº de violações/severidade, rastreabilidade ao trecho de origem como filtro, e a revisão humana opcional já prevista no pipeline. Reportar o tamanho típico do conjunto retornado por dataset para dimensionar o esforço.}
+
+%DIF <  \noindent\textbf{Cost and efficiency.}
+%DIF <  While cost and runtime are not the main focus of this work, we provide a brief qualitative assessment. 
+%DIF <  The full \system\ pipeline incurs an average cost of approximately \$3 per dataset, while the document-level variant is significantly cheaper (around \$0.20 per dataset). In terms of runtime, \system\ is substantially faster than data profiling baselines, which require expensive combinatorial search. Compared to Text-to-SQL approaches, \system\ operates under a different trade-off, focusing on structured constraint construction rather than query generation. Overall, these observations indicate that \system\ achieves a favorable cost–efficiency trade-off.
+\DIFdelbegin %DIFDELCMD < 
+
+%DIFDELCMD < %%%
+\DIFdelend \smallskip\noindent\textbf{Costs.}
+The full sentence-level \system\ pipeline is the most expensive variant because it requires multiple model calls per sentence. \DIFdelbegin \DIFdel{With GPT-5, the multi-step variant costs about \$3 per dataset on average, while cheaper models reduce this to }\DIFdelend \DIFaddbegin \DIFadd{In this evaluation, all experiments together cost US\$83 through OpenRouter (E1 US\$5.8, E2 US\$52.7, end-to-end US\$24.5). With GPT-6 Sol, an end-to-end run costs between US\$0.3 and US\$2.3 on the original datasets and between US\$3.4 (C+MS) and US\$9.9 (Multi-Step) on HMDA Checks (158 sentences, 1M rows). The classifier makes the pipeline 1.6 to 5 times cheaper, because rejected sentences never reach the Multi-Step mapper. Low-cost backbones such as GPT-6 Luna and DeepSeek-V4-Flash cost }\DIFaddend a few cents \DIFdelbegin \DIFdel{; the document-level variant is cheaper still, at roughly \$0.20 }\DIFdelend per dataset. \DIFdelbegin \DIFdel{Still, cost }\DIFdelend \DIFaddbegin \DIFadd{Cost }\DIFaddend scales linearly with the number of sentences, making the approach tractable in practice. By contrast, data profiling baselines face combinatorial search over the schema, and for some datasets we had to restrict the columns considered\DIFdelbegin \DIFdel{. Future work may reduce }%DIFDELCMD < \system %%%
+\DIFdel{cost further by replacing individual stages with cheaper components while preserving the current accuracy}\DIFdelend .

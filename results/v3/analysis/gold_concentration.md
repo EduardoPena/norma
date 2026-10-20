@@ -1,0 +1,8 @@
+| dataset     |   gold_violations |   max_rule_share |   rules_without_violations |   gt_sentences |
+|:------------|------------------:|-----------------:|---------------------------:|---------------:|
+| hospital    |               834 |           0.958  |                          0 |             15 |
+| restaurant  |             52311 |           0.9948 |                          0 |              7 |
+| sisu        |               487 |           0.653  |                          0 |             17 |
+| tax         |               468 |           0.7756 |                          0 |              6 |
+| hmdaz       |               209 |           0.5359 |                          1 |              9 |
+| hmda_checks |            986491 |           0.9897 |                         68 |             92 |

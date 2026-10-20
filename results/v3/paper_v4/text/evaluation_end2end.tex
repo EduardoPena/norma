@@ -1,0 +1,84 @@
+\subsection{End-to-End Evaluation and Comparison}
+\label{sec:endtoend}
+
+We now evaluate the full Text-to-Constraints pipeline end-to-end and compare \system\ against the baselines from Section~\ref{sec:baselines}. For \system, we use the default components selected in the previous experiments: \emph{Qwen3.8-2.4T-A95B} with \emph{Examples} for constraint classification and \emph{GPT-6 Sol} with \emph{Multi-Step} for mapping.
+We report two variants of \system: (1) the full pipeline, which combines the first-stage constraint classifier with the Multi-Step mapper (C+MS), and (2) the Multi-Step mapper alone, which skips the initial classification stage and relies on its own rule filter (Multi-Step).
+As baselines, we include (i) the best result from DC discovery, following the procedure previously described, and (ii) an adaptation of the Text-to-SQL tool XiYan-SQL, as described before. Baseline results on the four original datasets are those of our previous evaluation, which used the same data and gold constraints; the baselines were not run on the HMDA datasets.
+Table~\ref{tab:main_results} shows the results on all six datasets using the three metrics introduced in Section~\ref{sec:metrics}: constraint classification, constraint extraction, and violation detection.
+
+\begin{table}[!ht]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \resizebox{\columnwidth}{!}{%
+  \input{figures/results/v3_table3_end2end}
+  }%
+\caption{End-to-end comparison of \system\ modes, Classifier+Multi-Step (C+MS) and Multi-Step, and the baselines across six
+datasets. \textbf{Profiling} denotes DC discovery from data alone, and
+\textbf{Text2SQL} denotes XiYan-SQL adapted to generate violation queries from
+regulatory sentences; their results on the four original datasets come from our
+previous evaluation, and -- marks configurations not run. n/a indicates that the metric is not applicable; bold
+marks the best F$_1$ for each metric and dataset.}
+  \label{tab:main_results}
+\end{table}
+
+\system\ is the only approach that produces gold constraints on every dataset.
+Constraint extraction F$_1$ is 1.00 on Hospital and Tax, 0.67 on Restaurant,
+0.53--0.59 on SISU, 0.58--0.59 on HMDA Checks, and 0.24--0.40 on HMDAZ, against
+at most 0.75 for XiYan-SQL and zero for DC discovery on the original datasets.
+Classification is also strong, with F$_1$ between 0.75 and 0.92 for C+MS. The
+pipeline therefore extends to the two HMDA datasets, with up to 135 columns and
+1M rows, against at most 56 columns and 128k rows in the original ones. On
+HMDA Checks, the 92 constraint edits are classified with F$_1$ 0.92 and more than
+half of them are extracted exactly.
+
+The classifier mainly improves precision. Compared with \emph{Multi-Step} alone,
+\emph{C+MS} raises classification precision on Hospital (0.83 vs.\ 0.71), SISU
+(0.84 vs.\ 0.75), and HMDA Checks (0.94 vs.\ 0.92), and it reduces the
+non-constraint sentences that reach a DC (3 vs.\ 6 on Hospital, 3 vs.\ 5 on SISU,
+5 vs.\ 7 on HMDA Checks). With the current backbones, however, the gain is
+smaller than in our previous evaluation. The Multi-Step rule filter already
+rejects most non-constraint sentences, and on Restaurant, Tax, and HMDAZ both
+variants make the same classification decisions. On HMDAZ, C+MS is worse on
+extraction and violations (0.24 vs.\ 0.40 and 0.56 vs.\ 0.72). The two variants
+map five common sentences and differ on one each: the classifier drops the
+balloon-payment limitation, which Multi-Step maps exactly, and keeps the
+points-and-fees trigger, which the Multi-Step filter rejects. The two runs also
+write different DCs for the APR trigger (per-rule violation F$_1$ 0.17 vs.\
+0.35). Part of the gap is therefore run-to-run variation of a single execution.
+
+The violation results expose two failure modes that are specific to the
+end-to-end setting, where non-constraint sentences can also reach the mapper.
+On Tax, every gold constraint is extracted exactly (F$_1$ 1.00), yet aggregate
+violation F$_1$ falls to 0.15. Four of the 120 non-constraint sentences are
+accepted by the classifier and the rule filter and mapped to DCs. These
+sentences were written to resemble constraints (e.g., ``The sample data shows
+exemption values ranging from \$0 to \$6,600, all falling well within respective
+salary figures''), and the resulting DCs flag 5.6k tuples against 468 gold
+violations. On SISU, the C+MS run maps one gold sentence with an additional
+two-tuple rule that identifies students by exam registration instead of national
+ID, so that the run flags 9.2k tuples against 533 gold violations (aggregate F$_1$ 0.11 vs.\ 0.87 for Multi-Step, whose
+DC for the same sentence uses the national ID). Both cases show that a single broad DC dominates the tuple-level
+aggregate. On HMDA Checks, the aggregate (0.10) again reflects the two date-range
+edits discussed in Section~\ref{sec:constraintextraction}. The per-rule view is
+more informative there: 83\% of the gold rules with violations are reproduced
+exactly (execution equivalence 0.83 for both variants), and the mean per-rule
+violation F$_1$ is 0.80--0.83.
+
+The baselines are competitive only on narrower parts of the experiments, that is, on specific aspects of the evaluation. The profiling baseline can recover meaningful violation signals when the data distribution strongly reflects the target rules, but it does not recover the gold
+constraint set itself, with constraint-extraction F$_1$ equal to zero on all datasets. XiYan-SQL is competitive on Hospital, but its behavior is much less reliable on the remaining datasets. On SISU and Tax in particular, it achieves very high recall for violations but near-zero precision, indicating that it returns queries pointing to overly broad violation sets.
+
+Finally, the dataset characteristics matter when interpreting the aggregate
+violation results. In four of the six datasets, a single gold rule flags most of
+the gold-violating tuples (96\% on Hospital, 99\% on Restaurant, 78\% on Tax, and
+99\% on HMDA Checks). The aggregate then mostly measures whether that rule is
+recovered. Methods that return broad violation sets can still overlap strongly
+with the gold violations, as with the profiling baseline on Hospital and
+Restaurant. Conversely, a correct pipeline can be penalized by one broad false
+positive, as on Tax. We therefore recommend reading the aggregate together with
+the per-rule metrics of Section~\ref{sec:metrics}.
+Overall, \system\ is the only approach that remains strong on classification and extraction across all six datasets. The violation metric remains sensitive to individual broad DCs.
+\altic{[R1-O9] Responder à usabilidade do output: com uma constraint por sentença, o conjunto retornado pode ser grande. Discutir como o usuário tria isso, p.ex. ranqueamento por nº de violações/severidade, rastreabilidade ao trecho de origem como filtro, e a revisão humana opcional já prevista no pipeline. Reportar o tamanho típico do conjunto retornado por dataset para dimensionar o esforço.}
+
+\smallskip\noindent\textbf{Costs.}
+The full sentence-level \system\ pipeline is the most expensive variant because it requires multiple model calls per sentence. In this evaluation, all experiments together cost US\$83 through OpenRouter (E1 US\$5.8, E2 US\$52.7, end-to-end US\$24.5). With GPT-6 Sol, an end-to-end run costs between US\$0.3 and US\$2.3 on the original datasets and between US\$3.4 (C+MS) and US\$9.9 (Multi-Step) on HMDA Checks (158 sentences, 1M rows). The classifier makes the pipeline 1.6 to 5 times cheaper, because rejected sentences never reach the Multi-Step mapper. Low-cost backbones such as GPT-6 Luna and DeepSeek-V4-Flash cost a few cents per dataset. Cost scales linearly with the number of sentences, making the approach tractable in practice. By contrast, data profiling baselines face combinatorial search over the schema, and for some datasets we had to restrict the columns considered.

@@ -1,0 +1,228 @@
+Execution artifacts: results/v3/telemetry/20261013_215731_662134
+
+================================================================================
+GT-ONLY MAPPER EVALUATION: hmda_e2_tax_deepseekv4flash_MultiStep
+================================================================================
+
+Results directory: results/v3/e2_mapping/hmda_e2_tax_deepseekv4flash_multistep_20261014_122535
+Timestamp:         20261014_122535
+
+Scope: GT constraint sentences only (rules != null)
+No classifier — pure mapping quality measurement.
+
+Metrics computed over GT sentences:
+  Syntactic:   exact match, predicate Jaccard
+  Pairwise:    violation exact match, P/R/F1/Jaccard
+  Aggregate:   pooled violation P/R/F1
+================================================================================
+
+Config YAML saved to: results/v3/e2_mapping/hmda_e2_tax_deepseekv4flash_multistep_20261014_122535/config.yaml
+Execution config saved to: results/v3/e2_mapping/hmda_e2_tax_deepseekv4flash_multistep_20261014_122535/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: tax
+--------------------------------------------------------------------------------
+Loading tax...
+Total sentences in document: 126
+GT constraint sentences:     6  ← only these are fed to the mapper
+Non-constraint sentences:    120  ← skipped
+
+
+[1/1] Variant: Multi-Step | DeepSeek-V4-Flash
+  Implementation: multi_step_refinement
+  Model:          deepseek/deepseek-v4-flash
+  Creating mapper (multi_step_refinement)...
+  Mapping 6 GT sentences...
+
+============================================================
+Processing: Each person is uniquely identified by area code and phone number....
+
+============================================================
+Processing: Two persons with the same ZIP code must live in the same state....
+
+============================================================
+Processing: If a person lives in Denver, their state must be Colorado....
+
+============================================================
+
+============================================================
+Processing: Within the same ZIP code, one person cannot earn less but have a higher tax rate...
+Processing: Within the same state, a person with lower salary cannot have higher tax rate....
+============================================================
+Processing: A person single tax exemption cannot be greater than his salary....
+
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["city", "state"],
+  "implied_columns": [],
+  "reasoning": "The sentence directly mentions 'lives in Denver' which corresponds to the city column, and 'their state must be Colorado' which corresponds to the state column. Both columns are in the predicate list.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['city', 'state']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["singleexemp", "salary"],
+  "implied_columns": [],
+  "reasoning": "The sentence compares 'single tax exemption' to 'salary', which directly map to columns 'singleexemp' and 'salary' in the schema. No other columns are needed to scope the constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['singleexemp', 'salary']
+-> Step 3: Considering 56 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["zip", "state"],
+  "implied_columns": [],
+  "reasoning": "The sentence states a functional dependency: ZIP code determines state. Both 'zip' and 'state' are columns in the table. No additional columns are needed because the constraint applies universally to all rows.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['zip', 'state']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["areacode", "phone"],
+  "implied_columns": [],
+  "reasoning": "The sentence states that each person is uniquely identified by area code and phone number, indicating that the combination of areacode and phone serves as a unique identifier. Both columns are explicitly mentioned and present in the schema.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['areacode', 'phone']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["state", "salary", "rate"],
+  "implied_columns": [],
+  "reasoning": "The sentence directly mentions 'same state' (state column), 'lower salary' (salary column), and 'higher tax rate' (rate column). These are the columns needed to express the constraint: for any two persons within the same state, if one has a lower salary, then that person must not have a higher tax rate. No additional columns are required to scope the constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['state', 'salary', 'rate']
+-> Step 3: Considering 58 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["zip", "salary", "rate"],
+  "implied_columns": [],
+  "reasoning": "The constraint 'Within the same ZIP code, one person cannot earn less but have a higher tax rate' directly involves ZIP code (column 'zip'), salary (column 'salary' for earning), and tax rate (column 'rate'). No additional columns are needed to scope the constraint as the comparison is between rows within the same ZIP code.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['zip', 'salary', 'rate']
+-> Step 3: Considering 78 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.state != t2.state']
+-> Step 3: Selected 1 predicates: ['t1.singleexemp > t1.salary']
+-> Step 3: Selected 2 predicates: ['t1.city = $string', 't1.state != $string']
+-> Step 3.5 [GATE]: PASS — The sentence asserts that the value of singleexemp must not be greater than the value of salary, which is a concrete violation scenario expressible from the data alone. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — Two rows with the same zip code but different states violate the functional dependency that zip determines state. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3: Selected 3 predicates: ['t1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']
+-> Step 4: Constructed comparative with 1 rule(s)
+   ['t1.singleexemp > t1.salary']
+   对于任意一行，如果其singleexemp值大于salary值，则构成违规。
+
+-> Verification iteration 1/2
+-> Step 5: Found 89 violations
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.state != t2.state']}]
+   Two persons with the same ZIP code but different states is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 7 violations
+-> Step 3.5 [GATE]: PASS — Violation occurs when city is 'Denver' and state is not 'Colorado'. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3: Selected 2 predicates: ['t1.areacode = t2.areacode', 't1.phone = t2.phone']
+-> Step 3.5 [GATE]: PASS — A violation occurs when two tuples share the same state, one has a lower salary but a higher rate, which is forbidden by the rule. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 3: Selected 3 predicates: ['t1.zip = t2.zip', 't1.salary < t2.salary', 't1.rate > t2.rate']
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ["t1.city = 'Denver'", "t1.state != 'Colorado'"]}]
+   A record with city = 'Denver' and state != 'Colorado' violates the rule.
+
+-> Verification iteration 1/2
+   [G1] Dead predicate — value 'Denver' not found in 'city': t1.city = 'Denver'
+   [G1] Dead predicate — value 'Colorado' not found in 'state': t1.state != 'Colorado'
+-> Step 5 [G1]: Invented constants detected — dead predicates: ["t1.city = 'Denver'", "t1.state != 'Colorado'"]
+-> Discarding: invented constant, refinement skipped
+-> Step 3.5 [GATE]: PASS — Two records with the same ZIP code cannot have one record with a lower salary and a higher tax rate than the other. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']}]
+   For any two persons in the same state, if one has a lower salary, that person must not have a higher tax rate. The violation occurs when both conditions hold simultaneously.
+
+-> Verification iteration 1/2
+-> Step 5: Found 362 violations
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.salary < t2.salary', 't1.rate > t2.rate']}]
+   For any two persons in the same ZIP code, it is forbidden that one person has a lower salary and a higher tax rate than the other.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+-> Step 3.5 [GATE]: PASS — A violation occurs if two distinct person records have the same areacode and phone, since that combination is asserted to uniquely identify a person. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed uniqueness with 1 rule(s)
+   [{'AND': ['t1.areacode = t2.areacode', 't1.phone = t2.phone']}]
+   A violation occurs when two distinct rows have the same area code and the same phone number.
+
+-> Verification iteration 1/2
+-> Step 5: Found 2 violations
+  Evaluating pairwise quality (6 GT sentences)...
+  Evaluating aggregate violation (GT sentences pooled)...
+  Saving outputs...
+  Saved detailed results: tax_Multi-Step_|_DeepSeek-V4-Flash_detailed.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 60.39s  (6 GT sentences)
+
+  ── AGGREGATE VIOLATION DISCOVERY (GT sentences pooled) ───────────────
+     Precision: 1.000
+     Recall:    0.983
+     F1:        0.991  [PRIMARY]
+     Gold violations:      468
+     Predicted violations: 460
+     Overlap violations:   460
+
+  ── CONSTRAINT EXACT MATCH (GT sentences) ─────────────────────────────
+     Precision: 1.000
+     Recall:    0.833
+     F1:        0.909  [PRIMARY]
+     TP: 5  FP: 0  FN: 1
+     Predicted: 5, Gold: 6
+
+  ── PAIRWISE SYNTACTIC QUALITY (n=6) ──────────────────────────────
+     Exact Match:       0.833 (5/6)
+     Predicate Jaccard: 0.833 (±0.373)
+
+  ── PAIRWISE VIOLATION DISCOVERY ───────────────────────────────────────
+     Exact Match:       0.833 (5/6)
+     Precision:         0.833 (±0.373)
+     Recall:            0.833 (±0.373)
+     F1:                0.833 (±0.373)
+     Violation Jaccard: 0.833 (±0.373)
+
+  INSIGHT: Syntactic vs Violation Gap = 0.000
+  Variant completed
+
+==================================================================================================================================
+COMPARISON TABLE  —  GT sentences only, no classifier
+==================================================================================================================================
+  Variant                                       Impl       Model                  AggViol F1   ConstExact F1   SynExact   SynJacc    ViolF1     ViolJacc   Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Multi-Step | DeepSeek-V4-Flash                multi_step_refinement deepseek/deepseek-v4-flash 0.991        0.909           0.833      0.833      0.833      0.833      60.39     
+
+  Best Aggregate Violation F1:   Multi-Step | DeepSeek-V4-Flash (0.991)
+  Best Constraint Exact F1:      Multi-Step | DeepSeek-V4-Flash (0.909)
+  Best Syntactic Exact Match:    Multi-Step | DeepSeek-V4-Flash (0.833)
+  Best Pairwise Violation F1:    Multi-Step | DeepSeek-V4-Flash (0.833)
+  Fastest:                       Multi-Step | DeepSeek-V4-Flash (60.39s)
+==================================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3/e2_mapping/hmda_e2_tax_deepseekv4flash_multistep_20261014_122535

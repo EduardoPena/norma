@@ -1,0 +1,2446 @@
+Execution artifacts: results/v3/telemetry/20261013_215731_662134
+
+================================================================================
+GT-ONLY MAPPER EVALUATION: hmda_e2_hmda_checks_qwen38a95b_MultiStep
+================================================================================
+
+Results directory: results/v3/e2_mapping/hmda_e2_hmda_checks_qwen38a95b_multistep_20261014_124444
+Timestamp:         20261014_124444
+
+Scope: GT constraint sentences only (rules != null)
+No classifier — pure mapping quality measurement.
+
+Metrics computed over GT sentences:
+  Syntactic:   exact match, predicate Jaccard
+  Pairwise:    violation exact match, P/R/F1/Jaccard
+  Aggregate:   pooled violation P/R/F1
+================================================================================
+
+Config YAML saved to: results/v3/e2_mapping/hmda_e2_hmda_checks_qwen38a95b_multistep_20261014_124444/config.yaml
+Execution config saved to: results/v3/e2_mapping/hmda_e2_hmda_checks_qwen38a95b_multistep_20261014_124444/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: hmda_checks
+--------------------------------------------------------------------------------
+Loading hmda_checks...
+Total sentences in document: 158
+GT constraint sentences:     92  ← only these are fed to the mapper
+Non-constraint sentences:    66  ← skipped
+
+
+[1/1] Variant: Multi-Step | Qwen3.8-2.4T-A95B
+  Implementation: multi_step_refinement
+  Model:          qwen/qwen3.8-2.4t-a95b
+  Creating mapper (multi_step_refinement)...
+  Mapping 92 GT sentences...
+
+============================================================
+Processing: Date application received should = activity year or (activity year minus 1 or ac...
+
+============================================================
+Processing: If purchaser type = 1 or 3, then loan type should = 1....
+
+============================================================
+============================================================
+
+Processing: If loan amount and income are numeric and > 0 and the loan amount is ≥ $1,000 ($...
+============================================================
+Processing: If loan type = 2 and property type = 1 or 2, then loan amount should be ≤ $729 (...
+
+Processing: If property type = 1 and income ≤ $200 thousand, then loan amount should be < $2...
+
+============================================================
+Processing: If loan type = 3 and property type = 1 or 2, then loan amount should be ≤ $1,094...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "purchaser_type",
+    "loan_type"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence directly references 'purchaser type' with numeric values 1 or 3, which maps to purchaser_type, and 'loan type' with numeric value 1, which maps to loan_type. These are the columns needed to express the conditional constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['purchaser_type', 'loan_type']
+-> Step 3: Considering 104 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "loan_amount",
+    "applicant_income"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly refers to 'loan amount', which maps directly to loan_amount. It also refers to 'income', which in this schema most directly maps to applicant_income. The numeric positivity checks, the $1,000/$1 million threshold, and the comparison to 5 times income all involve these two columns.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['loan_amount', 'applicant_income']
+-> Step 3: Considering 100 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "property_type",
+    "applicant_income",
+    "loan_amount"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence directly constrains three concepts: 'property type = 1' maps to the numeric property-type code property_type; 'income ≤ $200 thousand' maps to applicant_income, the applicant's income field; and 'loan amount should be < $2 million' maps to loan_amount. No additional scoping columns are implied.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['property_type', 'applicant_income', 'loan_amount']
+-> Step 3: Considering 236 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.purchaser_type IN $values', 't1.loan_type != $int']
+-> Step 3.5 [GATE]: PASS — A concrete violation exists when purchaser_type is 1 or 3 and loan_type is not 1. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3: Selected 3 predicates: ['t1.property_type = $int', 't1.applicant_income <= $float', 't1.loan_amount >= $int']
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.purchaser_type IN (1,3)', 't1.loan_type != 1']}]
+   A record violates the constraint if its purchaser_type is 1 or 3 and its loan_type is not 1.
+
+-> Verification iteration 1/2
+-> Step 5: Found 441 violations
+
+============================================================
+Processing: If type of purchaser = 1-4, and property type = 1 or 2, then loan amount should ...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "loan_type",
+    "property_type",
+    "loan_amount"
+  ],
+  "implied_columns": [
+    "loan_type_name",
+    "property_type_name"
+  ],
+  "reasoning": "The constraint explicitly conditions on loan type code 3 and property type code 1 or 2, then restricts loan amount to be no greater than 1,094 thousands. Therefore, the directly relevant columns are loan_type, property_type, and loan_amount. The corresponding descriptive fields loan_type_name and property_type_name are included as implied/related columns because they represent the same conceptual categories, although the numeric code columns are the ones matching the stated values.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['loan_type', 'property_type', 'loan_amount', 'loan_type_name', 'property_type_name']
+-> Step 3: Considering 258 predicate candidates
+-> Step 3: Selected 3 predicates: ['t1.loan_type = $int', 't1.property_type IN $values', 't1.loan_amount > $int']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "loan_type",
+    "property_type",
+    "loan_amount"
+  ],
+  "implied_columns": [
+    "loan_type_name",
+    "property_type_name"
+  ],
+  "reasoning": "The sentence directly constrains records based on loan type code 2, property type codes 1 or 2, and a maximum loan amount of 729 (thousand). Therefore, loan_type, property_type, and loan_amount are directly relevant. The corresponding descriptive fields loan_type_name and property_type_name are related label columns for the same concepts and are included as implied relevant columns.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['loan_type', 'property_type', 'loan_amount', 'loan_type_name', 'property_type_name']
+-> Step 3: Considering 258 predicate candidates
+-> Step 3.5 [GATE]: PASS — A concrete violation exists when property_type = 1, applicant_income is at or below the income threshold, and loan_amount is at or above the prohibited loan threshold. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 3.5 [GATE]: PASS — The concrete violation scenario is a record where loan_type = 3, property_type is 1 or 2, and loan_amount > 1094. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 5 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "date_application_received",
+    "activity_year"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint compares the year portion of the application received date against the activity year and the two prior activity years. Therefore, date_application_received is needed as the date being validated, and activity_year is needed as the reference year used to compute the allowed values (activity_year, activity_year - 1, activity_year - 2).",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['date_application_received', 'activity_year']
+-> Step 3: Considering 90 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.loan_type = 3', 't1.property_type IN (1,2)', 't1.loan_amount > 1094']}]
+   A loan with loan_type 3 and property_type 1 or 2 violates the rule if its loan_amount exceeds 1094.
+
+-> Verification iteration 1/2
+-> Step 5: Found 26 violations
+
+============================================================
+Processing: If property type = 3, then loan amount should be in the range of $100 thousand a...
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.property_type = 1', 't1.applicant_income <= 200', 't1.loan_amount >= 2000']}]
+   A violation occurs when a loan application has property type 1, applicant income of $200 thousand or less, but the loan amount is $2 million or more.
+
+-> Verification iteration 1/2
+-> Step 5: Found 6 violations
+
+============================================================
+Processing: If property type = 2, then loan amount should be ≤ $150 ($150 thousand)....
+-> Step 2 response: {
+  "direct_columns": [
+    "purchaser_type",
+    "property_type",
+    "loan_amount"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The constraint explicitly conditions on 'type of purchaser = 1-4', which maps to purchaser_type, and 'property type = 1 or 2', which maps to property_type. The constrained outcome is 'loan amount should be ≤ $729 ($729 thousand)', which maps to loan_amount. No additional scoping columns are implied."
+}...
+-> Step 2: Identified columns ['purchaser_type', 'property_type', 'loan_amount']
+-> Step 3: Considering 238 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "property_type",
+    "loan_amount"
+  ],
+  "implied_columns": [
+    "property_type_name"
+  ],
+  "reasoning": "The constraint explicitly conditions on 'property type = 2', which maps to the numeric property-type code column property_type. The related descriptive column property_type_name is included as an implied/related representation of the same property-type concept. The consequence restricts 'loan amount' to be ≤ $150 thousand, which maps directly to loan_amount.",
+  "missing_concepts": [
+    "loan amount unit/scale interpretation as thousands of dollars"
+  ],
+  "reason": null
+}...
+-> Step 2: Identified columns ['property_type', 'loan_amount', 'property_type_name']
+-> Step 3: Considering 100 predicate candidates
+-> Step 3: Selected 4 predicates: ['t1.loan_amount > $int', 't1.applicant_income > $float', 't1.loan_amount >= $int', 't1.loan_amount >= t1.applicant_income * $number']
+-> Step 3: Selected 3 predicates: ['t1.purchaser_type IN $values', 't1.property_type IN $values', 't1.loan_amount > $int']
+-> Step 3: Selected 2 predicates: ['t1.property_type = $int', 't1.loan_amount > $int']
+-> Step 3.5 [GATE]: PASS — The concrete violation is a record where purchaser_type is in 1-4, property_type is 1 or 2, and loan_amount is greater than 729. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 3.5 [GATE]: PASS — A violation occurs when loan_amount and applicant_income are positive, loan_amount meets the specified threshold, and loan_amount is greater than or equal to 5 times applicant_income. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — The concrete violation scenario is a record where property_type = 2 and loan_amount > 150. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 3 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.property_type = 2', 't1.loan_amount > 150']}]
+   A violation occurs when a loan has property type 2 but its loan amount exceeds $150 thousand.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If lien status = 2, then loan amount should be ≤ $250 ($250 thousand)....
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.purchaser_type IN (1,2,3,4)', 't1.property_type IN (1,2)', 't1.loan_amount > 729']}]
+   A loan record violates the constraint if the purchaser type is 1-4, the property type is 1 or 2, and the loan amount is greater than 729.
+
+-> Verification iteration 1/2
+-> Step 5: Found 229 violations
+
+============================================================
+Processing: If lien status = 3, then loan amount should be ≤ $100 ($100 thousand)....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "property_type",
+    "loan_amount"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint is conditional on the numeric property-type code being 3, which maps to property_type. It then restricts the loan amount to a monetary range, which maps to loan_amount. No additional columns are needed to express this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['property_type', 'loan_amount']
+-> Step 3: Considering 90 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "lien_status",
+    "loan_amount"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly conditions on lien status equaling 2, which maps to the numeric lien_status column. It then restricts the loan amount to be less than or equal to 250 thousand, which maps to loan_amount. No additional scoping columns are implied.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['lien_status', 'loan_amount']
+-> Step 3: Considering 90 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "lien_status",
+    "loan_amount"
+  ],
+  "implied_columns": [],
+  "reasoning": "The condition 'lien status = 3' maps to the numeric lien status code column lien_status. The requirement 'loan amount should be ≤ $100 ($100 thousand)' maps to loan_amount, with the threshold interpreted as a constant value of 100 in thousands. No additional columns are needed to express the constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['lien_status', 'loan_amount']
+-> Step 3: Considering 90 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.lien_status = $int', 't1.loan_amount > $int']
+-> Step 3: Selected 3 predicates: ['t1.property_type = $int', 't1.loan_amount < $int', 't1.loan_amount > $int']
+-> Step 3: Selected 2 predicates: ['t1.lien_status = $int', 't1.loan_amount > $int']
+-> Step 3.5 [GATE]: PASS — The sentence defines a concrete conditional violation: a record with lien_status = 2 and loan_amount > 250 is invalid. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — A concrete violation exists when lien_status = 3 and loan_amount > 100. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — A violation exists when property_type = 3 and loan_amount is outside the required range, i.e. loan_amount < 100000 or loan_amount > 10000000. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.lien_status = 2', 't1.loan_amount > 250']}]
+   A violation occurs for a loan record whose lien status is 2 but whose loan amount exceeds $250 thousand.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If loan purpose = 1 and property type = 1, then loan amount should be > $10 thou...
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.lien_status = 3', 't1.loan_amount > 100']}]
+   A record violates the constraint if it has lien_status = 3 and a loan_amount greater than 100.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If action taken type = 1, then action taken date should not equal the date appli...
+-> Step 3: Selected 3 predicates: ['t1.date_application_received != t1.activity_year - $number', 't1.date_application_received != t1.activity_year - $number', 't1.date_application_received != t1.activity_year - $number']
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.applicant_income > 0', 't1.loan_amount >= 1000', 't1.loan_amount >= t1.applicant_income * 5']}]
+   A violation is a record where income is positive, loan amount is at least the $1 million threshold, and the loan amount is not less than five times the income.
+
+-> Verification iteration 1/2
+-> Step 5: Found 600 violations
+
+============================================================
+Processing: If action taken type = 1-5, 7, or 8, then applicant ethnicity, race and/or sex s...
+-> Step 3.5 [GATE]: PASS — The sentence asserts that date_application_received must equal activity_year, activity_year - 1, or activity_year - 2, so a concrete violation exists when date_application_received is not equal to any of those three values. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 2 response: {
+  "direct_columns": [
+    "action_taken_type",
+    "action_taken_date",
+    "date_application_received"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence explicitly references 'action taken type', which maps to action_taken_type; 'action taken date', which maps to action_taken_date; and 'date application received', which maps to date_application_received. The constraint compares the two date fields conditionally when action_taken_type equals 1."
+}...
+-> Step 2: Identified columns ['action_taken_type', 'action_taken_date', 'date_application_received']
+-> Step 3: Considering 236 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.action_taken_type = $int', 't1.action_taken_date = t1.date_application_received']
+-> Step 3.5 [GATE]: PASS — A concrete violation exists when action_taken_type = 1 and action_taken_date equals date_application_received. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 3 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.property_type = 3', {'OR': ['t1.loan_amount < 100', 't1.loan_amount > 10000']}]}]
+   A record violates the constraint if its property type is 3 but its loan amount is outside the allowed range of $100 thousand to $10 million.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If action taken type = 1-5, 7 or 8, and applicant ethnicity, race and sex = 4,7,...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "loan_purpose",
+    "property_type",
+    "loan_amount"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly conditions on loan purpose = 1 and property type = 1, which map to the numeric code columns loan_purpose and property_type. The resulting requirement constrains the loan amount, mapping to loan_amount. The descriptive name columns are not needed because the constraint uses explicit numeric codes.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['loan_purpose', 'property_type', 'loan_amount']
+-> Step 3: Considering 238 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.action_taken_type = 1', 't1.action_taken_date = t1.date_application_received']}]
+   A record violates the constraint if its action taken type is 1 and its action taken date is the same as the date the application was received.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1638 violations
+
+============================================================
+Processing: If income is numeric, then income should be < $3 million....
+-> Step 3: Selected 4 predicates: ['t1.loan_type = $int', 't1.property_type = $int', 't1.property_type = $int', 't1.loan_amount > $int']
+-> Step 3: Selected 3 predicates: ['t1.loan_purpose = $int', 't1.property_type = $int', 't1.loan_amount <= $int']
+-> Step 3.5 [GATE]: PASS — The sentence defines a concrete conditional violation: a record with loan_type = 2, property_type in {1, 2}, and loan_amount > 729 violates the rule. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 5 columns
+-> Step 3.5 [GATE]: PASS — A violation occurs when loan_purpose = 1 and property_type = 1 but loan_amount <= 10000. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 4: Constructed bound with 1 rule(s)
+   [{'AND': ['t1.date_application_received != t1.activity_year - 0', 't1.date_application_received != t1.activity_year - 1', 't1.date_application_received != t1.activity_year - 2']}]
+   A violation occurs when the date application received is not equal to the activity year, activity year minus 1, or activity year minus 2.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1000000 violations
+-> Step 5 [G2]: Too many single-row violations (1000000) — constraint too loose or logically inverted
+
+============================================================
+Processing: If action taken type = 1, and income and loan amount are numeric, and loan amoun...
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.loan_type = 2', {'OR': ['t1.property_type = 1', 't1.property_type = 2']}, 't1.loan_amount > 729']}]
+   A loan with loan type 2 and property type 1 or 2 has a loan amount greater than 729 thousand.
+
+-> Verification iteration 1/2
+-> Step 5: Found 88 violations
+
+============================================================
+Processing: If action taken type = 1-5, 7 or 8, and property type = 1 or 2, then applicant i...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "action_taken_type",
+    "applicant_ethnicity",
+    "applicant_race_1",
+    "applicant_sex"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint is conditional on action_taken_type having values 1-5, 7, or 8. It then restricts applicant demographic fields: applicant_ethnicity should not equal 4, applicant race should not equal 7, and applicant_sex should not equal 4. The primary numeric race column representing applicant race is applicant_race_1. Numeric code columns are used because the constraint specifies numeric forbidden values.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action_taken_type', 'applicant_ethnicity', 'applicant_race_1', 'applicant_sex']
+-> Step 3: Considering 460 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "applicant_income"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence constrains the value of 'income' to be less than $3 million when it is numeric. In the provided schema, the direct match for generic applicant income is applicant_income, which is a numeric income field. The 'is numeric' condition is effectively a type/null condition on applicant_income rather than a separate column.",
+  "missing_concepts": [
+    "explicit numeric/type flag for income, if needed as a separate column"
+  ],
+  "reason": null
+}...
+-> Step 2: Identified columns ['applicant_income']
+-> Step 3: Considering 14 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "action_taken_type",
+    "property_type",
+    "applicant_income"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references 'action taken type', which maps to action_taken_type; 'property type', which maps to property_type; and 'applicant income', which maps to applicant_income. The constraint checks whether applicant_income is not NA/null when the action_taken_type and property_type conditions are met.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action_taken_type', 'property_type', 'applicant_income']
+-> Step 3: Considering 226 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "action_taken_type",
+    "applicant_income",
+    "loan_amount"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly references 'action taken type = 1', which maps to action_taken_type. It references 'income', which maps to applicant_income in this HMDA schema. It references 'loan amount', which maps to loan_amount. The numeric checks and comparisons involving income and loan amount are evaluated using applicant_income and loan_amount.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action_taken_type', 'applicant_income', 'loan_amount']
+-> Step 3: Considering 236 predicate candidates
+-> Step 3: Selected 3 predicates: ['t1.action_taken_type IN $values', 't1.property_type IN $values', 't1.applicant_income IS NULL']
+-> Step 3: Selected 2 predicates: ['t1.applicant_income IS NOT NULL', 't1.applicant_income >= $float']
+-> Step 3.5 [GATE]: PASS — The concrete violation is a record where action_taken_type is one of 1-5, 7, or 8 and property_type is 1 or 2 while applicant_income is null/NA. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 3.5 [GATE]: PASS — The concrete violation is a non-null applicant_income value that is greater than or equal to 3,000,000. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 1 columns
+-> Step 3: Selected 4 predicates: ['t1.action_taken_type IN $values', 't1.applicant_ethnicity = $int', 't1.applicant_race_1 = $int', 't1.applicant_sex = $int']
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.loan_purpose = 1', 't1.property_type = 1', 't1.loan_amount <= 10000']}]
+   A record with loan purpose 1 and property type 1 violates the rule if its loan amount is 10000 or less.
+
+-> Verification iteration 1/2
+-> Step 5: Found 552911 violations
+-> Step 5 [G2]: Too many single-row violations (552911) — constraint too loose or logically inverted
+
+============================================================
+Processing: If applicant ethnicity, race and sex = 4, 7, and 4, respectively, and co-applica...
+-> Step 4: Constructed required with 1 rule(s)
+   [{'AND': ['t1.action_taken_type IN (1,2,3,4,5,7,8)', 't1.property_type IN (1,2)', 't1.applicant_income IS NULL']}]
+   For records where action taken type is 1, 2, 3, 4, 5, 7, or 8 and property type is 1 or 2, applicant income must not be missing/NA.
+
+-> Verification iteration 1/2
+-> Step 5: Found 46777 violations
+
+============================================================
+Processing: If HOEPA status = 1 and action taken type = 1, then rate spread should not = NA....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "hoepa_status",
+    "action_taken_type",
+    "rate_spread"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references 'HOEPA status = 1', which maps to hoepa_status; 'action taken type = 1', which maps to action_taken_type; and 'rate spread should not = NA', which maps to rate_spread being non-null or not missing.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['hoepa_status', 'action_taken_type', 'rate_spread']
+-> Step 3: Considering 226 predicate candidates
+-> Step 3.5 [GATE]: PASS — The sentence defines a concrete conditional violation: when action_taken_type is in {1,2,3,4,5,7,8}, applicant_ethnicity must not be 4, applicant_race_1 must not be 7, and applicant_sex must not be 4. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 4 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "action_taken_type",
+    "applicant_ethnicity",
+    "applicant_race_1",
+    "applicant_sex",
+    "co_applicant_ethnicity",
+    "co_applicant_race_1",
+    "co_applicant_sex"
+  ],
+  "implied_columns": [
+    "co_applicant_ethnicity_name",
+    "co_applicant_race_name_1",
+    "co_applicant_sex_name"
+  ],
+  "reasoning": "The constraint explicitly references action taken type and numeric applicant/co-applicant demographic codes. 'Race' is interpreted as the primary race field because the cited race codes (7 and 8) align with not-applicable/no-co-applicant semantics in the first race field. The 'no co-applicant' concept is represented by the co-applicant ethnicity, race, and sex code values and is also reflected in their descriptive name fields.",
+  "missing_concepts": [
+    "There is no separate standalone co-applicant presence indicator; the presence or absence of a co-applicant is encoded through co_applicant_ethnicity, co_applicant_race_1, co_applicant_sex, and/or their corresponding name fields."
+  ],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action_taken_type', 'applicant_ethnicity', 'applicant_race_1', 'applicant_sex', 'co_applicant_ethnicity', 'co_applicant_race_1', 'co_applicant_sex', 'co_applicant_ethnicity_name', 'co_applicant_race_name_1', 'co_applicant_sex_name']
+-> Step 3: Selected 3 predicates: ['t1.action_taken_type = $int', 't1.loan_amount > t1.applicant_income * $number', 't1.applicant_income <= $float']
+-> Step 3: Considering 1000 predicate candidates
+-> Step 3: Selected 3 predicates: ['t1.hoepa_status = $int', 't1.action_taken_type = $int', 't1.rate_spread IS NULL']
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.applicant_income >= 3000000']
+   A record violates the constraint if its applicant income is $3 million or more.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If purchaser type = 1-4 and lien status = 1 or 2, then rate spread should be ≤ 1...
+-> Step 3.5 [GATE]: PASS — A concrete violation exists when hoepa_status = 1 and action_taken_type = 1 while rate_spread is NULL/NA. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "applicant_ethnicity",
+    "applicant_race_1",
+    "applicant_sex",
+    "co_applicant_ethnicity",
+    "co_applicant_race_1",
+    "co_applicant_sex",
+    "applicant_income"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly conditions on applicant ethnicity, applicant race, and applicant sex, which map to applicant_ethnicity, applicant_race_1, and applicant_sex. It also conditions on the corresponding co-applicant fields: co_applicant_ethnicity, co_applicant_race_1, and co_applicant_sex. The consequent states that applicant income should be NA, which maps to applicant_income, with NA interpreted as missing/null income.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['applicant_ethnicity', 'applicant_race_1', 'applicant_sex', 'co_applicant_ethnicity', 'co_applicant_race_1', 'co_applicant_sex', 'applicant_income']
+-> Step 3: Considering 1000 predicate candidates
+-> Step 3.5 [GATE]: PASS — A record violates the rule when action_taken_type = 1, loan_amount is greater than five times applicant_income, and applicant_income is not greater than $9 thousand. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 4: Constructed required with 1 rule(s)
+   [{'AND': ['t1.hoepa_status = 1', 't1.action_taken_type = 1', 't1.rate_spread IS NULL']}]
+   A record violates the constraint if HOEPA status is 1, action taken type is 1, and rate spread is missing/NA.
+
+-> Verification iteration 1/2
+-> Step 5: Found 83 violations
+
+============================================================
+Processing: If agency = 5, property type = 1, lien status = 1 and action taken type = 1, rat...
+-> Step 3: Selected 7 predicates: ['t1.applicant_ethnicity = $int', 't1.applicant_race_1 = $int', 't1.applicant_sex = $int', 't1.co_applicant_ethnicity = $int', 't1.co_applicant_race_1 = $int', 't1.co_applicant_sex = $int', 't1.applicant_income IS NOT NULL']
+-> Step 3.5 [GATE]: PASS — A violation occurs when applicant_ethnicity=4, applicant_race_1=4, applicant_sex=4, co_applicant_ethnicity=4, co_applicant_race_1=7, co_applicant_sex=4, and applicant_income is not null. (confidence=high)
+-> Step 4: Constructing constraint with 7 predicates and 7 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.action_taken_type = 1', 't1.loan_amount > t1.applicant_income * 5', 't1.applicant_income <= 9000']}]
+   For records where action_taken_type is 1 and the loan amount is more than five times the applicant income, a violation occurs if the applicant income is $9,000 or less.
+
+-> Verification iteration 1/2
+-> Step 5: Found 32774 violations
+
+============================================================
+Processing: If rate spread does not = NA, then rate spread should be < 13%....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "purchaser_type",
+    "lien_status",
+    "rate_spread"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence directly references three concepts: purchaser type with numeric values 1 through 4, lien status with numeric values 1 or 2, and rate spread with a threshold of 10% or NA. These map to purchaser_type, lien_status, and rate_spread respectively. NA is treated as a missing/null value for rate_spread, so no separate column is required.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['purchaser_type', 'lien_status', 'rate_spread']
+-> Step 3: Considering 238 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "rate_spread"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly refers to 'rate spread' and its value being non-NA and less than 13%. This maps directly to the rate_spread column. The 'does not = NA' condition is a null/missing-value check on rate_spread itself, so no additional column is needed.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['rate_spread']
+-> Step 3: Considering 14 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.action_taken_type IN (1,2,3,4,5,7,8)', {'OR': ['t1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4']}]}]
+   A violation is a record with action_taken_type equal to 1, 2, 3, 4, 5, 7, or 8 where applicant ethnicity is 4, applicant race is 7, or applicant sex is 4.
+
+-> Verification iteration 1/2
+-> Step 5: Found 775 violations
+
+============================================================
+Processing: If agency = 1, 2, 3, 7 or 9, action taken type = 1, lien status = 1, and rate sp...
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4', 't1.co_applicant_ethnicity = 4', 't1.co_applicant_race_1 = 7', 't1.co_applicant_sex = 4', 't1.applicant_income IS NOT NULL']}]
+   A record violates the constraint if the applicant and co-applicant both have ethnicity 4, race 7, and sex 4, but applicant income is recorded instead of being NA/null.
+
+-> Verification iteration 1/2
+-> Step 5: Found 5 violations
+
+============================================================
+Processing: If agency = 1, 2, 3, 7 or 9, action taken type = 1, lien status = 2, and rate sp...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "agency",
+    "property_type",
+    "lien_status",
+    "action_taken_type",
+    "rate_spread"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly conditions on agency = 5, property_type = 1, lien_status = 1, and action_taken_type = 1. It then requires rate_spread to be less than or equal to 5% or NA, where NA corresponds to a missing/null rate_spread value. These five columns are the ones directly involved in the constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['agency', 'property_type', 'lien_status', 'action_taken_type', 'rate_spread']
+-> Step 3: Considering 690 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.rate_spread IS NOT NULL', 't1.rate_spread >= $float']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "agency",
+    "action_taken_type",
+    "lien_status",
+    "rate_spread",
+    "hoepa_status"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly references agency codes, action taken type, lien status, rate spread, and the required HOEPA status value. These map directly to the columns agency, action_taken_type, lien_status, rate_spread, and hoepa_status.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['agency', 'action_taken_type', 'lien_status', 'rate_spread', 'hoepa_status']
+-> Step 3: Considering 690 predicate candidates
+-> Step 3.5 [GATE]: PASS — A concrete violation exists when rate_spread is not null/NA and rate_spread is greater than or equal to 13. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 1 columns
+-> Step 3: Selected 5 predicates: ['t1.agency IN $values', 't1.action_taken_type = $int', 't1.lien_status = $int', 't1.rate_spread > $float', 't1.hoepa_status != $int']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "agency",
+    "action_taken_type",
+    "lien_status",
+    "rate_spread",
+    "hoepa_status"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly references agency codes, action taken type, lien status, rate spread, and HOEPA status. These map directly to the numeric columns agency, action_taken_type, lien_status, rate_spread, and hoepa_status. The corresponding descriptive name columns are not needed because the constraint uses numeric codes.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['agency', 'action_taken_type', 'lien_status', 'rate_spread', 'hoepa_status']
+-> Step 3: Considering 690 predicate candidates
+-> Step 3.5 [GATE]: PASS — The violation is a row where agency is one of 1, 2, 3, 7, or 9, action_taken_type = 1, lien_status = 1, rate_spread > 6.5, and hoepa_status != 1. (confidence=high)
+-> Step 4: Constructing constraint with 5 predicates and 5 columns
+-> Step 3: Selected 5 predicates: ['t1.agency = $int', 't1.property_type = $int', 't1.lien_status = $int', 't1.action_taken_type = $int', 't1.rate_spread > $float']
+-> Step 3.5 [GATE]: PASS — A violation occurs when agency = 5, property_type = 1, lien_status = 1, action_taken_type = 1, and rate_spread is greater than 5 rather than being ≤ 5 or null/NA. (confidence=high)
+-> Step 4: Constructing constraint with 5 predicates and 5 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.agency IN (1,2,3,7,9)', 't1.action_taken_type = 1', 't1.lien_status = 1', 't1.rate_spread > 6.5', 't1.hoepa_status != 1']}]
+   A record violates the constraint if it has agency 1, 2, 3, 7, or 9, action taken type 1, lien status 1, rate spread above 6.5, but HOEPA status is not 1.
+
+-> Verification iteration 1/2
+-> Step 5: Found 28 violations
+
+============================================================
+Processing: If loan purpose = 1, HOEPA Status should not = 1....
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.agency = 5', 't1.property_type = 1', 't1.lien_status = 1', 't1.action_taken_type = 1', 't1.rate_spread > 5']}]
+   For records with agency = 5, property type = 1, lien status = 1, and action taken type = 1, a violation occurs if the rate spread is greater than 5%.
+
+-> Verification iteration 1/2
+-> Step 5: Found 252 violations
+
+============================================================
+Processing: If agency = 5, HOEPA status should not = 1....
+-> Step 3: Selected 5 predicates: ['t1.agency IN $values', 't1.action_taken_type = $int', 't1.lien_status = $int', 't1.rate_spread > $float', 't1.hoepa_status != $int']
+-> Step 3.5 [GATE]: PASS — A concrete violation exists when agency is 1, 2, 3, 7, or 9, action_taken_type = 1, lien_status = 2, rate_spread > 8.5, and hoepa_status is not 1. (confidence=high)
+-> Step 4: Constructing constraint with 5 predicates and 5 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "loan_purpose",
+    "hoepa_status"
+  ],
+  "implied_columns": [
+    "loan_purpose_name",
+    "hoepa_status_name"
+  ],
+  "reasoning": "The constraint explicitly references the numeric loan purpose code equal to 1, which maps to loan_purpose, and the numeric HOEPA status code not equal to 1, which maps to hoepa_status. The corresponding descriptive label columns, loan_purpose_name and hoepa_status_name, represent the same concepts and are included as related/implied columns.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['loan_purpose', 'hoepa_status', 'loan_purpose_name', 'hoepa_status_name']
+-> Step 3: Considering 112 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "agency",
+    "hoepa_status"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly references the numeric agency code with 'agency = 5', which maps to the agency column. It also references 'HOEPA status should not = 1', which maps to hoepa_status because that column encodes HOEPA status as an integer where 1 means HOEPA loan.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['agency', 'hoepa_status']
+-> Step 3: Considering 92 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.loan_purpose = $int', 't1.hoepa_status = $int']
+-> Step 3: Selected 2 predicates: ['t1.agency = $int', 't1.hoepa_status = $int']
+-> Step 3.5 [GATE]: PASS — The concrete violation scenario is a record where loan_purpose = 1 and hoepa_status = 1 simultaneously. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 4 columns
+-> Step 3: Selected 3 predicates: ['t1.purchaser_type IN $values', 't1.lien_status IN $values', 't1.rate_spread > $float']
+-> Step 3.5 [GATE]: PASS — The concrete violation scenario is a record where agency = 5 and hoepa_status = 1 simultaneously. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.rate_spread >= 13']
+   A non-missing rate spread value of 13% or higher violates the rule; missing/NA rate spreads are not violations.
+
+-> Verification iteration 1/2
+-> Step 5: Found 7 violations
+
+============================================================
+Processing: If applicant ethnicity, race and sex = 4, 7, and 4, respectively, HOEPA status s...
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.agency IN (1,2,3,7,9)', 't1.action_taken_type = 1', 't1.lien_status = 2', 't1.rate_spread > 8.5', 't1.hoepa_status != 1']}]
+   A record violates the constraint if it has agency in (1, 2, 3, 7, 9), action_taken_type = 1, lien_status = 2, rate_spread > 8.5, but hoepa_status is not 1.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If property type = 3, HOEPA status should not = 1....
+-> Step 3.5 [GATE]: PASS — A concrete violation exists when purchaser_type is 1-4, lien_status is 1 or 2, and rate_spread is greater than 10 rather than ≤ 10 or null/NA. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.loan_purpose = 1', 't1.hoepa_status = 1']}]
+   A violation occurs when a loan has loan purpose 1 and HOEPA status 1, even though HOEPA status should not be 1 for that loan purpose.
+
+-> Verification iteration 1/2
+-> Step 5: Found 81 violations
+
+============================================================
+Processing: If purchaser type = 1 or 3, HOEPA status should not = 1....
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.agency = 5', 't1.hoepa_status = 1']}]
+   A record violates the constraint if its agency is 5 and its HOEPA status is 1.
+
+-> Verification iteration 1/2
+-> Step 5: Found 60 violations
+
+============================================================
+Processing: If loan type = 3 or 4, then property type should not = 3....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "purchaser_type",
+    "hoepa_status"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly refers to 'purchaser type' with numeric values 1 or 3, which maps to purchaser_type. It also explicitly refers to 'HOEPA status' with numeric value 1, which maps to hoepa_status. The corresponding name columns are descriptive labels but are not needed to express the numeric condition.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['purchaser_type', 'hoepa_status']
+-> Step 3: Considering 92 predicate candidates
+-> Step 3: Selected 13 predicates: ['t1.action_taken_type IN $values', 't1.applicant_ethnicity = $int', 't1.applicant_race_1 = $int', 't1.applicant_sex = $int', 't1.co_applicant_ethnicity = $int', 't1.co_applicant_race_1 = $int', 't1.co_applicant_sex = $int', 't1.co_applicant_ethnicity_name = $string', 't1.co_applicant_race_name_1 = $string', 't1.co_applicant_sex_name = $string', 't1.co_applicant_ethnicity != $int', 't1.co_applicant_race_1 != $int', 't1.co_applicant_sex != $int']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "applicant_ethnicity",
+    "applicant_race_1",
+    "applicant_sex",
+    "hoepa_status"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly references applicant ethnicity, applicant race, applicant sex, and HOEPA status. The numeric values 4, 7, 4, and 1 indicate the coded integer columns should be used: applicant_ethnicity, applicant_race_1, applicant_sex, and hoepa_status. The race value 7 is most plausibly associated with the primary applicant race field, applicant_race_1.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['applicant_ethnicity', 'applicant_race_1', 'applicant_sex', 'hoepa_status']
+-> Step 3: Considering 460 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "property_type",
+    "hoepa_status"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly refers to 'property type' with a numeric value, which maps to property_type, and 'HOEPA status' with a numeric value, which maps to hoepa_status. No additional scoping columns are implied.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['property_type', 'hoepa_status']
+-> Step 3: Considering 92 predicate candidates
+-> Step 3: Selected 4 predicates: ['t1.applicant_ethnicity = $int', 't1.applicant_race_1 = $int', 't1.applicant_sex = $int', 't1.hoepa_status = $int']
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.purchaser_type IN (1,2,3,4)', 't1.lien_status IN (1,2)', 't1.rate_spread > 10']}]
+   A record violates the constraint if purchaser type is 1-4 and lien status is 1 or 2, but the rate spread is greater than 10% rather than being 10% or less or NA.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If action taken type = 7 or 8, then MSA/MD, state, county, census tract should e...
+-> Step 3: Selected 2 predicates: ['t1.purchaser_type IN $values', 't1.hoepa_status = $int']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "loan_type",
+    "property_type"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly conditions on numeric loan type codes 3 or 4, which map to loan_type, and restricts numeric property type code 3, which maps to property_type. The corresponding name columns are not needed because the constraint is stated in terms of numeric codes.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['loan_type', 'property_type']
+-> Step 3: Considering 92 predicate candidates
+-> Step 3.5 [GATE]: PASS — The concrete violation is a record where applicant_ethnicity = 4, applicant_race_1 = 7, applicant_sex = 4, and hoepa_status = 1 simultaneously. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 4 columns
+-> Step 3.5 [GATE]: PASS — A violation occurs when purchaser_type is 1 or 3 and hoepa_status equals 1. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3: Selected 2 predicates: ['t1.property_type = $int', 't1.hoepa_status = $int']
+-> Step 3: Selected 2 predicates: ['t1.loan_type IN $values', 't1.property_type = $int']
+-> Step 3.5 [GATE]: PASS — The concrete violation scenario is a record where property_type = 3 and hoepa_status = 1. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.purchaser_type IN (1,3)', 't1.hoepa_status = 1']}]
+   A record violates the rule if its purchaser type is 1 or 3 and its HOEPA status is 1.
+
+-> Verification iteration 1/2
+-> Step 5: Found 11 violations
+
+============================================================
+Processing: If Action taken type = 6, then date application received must = NA....
+-> Step 3.5 [GATE]: PASS — The concrete violation scenario is a record where loan_type is 3 or 4 and property_type equals 3. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4', 't1.hoepa_status = 1']}]
+   A violation is a record where applicant ethnicity is 4, applicant race is 7, applicant sex is 4, and HOEPA status is 1, even though HOEPA status should not be 1 for that combination.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Loan type must = 1, 2, 3, or 4....
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.property_type = 3', 't1.hoepa_status = 1']}]
+   A record is a violation when its property type is 3 and its HOEPA status is 1, because HOEPA status should not be 1 for property type 3.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Property type must = 1, 2, or 3....
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.loan_type IN (3,4)', 't1.property_type = 3']}]
+   A record violates the rule if its loan type is 3 or 4 and its property type is 3.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Loan purpose must = 1, 2, or 3....
+-> Step 3.5 [GATE]: PASS — The sentence defines a concrete conditional violation: records with the specified action_taken_type values, applicant ethnicity/race/sex values, and no co-applicant indication must not have co-applicant ethnicity/race/sex values other than 5/8/5. (confidence=high)
+-> Step 4: Constructing constraint with 13 predicates and 10 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "property_type"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence constrains the allowed numeric values for property type to 1, 2, or 3. In the schema, property_type is the numeric property-type code, making it the directly relevant column. property_type_name is the descriptive label, but the constraint is explicitly numeric, so it is not needed.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['property_type']
+-> Step 3: Considering 16 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "loan_type"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence constrains the numeric loan type code to the allowed values 1, 2, 3, or 4. This directly maps to the loan_type column, whose description defines those exact numeric loan-type codes.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['loan_type']
+-> Step 3: Considering 16 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "loan_purpose"
+  ],
+  "implied_columns": [
+    "loan_purpose_name"
+  ],
+  "reasoning": "The sentence constrains 'Loan purpose' to the numeric values 1, 2, or 3, which directly maps to loan_purpose. loan_purpose_name is the descriptive label column for the same loan-purpose concept and is therefore related, though the explicit numeric constraint applies to loan_purpose.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['loan_purpose', 'loan_purpose_name']
+-> Step 3: Considering 26 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "action_taken_type",
+    "msa_md",
+    "msamd_name",
+    "state_code",
+    "state_name",
+    "state_abbr",
+    "county_code",
+    "county_name",
+    "census_tract_number"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly conditions on 'action taken type = 7 or 8', which maps to action_taken_type. The required fields that should be NA are geographic identifiers: MSA/MD maps to msa_md and its descriptive counterpart msamd_name; state maps to state_code, state_name, and state_abbr; county maps to county_code and county_name; census tract maps to census_tract_number.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action_taken_type', 'msa_md', 'msamd_name', 'state_code', 'state_name', 'state_abbr', 'county_code', 'county_name', 'census_tract_number']
+-> Step 3: Selected 1 predicates: ['t1.property_type NOT IN $values']
+-> Step 3: Considering 752 predicate candidates
+-> Step 3.5 [GATE]: PASS — A row violates the rule if property_type is not one of the allowed values 1, 2, or 3. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 3: Selected 1 predicates: ['t1.loan_type NOT IN $values']
+-> Step 3.5 [GATE]: PASS — A violation occurs when loan_type is not one of the allowed values 1, 2, 3, or 4. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.property_type NOT IN (1,2,3)']
+   A record violates the constraint if its property_type is not 1, 2, or 3.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If lien status = 3, then loan purpose must = 2....
+-> Step 3: Selected 1 predicates: ['t1.loan_purpose NOT IN $values']
+-> Step 3.5 [GATE]: PASS — A violation occurs when loan_purpose has a value other than 1, 2, or 3. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 2 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "action_taken_type",
+    "date_application_received"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence directly references 'Action taken type = 6', which maps to action_taken_type. It also requires 'date application received must = NA', which maps to date_application_received being null/missing. No additional columns are needed to express this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action_taken_type', 'date_application_received']
+-> Step 3: Considering 90 predicate candidates
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.loan_type NOT IN (1,2,3,4)']
+   A loan record violates the constraint if its loan_type is not one of the allowed values: 1, 2, 3, or 4.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Occupancy must = 1, 2, or 3....
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.loan_purpose NOT IN (1,2,3)']
+   A record violates the constraint if its loan_purpose is not 1, 2, or 3.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Loan amount must be numeric and > zero....
+-> Step 2 response: {
+  "direct_columns": [
+    "loan_amount"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence explicitly refers to 'Loan amount', which maps directly to the loan_amount column. The constraint requires that this column be numeric and greater than zero, so loan_amount is the only relevant column."
+}...
+-> Step 2: Identified columns ['loan_amount']
+-> Step 3: Considering 14 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.action_taken_type = $int', 't1.date_application_received IS NOT NULL']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a conditional rule: if action_taken_type = 6, then date_application_received must be NA (interpreted as NULL), so a violation occurs when action_taken_type = 6 AND date_application_received IS NOT NULL. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 2 response: {
+  "direct_columns": [
+    "occupancy"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence explicitly constrains 'Occupancy' to the numeric values 1, 2, or 3. The schema contains a numeric column named 'occupancy' that represents the occupancy code, making it the directly relevant column. No additional columns are needed to express this constraint."
+}...
+-> Step 2: Identified columns ['occupancy']
+-> Step 3: Considering 16 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "lien_status",
+    "loan_purpose"
+  ],
+  "implied_columns": [
+    "lien_status_name",
+    "loan_purpose_name"
+  ],
+  "reasoning": "The constraint explicitly conditions on lien status code 3 and requires loan purpose code 2, so the numeric columns lien_status and loan_purpose are directly relevant. The corresponding descriptive columns lien_status_name and loan_purpose_name are included as related representations of the same concepts.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['lien_status', 'loan_purpose', 'lien_status_name', 'loan_purpose_name']
+-> Step 3: Considering 112 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.action_taken_type = 6', 't1.date_application_received IS NOT NULL']}]
+   A violation occurs when a record has action_taken_type = 6 but still has a non-null date_application_received value.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Preapproval must = 1, 2, or 3....
+-> Step 3: Selected 2 predicates: ['t1.lien_status = $int', 't1.loan_purpose != $int']
+-> Step 3: Selected 1 predicates: ['t1.occupancy NOT IN $values']
+-> Step 3.5 [GATE]: PASS — The concrete violation scenario is a record where lien_status = 3 and loan_purpose != 2. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 4 columns
+-> Step 3.5 [GATE]: PASS — A violation occurs when occupancy is not one of the allowed values 1, 2, or 3. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 3: Selected 1 predicates: ['t1.loan_amount <= $int']
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.lien_status = 3', 't1.loan_purpose != 2']}]
+   A record violates the constraint when lien_status is 3 but loan_purpose is not 2.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If loan purpose = 1 and action taken type = 6, then preapproval must = 3....
+-> Step 2 response: {
+  "direct_columns": [
+    "preapproval"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence directly constrains the preapproval value to the allowed numeric codes 1, 2, or 3, which maps to the integer column 'preapproval'. The related descriptive column 'preapproval_name' is not needed because the constraint is expressed using numeric values."
+}...
+-> Step 2: Identified columns ['preapproval']
+-> Step 3: Considering 16 predicate candidates
+-> Step 3.5 [GATE]: PASS — A violation occurs when loan_amount is not greater than zero, e.g., loan_amount <= 0. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.occupancy NOT IN (1,2,3)']
+   A record violates the constraint if its occupancy value is not one of the allowed values: 1, 2, or 3.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If loan purpose = 2 or 3, then preapproval must = 3....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "loan_purpose",
+    "action_taken_type",
+    "preapproval"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly constrains three numeric fields: loan_purpose must be 1 under the condition, action_taken_type must be 6 under the condition, and preapproval must be 3 when the condition holds. No additional scoping or derived columns are implied.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['loan_purpose', 'action_taken_type', 'preapproval']
+-> Step 3: Considering 240 predicate candidates
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.loan_amount <= 0']
+   A loan amount that is zero or negative is a violation, because loan_amount must be greater than zero.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If action taken type = 7 or 8, then preapproval must = 1....
+-> Step 3: Selected 1 predicates: ['t1.preapproval NOT IN $values']
+-> Step 2 response: {
+  "direct_columns": [
+    "loan_purpose",
+    "preapproval"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence explicitly constrains loan purpose values 2 or 3 and requires preapproval to equal 3. These map directly to the numeric code columns loan_purpose and preapproval. The corresponding name columns are not needed because the constraint is stated using numeric codes."
+}...
+-> Step 2: Identified columns ['loan_purpose', 'preapproval']
+-> Step 3: Considering 104 predicate candidates
+-> Step 3.5 [GATE]: PASS — A violation occurs when preapproval is not one of the allowed values 1, 2, or 3. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 2 response: {
+  "direct_columns": [
+    "action_taken_type",
+    "preapproval"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence explicitly references 'action taken type' with numeric values 7 or 8, which maps directly to action_taken_type. It also explicitly requires 'preapproval' to equal 1, which maps directly to preapproval. No additional scoping or implied columns are needed."
+}...
+-> Step 2: Identified columns ['action_taken_type', 'preapproval']
+-> Step 3: Considering 92 predicate candidates
+-> Step 3: Selected 3 predicates: ['t1.loan_purpose = $int', 't1.action_taken_type = $int', 't1.preapproval != $int']
+-> Step 3: Selected 2 predicates: ['t1.action_taken_type IN $values', 't1.preapproval != $int']
+-> Step 3.5 [GATE]: PASS — The concrete violation is a row where action_taken_type is 7 or 8 and preapproval is not 1. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.preapproval NOT IN (1,2,3)']
+   A record violates the constraint if its preapproval value is not 1, 2, or 3.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Action taken type must = 1, 2, 3, 4, 5, 6, 7, or 8....
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.action_taken_type IN (7,8)', 't1.preapproval != 1']}]
+   A record violates the constraint when its action_taken_type is 7 or 8 but its preapproval value is not 1.
+
+-> Verification iteration 1/2
+   [G1] Dead predicate — none of (7,8) found in 'action_taken_type': t1.action_taken_type IN (7,8)
+-> Step 5 [G1]: Invented constants detected — dead predicates: ['t1.action_taken_type IN (7,8)']
+-> Discarding: invented constant, refinement skipped
+
+============================================================
+Processing: If reasons for denial are in the range 1-9, then action taken type must = 3 or 7...
+-> Step 2 response: {
+  "direct_columns": [
+    "action_taken_type"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence explicitly constrains 'Action taken type' to a set of allowed numeric values (1 through 8). This maps directly to the column action_taken_type, which is the numeric action-taken code. No other columns are required to express this constraint."
+}...
+-> Step 2: Identified columns ['action_taken_type']
+-> Step 3: Considering 16 predicate candidates
+-> Step 3.5 [GATE]: PASS — The violation scenario is a row where loan_purpose = 1 and action_taken_type = 6 but preapproval is not 3. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 3: Selected 2 predicates: ['t1.loan_purpose IN $values', 't1.preapproval != $int']
+-> Step 3.5 [GATE]: PASS — A violation occurs when loan_purpose is 2 or 3 while preapproval is not 3. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.loan_purpose = 1', 't1.action_taken_type = 6', 't1.preapproval != 3']}]
+   A record violates the constraint if its loan purpose is 1 and action taken type is 6, but its preapproval value is not 3.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If date application received = NA, then action taken type must = 6....
+-> Step 3: Selected 1 predicates: ['t1.action_taken_type NOT IN $values']
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.loan_purpose IN (2,3)', 't1.preapproval != 3']}]
+   A record violates the constraint if its loan purpose is 2 or 3 and its preapproval value is not 3.
+
+-> Verification iteration 1/2
+-> Step 2 response: {
+  "direct_columns": [
+    "denial_reason_1",
+    "denial_reason_2",
+    "denial_reason_3",
+    "action_taken_type"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The phrase 'reasons for denial' maps to the denial reason code columns. Since the schema contains three denial reason code fields (denial_reason_1, denial_reason_2, denial_reason_3), all are relevant because any of them could contain a value in the range 1-9. The consequence explicitly references 'action taken type', which maps directly to action_taken_type. The numeric range condition and allowed values 3 or 7 indicate the constraint operates on numeric code fields rather than the corresponding name fields."
+}...
+-> Step 2: Identified columns ['denial_reason_1', 'denial_reason_2', 'denial_reason_3', 'action_taken_type']
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If preapproval = 1, then action taken type must = 1-5, 7 or 8....
+-> Step 3: Considering 460 predicate candidates
+-> Step 3.5 [GATE]: PASS — A violation occurs when action_taken_type is not one of the allowed values 1 through 8. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 2 response: {
+  "direct_columns": [
+    "preapproval",
+    "action_taken_type"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence explicitly conditions on preapproval = 1 and restricts the allowed values of action taken type, which maps directly to action_taken_type. No other columns are needed to scope or evaluate the constraint."
+}...
+-> Step 2: Identified columns ['preapproval', 'action_taken_type']
+-> Step 3: Considering 92 predicate candidates
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.action_taken_type NOT IN (1,2,3,4,5,6,7,8)']
+   A record violates the constraint when its action_taken_type is not one of the allowed values: 1, 2, 3, 4, 5, 6, 7, or 8.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If preapproval = 2, then action taken type must = 1-5....
+-> Step 3: Selected 9 predicates: ['t1.action_taken_type IN $values', 't1.msa_md IS NOT NULL', 't1.msamd_name IS NOT NULL', 't1.state_code IS NOT NULL', 't1.state_name IS NOT NULL', 't1.state_abbr IS NOT NULL', 't1.county_code IS NOT NULL', 't1.county_name IS NOT NULL', 't1.census_tract_number IS NOT NULL']
+-> Step 3: Selected 2 predicates: ['t1.preapproval = $int', 't1.action_taken_type NOT IN $values']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a conditional value-range rule: when preapproval = 1, action_taken_type must be one of {1,2,3,4,5,7,8}, so a concrete violation is preapproval = 1 AND action_taken_type NOT IN (1,2,3,4,5,7,8). (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — A violation occurs when action_taken_type is 7 or 8 and any MSA/MD, state, county, or census tract field is not NA/null. (confidence=high)
+-> Step 4: Constructing constraint with 9 predicates and 9 columns
+-> Step 2 response: {
+  "direct_columns": [
+    "date_application_received",
+    "action_taken_type"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence directly references 'date application received', which maps to date_application_received, and 'action taken type', which maps to action_taken_type. The constraint states that when date_application_received is NA/missing, action_taken_type must equal 6. No additional columns are required."
+}...
+-> Step 2: Identified columns ['date_application_received', 'action_taken_type']
+-> Step 3: Considering 90 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.date_application_received IS NULL', 't1.action_taken_type != $int']
+-> Step 2 response: {
+  "direct_columns": [
+    "preapproval",
+    "action_taken_type"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The constraint explicitly references 'preapproval' with value 2 as the condition and 'action taken type' as the restricted field, which maps directly to action_taken_type. No additional columns are needed to express this conditional value-range constraint."
+}...
+-> Step 2: Identified columns ['preapproval', 'action_taken_type']
+-> Step 3: Considering 92 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.action_taken_type IN (7,8)', {'OR': ['t1.msa_md IS NOT NULL', 't1.msamd_name IS NOT NULL', 't1.state_code IS NOT NULL', 't1.state_name IS NOT NULL', 't1.state_abbr IS NOT NULL', 't1.county_code IS NOT NULL', 't1.county_name IS NOT NULL', 't1.census_tract_number IS NOT NULL']}]}]
+   A violation is a record where action taken type is 7 or 8 but at least one MSA/MD, state, county, or census tract field is not NA/null.
+
+-> Verification iteration 1/2
+   [G1] Dead predicate — none of (7,8) found in 'action_taken_type': t1.action_taken_type IN (7,8)
+-> Step 5 [G1]: Invented constants detected — dead predicates: ['t1.action_taken_type IN (7,8)']
+-> Discarding: invented constant, refinement skipped
+
+============================================================
+Processing: If preapproval = 3, then action taken type must = 1-6....
+-> Step 3.5 [GATE]: PASS — The concrete violation is a record where date_application_received is NULL/NA and action_taken_type is not 6. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.preapproval = 1', 't1.action_taken_type NOT IN (1,2,3,4,5,7,8)']}]
+   A record violates the constraint when preapproval is 1 but action_taken_type is not one of the allowed values: 1, 2, 3, 4, 5, 7, or 8.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If date application received does not = NA, then action taken date must be ≥ dat...
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.date_application_received IS NULL', 't1.action_taken_type != 6']}]
+   A record violates the constraint if the application received date is missing/NA and the action taken type is not 6.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Applicant ethnicity must = 1, 2, 3, or 4....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["date_application_received", "action_taken_date"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly compares two date fields: 'date application received' maps directly to date_application_received, and 'action taken date' maps directly to action_taken_date. The constraint is a conditional temporal comparison: if date_application_received is not NA/null, then action_taken_date must be greater than or equal to date_application_received. No other columns are mentioned or implied by this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['date_application_received', 'action_taken_date']
+-> Step 3: Considering 100 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["applicant_ethnicity"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly constrains 'Applicant ethnicity' to the values 1, 2, 3, or 4. In the schema, applicant_ethnicity is the integer-encoded applicant ethnicity field with those code values. The corresponding name field applicant_ethnicity_name is not needed because the constraint is stated in numeric codes, not text labels. No co-applicant, race, sex, or other columns are mentioned or implied.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['applicant_ethnicity']
+-> Step 3: Considering 16 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.date_application_received IS NOT NULL', 't1.action_taken_date < t1.date_application_received']
+-> Step 3: Selected 1 predicates: ['t1.applicant_ethnicity NOT IN $values']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "preapproval",
+    "action_taken_type"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly references 'preapproval = 3', which maps directly to the preapproval column. It also explicitly requires 'action taken type' to be within 1-6, which maps directly to action_taken_type. No additional scoping or derived columns are needed.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['preapproval', 'action_taken_type']
+-> Step 3: Considering 92 predicate candidates
+-> Step 3.5 [GATE]: PASS — A violation occurs when applicant_ethnicity is not one of the allowed values 1, 2, 3, or 4. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 3: Selected 2 predicates: ['t1.preapproval = $int', 't1.action_taken_type NOT IN $values']
+-> Step 3.5 [GATE]: PASS — The concrete violation is a record where date_application_received is not null and action_taken_date is earlier than date_application_received. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — A violation occurs when preapproval = 2 and action_taken_type is not in the allowed range 1 through 5. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.preapproval = 2', 't1.action_taken_type NOT IN (1,2,3,4,5)']}]
+   A record violates the constraint if preapproval is 2 but action_taken_type is not one of 1, 2, 3, 4, or 5.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Co-Applicant ethnicity must = 1, 2, 3, 4, or 5....
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.applicant_ethnicity NOT IN (1,2,3,4)']
+   A record violates the constraint if its applicant ethnicity is not 1, 2, 3, or 4.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Co-Applicant ethnicity does not = 5; however, co-applicant race field 1 = 8 and/...
+-> Step 2 response: {
+  "direct_columns": [
+    "co_applicant_ethnicity"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence constrains the numeric co-applicant ethnicity code to the allowed values 1, 2, 3, 4, or 5. This maps directly to co_applicant_ethnicity. The corresponding text label column is not needed to enforce the numeric value constraint."
+}...
+-> Step 2: Identified columns ['co_applicant_ethnicity']
+-> Step 3: Considering 16 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "co_applicant_ethnicity",
+    "co_applicant_race_1",
+    "co_applicant_sex"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly constrains three co-applicant fields using numeric codes: co-applicant ethnicity not equal to 5, co-applicant race field 1 equal to 8, and co-applicant sex equal to 5. These map directly to co_applicant_ethnicity, co_applicant_race_1, and co_applicant_sex.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['co_applicant_ethnicity', 'co_applicant_race_1', 'co_applicant_sex']
+-> Step 3: Considering 264 predicate candidates
+-> Step 3: Selected 3 predicates: ['t1.co_applicant_ethnicity != $int', 't1.co_applicant_race_1 = $int', 't1.co_applicant_sex = $int']
+-> Step 4: Constructed temporal with 1 rule(s)
+   ['t1.action_taken_date < t1.date_application_received']
+   A record violates the rule if the action taken date is earlier than the date application received.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If applicant ethnicity = 1, 2 or 3 then the first applicant race field must not ...
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.action_taken_type IN (1,2,3,4,5,7,8)', 't1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4', 't1.co_applicant_ethnicity = 4', 't1.co_applicant_race_1 = 7', 't1.co_applicant_sex = 4', {'OR': ["t1.co_applicant_ethnicity_name = 'No co-applicant'", "t1.co_applicant_race_name_1 = 'No co-applicant'", "t1.co_applicant_sex_name = 'No co-applicant'"]}]}]
+   A violation occurs when a record has an eligible action taken type, applicant ethnicity/race/sex values of 4/7/4, co-applicant numeric ethnicity/race/sex values of 4/7/4, and the available co-applicant descriptive fields indicate that there is no co-applicant. In that situation, the co-applicant numeric fields should instead be 5/8/5.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If co-applicant ethnicity = 1, 2 or 3 then the first co-applicant race field mus...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["co_applicant_ethnicity", "co_applicant_race_1"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references 'co-applicant ethnicity' with values 1, 2, or 3, which maps directly to the column co_applicant_ethnicity. It also explicitly references 'the first co-applicant race field' with prohibited values 7 or 8, which maps directly to co_applicant_race_1. No other columns are needed to express or scope this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['co_applicant_ethnicity', 'co_applicant_race_1']
+-> Step 3: Considering 104 predicate candidates
+-> Step 3: Selected 1 predicates: ['t1.co_applicant_ethnicity NOT IN $values']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a concrete value-domain rule: a row violates the constraint if co_applicant_ethnicity is not one of the allowed values 1, 2, 3, 4, or 5. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.co_applicant_ethnicity NOT IN (1,2,3,4,5)']
+   A record violates the constraint if its co_applicant_ethnicity is not one of 1, 2, 3, 4, or 5.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Applicant race field 1 must = 1, 2, 3, 4, 5, 6, or 7....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["applicant_race_1"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly refers to 'Applicant race field 1', which maps directly to applicant_race_1. The constraint specifies that this field must be one of the values 1, 2, 3, 4, 5, 6, or 7, which is a value-domain validation on that column. No other columns are needed to scope or evaluate this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['applicant_race_1']
+-> Step 3: Considering 16 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "applicant_ethnicity",
+    "applicant_race_1"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly conditions on applicant ethnicity having values 1, 2, or 3, which maps to applicant_ethnicity. It then restricts the first applicant race field from being 7, which maps to applicant_race_1. The numeric values indicate the encoded fields rather than the corresponding name fields.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['applicant_ethnicity', 'applicant_race_1']
+-> Step 3: Considering 104 predicate candidates
+-> Step 3: Selected 1 predicates: ['t1.applicant_race_1 NOT IN $values']
+-> Step 3.5 [GATE]: PASS — A violation occurs when co_applicant_ethnicity is not 5 while co_applicant_race_1 is 8 and/or co_applicant_sex is 5. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 3: Selected 2 predicates: ['t1.preapproval = $int', 't1.action_taken_type NOT IN $values']
+-> Step 3: Selected 2 predicates: ['t1.co_applicant_ethnicity IN $values', 't1.co_applicant_race_1 IN $values']
+-> Step 3.5 [GATE]: PASS — A violation occurs when applicant_race_1 is not one of the allowed values 1, 2, 3, 4, 5, 6, or 7. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 3: Selected 2 predicates: ['t1.applicant_ethnicity IN $values', 't1.applicant_race_1 = $int']
+-> Step 3.5 [GATE]: PASS — A violation occurs when co_applicant_ethnicity is 1, 2, or 3 and co_applicant_race_1 is 7 or 8. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — A violation occurs when preapproval = 3 and action_taken_type is not in the allowed range 1 through 6. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.applicant_race_1 NOT IN (1,2,3,4,5,6,7)']
+   A violation occurs when applicant_race_1 is not one of the allowed values 1, 2, 3, 4, 5, 6, or 7.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If applicant race = 1-5 in applicant race field 1, then all other applicant race...
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.preapproval = 3', 't1.action_taken_type NOT IN (1,2,3,4,5,6)']}]
+   A record violates the constraint if preapproval is 3 but action_taken_type is not one of 1, 2, 3, 4, 5, or 6.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If applicant race = 6 or 7 in applicant race field 1, then all other applicant r...
+-> Step 3.5 [GATE]: PASS — The concrete violation is a record where applicant_ethnicity is 1, 2, or 3 and applicant_race_1 equals 7. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.co_applicant_ethnicity IN (1,2,3)', 't1.co_applicant_race_1 IN (7,8)']}]
+   A violation occurs when a record has co-applicant ethnicity equal to 1, 2, or 3 while the first co-applicant race is equal to 7 or 8.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Applicant race must not be the same (i.e. 1,1; 1,1,2; 1,2,3,4,1), when more than...
+-> Step 3: Selected 7 predicates: ['t1.denial_reason_1 >= $float', 't1.denial_reason_1 <= $float', 't1.denial_reason_2 >= $float', 't1.denial_reason_2 <= $float', 't1.denial_reason_3 >= $float', 't1.denial_reason_3 <= $float', 't1.action_taken_type NOT IN $values']
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.co_applicant_ethnicity != 5', {'OR': ['t1.co_applicant_race_1 = 8', 't1.co_applicant_sex = 5']}]}]
+   A record violates the constraint when co-applicant ethnicity is not 5 and either co-applicant race field 1 is 8 or co-applicant sex is 5.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Co-Applicant race field 1 must = 1, 2, 3, 4, 5, 6, 7, or 8....
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.applicant_ethnicity IN (1,2,3)', 't1.applicant_race_1 = 7']}]
+   A violation occurs when an applicant has ethnicity 1, 2, or 3 but the first applicant race field is 7.
+
+-> Verification iteration 1/2
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "applicant_race_1",
+    "applicant_race_2",
+    "applicant_race_3",
+    "applicant_race_4",
+    "applicant_race_5"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly references 'applicant race field 1', which maps to applicant_race_1, and 'all other applicant race fields', which maps to applicant_race_2 through applicant_race_5. The allowed values are numeric codes 1-5 or blank/null, so the numeric applicant race code columns are the relevant columns.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['applicant_race_1', 'applicant_race_2', 'applicant_race_3', 'applicant_race_4', 'applicant_race_5']
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Co-Applicant race field 1 does not = 8; however, co-applicant ethnicity and/or c...
+-> Step 3: Considering 800 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["co_applicant_race_1"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly refers to 'Co-Applicant race field 1', which maps directly to the column co_applicant_race_1. The constraint specifies that this field must be one of the values 1 through 8, which is a value-domain validation on that single column. No other columns are needed to scope or evaluate this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['co_applicant_race_1']
+-> Step 3: Considering 16 predicate candidates
+-> Step 3.5 [GATE]: PASS — A concrete violation exists when a denial reason is between 1 and 9 while action_taken_type is not 3 or 7. (confidence=high)
+-> Step 4: Constructing constraint with 7 predicates and 4 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "co_applicant_race_1",
+    "co_applicant_ethnicity",
+    "co_applicant_sex"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references the first co-applicant race field with a numeric comparison to 8, which maps to co_applicant_race_1. It also references co-applicant ethnicity and co-applicant sex with numeric comparison to 5, mapping to co_applicant_ethnicity and co_applicant_sex respectively.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['co_applicant_race_1', 'co_applicant_ethnicity', 'co_applicant_sex']
+-> Step 3: Considering 264 predicate candidates
+-> Step 3: Selected 1 predicates: ['t1.co_applicant_race_1 NOT IN $values']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "applicant_race_1",
+    "applicant_race_2",
+    "applicant_race_3",
+    "applicant_race_4",
+    "applicant_race_5"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly references 'applicant race field 1' with numeric values 6 or 7, which maps to applicant_race_1. It then requires that 'all other applicant race fields' be blank, which maps to the remaining applicant race numeric fields: applicant_race_2, applicant_race_3, applicant_race_4, and applicant_race_5. Co-applicant race fields and race name fields are not directly implicated by this numeric applicant-race blanking rule.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['applicant_race_1', 'applicant_race_2', 'applicant_race_3', 'applicant_race_4', 'applicant_race_5']
+-> Step 3: Considering 800 predicate candidates
+-> Step 3.5 [GATE]: PASS — A violation occurs when co_applicant_race_1 is not one of the allowed values 1, 2, 3, 4, 5, 6, 7, or 8. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 2 response: {
+  "direct_columns": [
+    "applicant_race_1",
+    "applicant_race_2",
+    "applicant_race_3",
+    "applicant_race_4",
+    "applicant_race_5"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The constraint is about preventing duplicate applicant race values when multiple applicant race fields are populated. The examples use numeric race codes, which map directly to applicant_race_1 through applicant_race_5. These columns are also needed to determine whether more than one applicant race has been designated."
+}...
+-> Step 2: Identified columns ['applicant_race_1', 'applicant_race_2', 'applicant_race_3', 'applicant_race_4', 'applicant_race_5']
+-> Step 3: Considering 800 predicate candidates
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.action_taken_type NOT IN (3,7)', {'OR': [{'AND': ['t1.denial_reason_1 >= 1', 't1.denial_reason_1 <= 9']}, {'AND': ['t1.denial_reason_2 >= 1', 't1.denial_reason_2 <= 9']}, {'AND': ['t1.denial_reason_3 >= 1', 't1.denial_reason_3 <= 9']}]}]}]
+   In plain language: a record is invalid if any denial reason is between 1 and 9 inclusive, but the action taken type is neither 3 nor 7.
+
+-> Verification iteration 1/2
+   [G1] Dead predicate — none of (3,7) found in 'action_taken_type': t1.action_taken_type NOT IN (3,7)
+-> Step 5 [G1]: Invented constants detected — dead predicates: ['t1.action_taken_type NOT IN (3,7)']
+-> Discarding: invented constant, refinement skipped
+
+============================================================
+Processing: If co-applicant race = 1-5 in co-applicant race field 1, then all other co-appli...
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.co_applicant_race_1 NOT IN (1,2,3,4,5,6,7,8)']
+   A record violates the constraint if Co-Applicant race field 1 contains a value other than 1, 2, 3, 4, 5, 6, 7, or 8.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If co-applicant race = 6, 7, or 8 in co-applicant race field 1, then all other c...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "co_applicant_race_1",
+    "co_applicant_race_2",
+    "co_applicant_race_3",
+    "co_applicant_race_4",
+    "co_applicant_race_5"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly references co-applicant race field 1, which maps to co_applicant_race_1, and says that if it contains a value from 1 to 5, then all other co-applicant race fields must be blank or also contain values from 1 to 5. The other co-applicant race fields map to co_applicant_race_2, co_applicant_race_3, co_applicant_race_4, and co_applicant_race_5. The numeric race code fields are the relevant columns because the constraint uses numeric values 1-5 and blank/null.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['co_applicant_race_1', 'co_applicant_race_2', 'co_applicant_race_3', 'co_applicant_race_4', 'co_applicant_race_5']
+-> Step 3: Considering 800 predicate candidates
+-> Step 3: Selected 5 predicates: ['t1.applicant_race_1 IN $values', 't1.applicant_race_2 IS NOT NULL', 't1.applicant_race_3 IS NOT NULL', 't1.applicant_race_4 IS NOT NULL', 't1.applicant_race_5 IS NOT NULL']
+-> Step 3: Selected 3 predicates: ['t1.co_applicant_race_1 != $int', 't1.co_applicant_ethnicity = $int', 't1.co_applicant_sex = $int']
+-> Step 3: Selected 9 predicates: ['t1.applicant_race_1 IN $values', 't1.applicant_race_2 IS NOT NULL', 't1.applicant_race_2 NOT IN $values', 't1.applicant_race_3 IS NOT NULL', 't1.applicant_race_3 NOT IN $values', 't1.applicant_race_4 IS NOT NULL', 't1.applicant_race_4 NOT IN $values', 't1.applicant_race_5 IS NOT NULL', 't1.applicant_race_5 NOT IN $values']
+-> Step 3.5 [GATE]: PASS — A violation occurs when applicant_race_1 is 6 or 7 and any of applicant_race_2, applicant_race_3, applicant_race_4, or applicant_race_5 is not blank/null. (confidence=high)
+-> Step 4: Constructing constraint with 5 predicates and 5 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.applicant_race_1 IN (6,7)', {'OR': ['t1.applicant_race_2 IS NOT NULL', 't1.applicant_race_3 IS NOT NULL', 't1.applicant_race_4 IS NOT NULL', 't1.applicant_race_5 IS NOT NULL']}]}]
+   A violation is a record where applicant_race_1 is 6 or 7 but at least one of applicant_race_2, applicant_race_3, applicant_race_4, or applicant_race_5 is not blank.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Co-Applicant race must not be the same (i.e. 1,1; 1,1,2; 1,2,3,4,1), when more t...
+-> Step 3.5 [GATE]: PASS — The concrete violation is applicant_race_1 in 1-5 while any other applicant_race field is non-null and not in 1-5. (confidence=high)
+-> Step 4: Constructing constraint with 9 predicates and 5 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "co_applicant_race_1",
+    "co_applicant_race_2",
+    "co_applicant_race_3",
+    "co_applicant_race_4",
+    "co_applicant_race_5"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence is about co-applicant race values across multiple designated co-applicant race fields. It says that when more than one co-applicant race is designated, the values must not be the same, with examples like 1,1; 1,1,2; 1,2,3,4,1. This directly involves the numeric co-applicant race code columns co_applicant_race_1 through co_applicant_race_5, because those columns store the designated race codes and the constraint checks for duplicate values among the populated ones. The corresponding name columns are not needed because the constraint is expressed in numeric codes and duplicate detection can be performed on the numeric race fields alone.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['co_applicant_race_1', 'co_applicant_race_2', 'co_applicant_race_3', 'co_applicant_race_4', 'co_applicant_race_5']
+-> Step 3: Considering 800 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.applicant_race_1 IN (1,2,3,4,5)', {'OR': ['t1.applicant_race_2 NOT IN (1,2,3,4,5)', 't1.applicant_race_3 NOT IN (1,2,3,4,5)', 't1.applicant_race_4 NOT IN (1,2,3,4,5)', 't1.applicant_race_5 NOT IN (1,2,3,4,5)']}]}]
+   A violation is a record where applicant_race_1 is 1, 2, 3, 4, or 5, but at least one other applicant race field contains a non-blank value that is not 1, 2, 3, 4, or 5.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Applicant sex must = 1, 2, 3, or 4....
+-> Step 3: Selected 10 predicates: ['t1.co_applicant_race_1 = t1.co_applicant_race_2', 't1.co_applicant_race_1 = t1.co_applicant_race_3', 't1.co_applicant_race_1 = t1.co_applicant_race_4', 't1.co_applicant_race_1 = t1.co_applicant_race_5', 't1.co_applicant_race_2 = t1.co_applicant_race_3', 't1.co_applicant_race_2 = t1.co_applicant_race_4', 't1.co_applicant_race_2 = t1.co_applicant_race_5', 't1.co_applicant_race_3 = t1.co_applicant_race_4', 't1.co_applicant_race_3 = t1.co_applicant_race_5', 't1.co_applicant_race_4 = t1.co_applicant_race_5']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "co_applicant_race_1",
+    "co_applicant_race_2",
+    "co_applicant_race_3",
+    "co_applicant_race_4",
+    "co_applicant_race_5"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint explicitly references 'co-applicant race field 1' with numeric values 6, 7, or 8, which maps to co_applicant_race_1. It then requires that 'all other co-applicant race fields' be blank, which maps to the remaining numeric co-applicant race fields: co_applicant_race_2, co_applicant_race_3, co_applicant_race_4, and co_applicant_race_5. The corresponding race name fields are not directly referenced because the constraint is expressed in terms of numeric race codes and blank numeric fields.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['co_applicant_race_1', 'co_applicant_race_2', 'co_applicant_race_3', 'co_applicant_race_4', 'co_applicant_race_5']
+-> Step 3: Considering 800 predicate candidates
+-> Step 3.5 [GATE]: PASS — The sentence asserts that when multiple co-applicant race fields are designated, no two designated race values may be equal, yielding a concrete violation scenario where any pair of non-null co_applicant_race columns has the same value. (confidence=high)
+-> Step 4: Constructing constraint with 10 predicates and 5 columns
+-> Step 3: Selected 5 predicates: ['t1.co_applicant_race_1 IN $values', 't1.co_applicant_race_2 IS NOT NULL', 't1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_5 IS NOT NULL']
+-> Step 3.5 [GATE]: PASS — The sentence defines a concrete invalid combination: co_applicant_race_1 is not 8 while co_applicant_ethnicity and/or co_applicant_sex equals 5. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 4: Constructed other with 1 rule(s)
+   [{'OR': ['t1.co_applicant_race_1 = t1.co_applicant_race_2', 't1.co_applicant_race_1 = t1.co_applicant_race_3', 't1.co_applicant_race_1 = t1.co_applicant_race_4', 't1.co_applicant_race_1 = t1.co_applicant_race_5', 't1.co_applicant_race_2 = t1.co_applicant_race_3', 't1.co_applicant_race_2 = t1.co_applicant_race_4', 't1.co_applicant_race_2 = t1.co_applicant_race_5', 't1.co_applicant_race_3 = t1.co_applicant_race_4', 't1.co_applicant_race_3 = t1.co_applicant_race_5', 't1.co_applicant_race_4 = t1.co_applicant_race_5']}]
+   A violation occurs when any two of the designated co-applicant race fields contain the same race value, meaning a race has been repeated among the selected co-applicant races.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Co-Applicant sex must = 1, 2, 3, 4, or 5....
+-> Step 3.5 [GATE]: PASS — The sentence asserts a conditional rule: if co_applicant_race_1 is 6, 7, or 8, then co_applicant_race_2 through co_applicant_race_5 must be blank/null, yielding a concrete violation scenario where co_applicant_race_1 IN (6,7,8) and any of the other race fields is not null. (confidence=high)
+-> Step 4: Constructing constraint with 5 predicates and 5 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.co_applicant_race_1 != 8', {'OR': ['t1.co_applicant_ethnicity = 5', 't1.co_applicant_sex = 5']}]}]
+   A violation occurs when a record has co_applicant_race_1 not equal to 8 and also has co_applicant_ethnicity equal to 5 or co_applicant_sex equal to 5.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Co-Applicant sex does not = 5; however, co-applicant ethnicity = 5 and/or co-app...
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.co_applicant_race_1 IN (6,7,8)', {'OR': ['t1.co_applicant_race_2 IS NOT NULL', 't1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_5 IS NOT NULL']}]}]
+   A violation is a record where co-applicant race field 1 is 6, 7, or 8, but one or more of co-applicant race fields 2, 3, 4, or 5 contains a non-blank value.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Income must be numeric and > 0, or equal NA....
+-> Step 3: Selected 10 predicates: ['t1.applicant_race_1 = t1.applicant_race_2', 't1.applicant_race_1 = t1.applicant_race_3', 't1.applicant_race_1 = t1.applicant_race_4', 't1.applicant_race_1 = t1.applicant_race_5', 't1.applicant_race_2 = t1.applicant_race_3', 't1.applicant_race_2 = t1.applicant_race_4', 't1.applicant_race_2 = t1.applicant_race_5', 't1.applicant_race_3 = t1.applicant_race_4', 't1.applicant_race_3 = t1.applicant_race_5', 't1.applicant_race_4 = t1.applicant_race_5']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["applicant_income"],
+  "implied_columns": [],
+  "reasoning": "The sentence refers to 'Income', which directly maps to applicant_income in the schema. The constraint specifies that applicant_income must be numeric and greater than 0, or equal to NA. Since applicant_income is a float64 column and has nulls (46777 nulls), 'NA' likely corresponds to null/missing values. No other columns are needed to scope or evaluate this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['applicant_income']
+-> Step 3: Considering 14 predicate candidates
+-> Step 3.5 [GATE]: PASS — The sentence asserts that when multiple applicant race fields are designated, no two of them may have the same value, yielding a concrete denial constraint violation where any pair among applicant_race_1 through applicant_race_5 are both non-null and equal. (confidence=high)
+-> Step 4: Constructing constraint with 10 predicates and 5 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "applicant_sex"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly constrains the applicant's sex code to the values 1, 2, 3, or 4. In the schema, applicant_sex is the integer-encoded applicant sex category with exactly those meanings: 1=Male, 2=Female, 3=information not provided, and 4=Not applicable. No other column is needed to express this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['applicant_sex']
+-> Step 3: Considering 16 predicate candidates
+-> Step 3: Selected 1 predicates: ['t1.applicant_sex NOT IN $values']
+-> Step 3.5 [GATE]: PASS — A violation occurs when applicant_sex is not one of the allowed values 1, 2, 3, or 4. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "co_applicant_sex"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence constrains the co-applicant sex code to the enumerated values 1, 2, 3, 4, or 5. This directly matches the co_applicant_sex column, whose description defines those exact numeric codes. The corresponding label column co_applicant_sex_name is not needed because the constraint is explicitly numeric.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['co_applicant_sex']
+-> Step 3: Considering 16 predicate candidates
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.applicant_sex NOT IN (1,2,3,4)']
+   A violation is an applicant record whose applicant_sex is not one of 1, 2, 3, or 4.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If property type = 3, then income must = NA....
+-> Step 3: Selected 2 predicates: ['t1.applicant_income <= $float', 't1.applicant_income IS NOT NULL']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a concrete value-range rule: applicant_income must be numeric and positive, or NA, so a violation is a non-null applicant_income <= 0. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 1 columns
+-> Step 4: Constructed bound with 1 rule(s)
+   [{'AND': ['t1.applicant_income IS NOT NULL', 't1.applicant_income <= 0']}]
+   In plain language: a violation is an applicant_income value that is not NA but is not greater than 0.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If applicant ethnicity, race, and sex = 4, 7, and 4, respectively, and co-applic...
+-> Step 3: Selected 1 predicates: ['t1.co_applicant_sex NOT IN $values']
+-> Step 2 response: {
+  "direct_columns": [
+    "co_applicant_sex",
+    "co_applicant_ethnicity",
+    "co_applicant_race_1"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence explicitly references three coded co-applicant fields: co-applicant sex not equal to 5, co-applicant ethnicity equal to 5, and co-applicant race field 1 equal to 8. These map directly to co_applicant_sex, co_applicant_ethnicity, and co_applicant_race_1. The corresponding name columns are not required because the constraint is expressed using numeric codes."
+}...
+-> Step 2: Identified columns ['co_applicant_sex', 'co_applicant_ethnicity', 'co_applicant_race_1']
+-> Step 3: Considering 264 predicate candidates
+-> Step 3.5 [GATE]: PASS — A violation occurs when co_applicant_sex is not one of the allowed values 1, 2, 3, 4, or 5. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 3: Selected 3 predicates: ['t1.co_applicant_sex != $int', 't1.co_applicant_ethnicity = $int', 't1.co_applicant_race_1 = $int']
+-> Step 4: Constructed uniqueness with 1 rule(s)
+   [{'OR': ['t1.applicant_race_1 = t1.applicant_race_2', 't1.applicant_race_1 = t1.applicant_race_3', 't1.applicant_race_1 = t1.applicant_race_4', 't1.applicant_race_1 = t1.applicant_race_5', 't1.applicant_race_2 = t1.applicant_race_3', 't1.applicant_race_2 = t1.applicant_race_4', 't1.applicant_race_2 = t1.applicant_race_5', 't1.applicant_race_3 = t1.applicant_race_4', 't1.applicant_race_3 = t1.applicant_race_5', 't1.applicant_race_4 = t1.applicant_race_5']}]
+   A record violates the constraint if any two applicant race fields contain the same non-null race code.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Type of purchaser must = 0, 1, 2, 3, 4, 5, 6, 7, 8, or 9....
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.co_applicant_sex NOT IN (1,2,3,4,5)']
+   A record violates the constraint if its co_applicant_sex is not one of 1, 2, 3, 4, or 5.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If type of purchaser = 1, 2, 3, 4, 5, 6, 7, 8, or 9, then action taken type must...
+-> Step 3.5 [GATE]: PASS — The sentence asserts a concrete conditional violation: a record cannot have co_applicant_sex != 5 while co_applicant_ethnicity = 5 and/or co_applicant_race_1 = 8. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["purchaser_type", "action_taken_type"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references 'type of purchaser', which maps to purchaser_type, and 'action taken type', which maps to action_taken_type. The constraint is a conditional value restriction: when purchaser_type is one of 1 through 9, action_taken_type must be 1 or 6. No other columns are needed to scope or evaluate this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['purchaser_type', 'action_taken_type']
+-> Step 3: Considering 92 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.co_applicant_sex != 5', {'OR': ['t1.co_applicant_ethnicity = 5', 't1.co_applicant_race_1 = 8']}]}]
+   A violation occurs when the co-applicant sex is not 5 and the co-applicant ethnicity is 5 or the co-applicant race field 1 is 8.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If type of purchaser = 2, then loan type must = 2, 3, or 4....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["purchaser_type"],
+  "implied_columns": [],
+  "reasoning": "The sentence specifies an allowed-value constraint for 'Type of purchaser', which maps directly to the purchaser_type column. The values 0 through 9 are the valid integer codes for purchaser_type, as described in the schema. No other columns are needed to scope or interpret this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['purchaser_type']
+-> Step 3: Considering 16 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.purchaser_type IN $values', 't1.action_taken_type NOT IN $values']
+-> Step 3: Selected 1 predicates: ['t1.purchaser_type NOT IN $values']
+-> Step 3.5 [GATE]: PASS — A violation occurs when purchaser_type is not one of the allowed values 0 through 9. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 3.5 [GATE]: PASS — A violation occurs when purchaser_type is one of 1-9 and action_taken_type is not 1 or 6. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.purchaser_type NOT IN (0,1,2,3,4,5,6,7,8,9)']
+   A record violates the constraint if its purchaser_type is not one of 0, 1, 2, 3, 4, 5, 6, 7, 8, or 9.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If (agency code = 2, 3, 5, 7, or 9) or (agency code = 1 and action taken not = 3...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["agency", "action_taken_type", "denial_reason_1", "denial_reason_2", "denial_reason_3"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references 'agency code', which maps to the numeric column agency. It also references 'action taken', which maps to action_taken_type (the numeric action-taken code; action_taken_name is the descriptive counterpart but the constraint uses numeric values 3 and 7, so action_taken_type is the relevant predicate column). The requirement concerns 'reasons for denial', which maps to the denial reason fields. Since the schema has three denial reason columns (denial_reason_1, denial_reason_2, denial_reason_3), all are relevant to validating that denial reasons must be one of the allowed values or blank. The name versions of denial reasons are not needed because the constraint specifies numeric codes.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['agency', 'action_taken_type', 'denial_reason_1', 'denial_reason_2', 'denial_reason_3']
+-> Step 3: Considering 716 predicate candidates
+-> Step 3: Selected 9 predicates: ['t1.co_applicant_race_1 IN $values', 't1.co_applicant_race_2 IS NOT NULL', 't1.co_applicant_race_2 NOT IN $values', 't1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_3 NOT IN $values', 't1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_4 NOT IN $values', 't1.co_applicant_race_5 IS NOT NULL', 't1.co_applicant_race_5 NOT IN $values']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a conditional data quality rule: if co_applicant_race_1 is in 1-5, then any non-null value in co_applicant_race_2 through co_applicant_race_5 must also be in 1-5, yielding a concrete violation scenario where co_applicant_race_1 IN (1,2,3,4,5) and some other co_applicant race field is NOT NULL and NOT IN (1,2,3,4,5). (confidence=high)
+-> Step 4: Constructing constraint with 9 predicates and 5 columns
+-> Step 2 response: {
+  "direct_columns": [
+    "property_type",
+    "applicant_income"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence explicitly references 'property type = 3', which maps to the numeric property_type column. It also references 'income must = NA', which maps to applicant_income, the loan applicant income field; NA indicates that applicant_income should be null/missing when property_type is 3."
+}...
+-> Step 2: Identified columns ['property_type', 'applicant_income']
+-> Step 3: Considering 90 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.purchaser_type IN (1,2,3,4,5,6,7,8,9)', 't1.action_taken_type NOT IN (1,6)']}]
+   A record violates the constraint if its purchaser_type is 1, 2, 3, 4, 5, 6, 7, 8, or 9 and its action_taken_type is not 1 or 6.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Responses for reasons for denial must not be the same (i.e. 1,1; 1,1,2; 1,2,2;.....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "purchaser_type",
+    "loan_type"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence directly constrains 'type of purchaser' with numeric value 2, which maps to purchaser_type. It then requires 'loan type' to be one of numeric values 2, 3, or 4, which maps to loan_type.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['purchaser_type', 'loan_type']
+-> Step 3: Considering 104 predicate candidates
+-> Step 2 response: {
+  "direct_columns": [
+    "applicant_ethnicity",
+    "applicant_race_1",
+    "applicant_sex",
+    "co_applicant_ethnicity",
+    "co_applicant_race_1",
+    "co_applicant_sex",
+    "action_taken_type",
+    "applicant_income"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The sentence explicitly constrains applicant ethnicity, applicant race, and applicant sex using numeric codes, which map to applicant_ethnicity, applicant_race_1, and applicant_sex. It also explicitly constrains co-applicant ethnicity, co-applicant race, and co-applicant sex using numeric codes, which map to co_applicant_ethnicity, co_applicant_race_1, and co_applicant_sex. The numeric range for 'action taken' maps to action_taken_type. Finally, the required condition that applicant income must be NA applies to applicant_income."
+}...
+-> Step 2: Identified columns ['applicant_ethnicity', 'applicant_race_1', 'applicant_sex', 'co_applicant_ethnicity', 'co_applicant_race_1', 'co_applicant_sex', 'action_taken_type', 'applicant_income']
+-> Step 3: Considering 1000 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["denial_reason_1", "denial_reason_2", "denial_reason_3"],
+  "implied_columns": [],
+  "reasoning": "The sentence refers to 'reasons for denial' and gives examples like 1,1; 1,1,2; 1,2,2, which are sequences of denial reason codes. In the schema, the denial reason fields are denial_reason_1, denial_reason_2, and denial_reason_3. The constraint says these values must not be the same across the populated denial reason fields, so all three denial reason columns are relevant. The corresponding name fields are not needed because the examples use numeric codes and the constraint is about equality of reason values.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['denial_reason_1', 'denial_reason_2', 'denial_reason_3']
+-> Step 3: Considering 264 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.purchaser_type = $int', 't1.loan_type NOT IN $values']
+-> Step 3.5 [GATE]: PASS — A violation occurs when purchaser_type = 2 and loan_type is not one of 2, 3, or 4. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3: Selected 2 predicates: ['t1.property_type = $int', 't1.applicant_income IS NOT NULL']
+-> Step 3.5 [GATE]: PASS — The sentence specifies a conditional value rule: when property_type = 3, applicant_income must be NA/null, so a violation is property_type = 3 AND applicant_income IS NOT NULL. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.purchaser_type = 2', 't1.loan_type NOT IN (2,3,4)']}]
+   A record violates the constraint if its purchaser_type is 2 and its loan_type is not 2, 3, or 4.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If agency code = 1 and action taken = 3 or 7, then at least one reason for denia...
+-> Step 3: Selected 3 predicates: ['t1.denial_reason_1 = t1.denial_reason_2', 't1.denial_reason_1 = t1.denial_reason_3', 't1.denial_reason_2 = t1.denial_reason_3']
+-> Step 3.5 [GATE]: PASS — The sentence forbids any two of the three denial reason columns from having the same value, yielding a concrete violation when denial_reason_1 = denial_reason_2 OR denial_reason_1 = denial_reason_3 OR denial_reason_2 = denial_reason_3. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["agency", "action_taken_type", "denial_reason_1", "denial_reason_2", "denial_reason_3"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references 'agency code', which maps to the numeric column agency. It explicitly references 'action taken', which maps to action_taken_type (the numeric action-taken code). It then imposes requirements on 'reason for denial' fields: at least one reason must be provided and valid, and other reasons must be valid or blank. In the schema, the denial reason value fields are denial_reason_1, denial_reason_2, and denial_reason_3. The name versions are not needed because the constraint specifies numeric allowed values (1-9 or blank).",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['agency', 'action_taken_type', 'denial_reason_1', 'denial_reason_2', 'denial_reason_3']
+-> Step 3: Considering 716 predicate candidates
+-> Step 4: Constructed other with 1 rule(s)
+   [{'OR': ['t1.denial_reason_1 = t1.denial_reason_2', 't1.denial_reason_1 = t1.denial_reason_3', 't1.denial_reason_2 = t1.denial_reason_3']}]
+   A record violates the constraint when two or more of its denial reason fields contain the same value.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If action taken type = 2-8, then rate spread must = NA....
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.property_type = 3', 't1.applicant_income IS NOT NULL']}]
+   A record violates the constraint if it has property_type = 3 and applicant_income is not NA/null.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If lien status = 1, then rate spread must be > 1.5% and ≤ 99.99% or NA....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "action_taken_type",
+    "rate_spread"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly refers to 'action taken type', which maps directly to action_taken_type, and 'rate spread', which maps directly to rate_spread. The constraint states that when action_taken_type is in the range 2 through 8, rate_spread must be NA/missing.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action_taken_type', 'rate_spread']
+-> Step 3: Considering 90 predicate candidates
+-> Step 3: Selected 3 predicates: ['t1.action_taken_type >= $int', 't1.action_taken_type <= $int', 't1.rate_spread IS NOT NULL']
+-> Step 3: Selected 8 predicates: ['t1.applicant_ethnicity = $int', 't1.applicant_race_1 = $int', 't1.applicant_sex = $int', 't1.co_applicant_ethnicity = $int', 't1.co_applicant_race_1 = $int', 't1.co_applicant_sex = $int', 't1.action_taken_type IN $values', 't1.applicant_income IS NOT NULL']
+-> Step 3.5 [GATE]: PASS — The sentence defines a concrete conditional violation: a record with action_taken_type between 2 and 8 while rate_spread is not NA/null. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.action_taken_type >= 2', 't1.action_taken_type <= 8', 't1.rate_spread IS NOT NULL']}]
+   A violation is a record where action_taken_type is between 2 and 8 inclusive, but rate_spread has a non-null value instead of being NA/null.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If lien status = 2, then rate spread must be > 3.5% and ≤ 99.99% or NA....
+-> Step 3.5 [GATE]: PASS — The rule defines a concrete violation where the specified applicant/co-applicant ethnicity, race, sex, and action-type conditions hold while applicant_income is not null/NA. (confidence=high)
+-> Step 4: Constructing constraint with 8 predicates and 8 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["lien_status", "rate_spread"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references 'lien status = 2', which maps to the lien_status column. It also explicitly references 'rate spread must be > 3.5% and ≤ 99.99% or NA', which maps to the rate_spread column. No other columns are needed to express or scope this conditional constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['lien_status', 'rate_spread']
+-> Step 3: Considering 90 predicate candidates
+-> Step 3: Selected 4 predicates: ['t1.lien_status = $int', 't1.rate_spread <= $float', 't1.rate_spread > $float', 't1.rate_spread IS NOT NULL']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "lien_status",
+    "rate_spread"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly conditions on 'lien status = 1', which maps directly to the numeric lien_status column. It then constrains 'rate spread' to a numeric range or NA, which maps to rate_spread. NA is treated as an allowed missing/null value for rate_spread rather than requiring a separate column.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['lien_status', 'rate_spread']
+-> Step 3: Considering 90 predicate candidates
+-> Step 3: Selected 4 predicates: ['t1.lien_status = $int', 't1.rate_spread <= $float', 't1.rate_spread > $float', 't1.rate_spread IS NULL']
+-> Step 3.5 [GATE]: PASS — A violation occurs when lien_status = 2 and rate_spread is neither NA/null nor within the required range > 3.5 and <= 99.99. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4', 't1.co_applicant_ethnicity = 5', 't1.co_applicant_race_1 = 8', 't1.co_applicant_sex = 5', 't1.action_taken_type IN (1,2,3,4,5,7,8)', 't1.applicant_income IS NOT NULL']}]
+   A record violates the constraint when the applicant has ethnicity 4, race 7, sex 4; the co-applicant has ethnicity 5, race 8, sex 5; the action taken type is 1 through 5 or 7 through 8; and applicant income is present instead of NA/null.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If lien status = 3, then rate spread must = NA....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["lien_status", "rate_spread"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references 'lien status' and 'rate spread'. In the schema, 'lien status' maps directly to the numeric code column lien_status (and its descriptive counterpart lien_status_name). 'rate spread' maps directly to rate_spread. The constraint is a conditional rule: when lien_status = 3, rate_spread must be NA/missing. Therefore, both the condition column and the requirement column are relevant. No additional columns are needed to scope the constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['lien_status', 'rate_spread']
+-> Step 3: Considering 90 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.lien_status = $int', 't1.rate_spread IS NOT NULL']
+-> Step 3: Selected 9 predicates: ['t1.agency IN $values', 't1.agency = $int', 't1.action_taken_type NOT IN $values', 't1.denial_reason_1 IS NOT NULL', 't1.denial_reason_1 NOT IN $values', 't1.denial_reason_2 IS NOT NULL', 't1.denial_reason_2 NOT IN $values', 't1.denial_reason_3 IS NOT NULL', 't1.denial_reason_3 NOT IN $values']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a conditional value rule: when lien_status = 3, rate_spread must be NA, so a concrete violation is lien_status = 3 AND rate_spread IS NOT NULL. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — A violation occurs when lien_status = 1 and rate_spread is not NA/null but is <= 1.5 or > 99.99. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.lien_status = 1', {'OR': ['t1.rate_spread <= 1.5', 't1.rate_spread > 99.99']}]}]
+   A violation is a record with lien_status = 1 whose rate_spread is not greater than 1.5 and not less than or equal to 99.99, and is also not NA/null.
+
+-> Verification iteration 1/2
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.lien_status = 3', 't1.rate_spread IS NOT NULL']}]
+   A violation is a record with lien_status = 3 that has a non-null rate_spread, because rate_spread should be NA/null in that case.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1975 violations
+
+============================================================
+Processing: If action taken type = 2-5, 7, or 8, HOEPA status must = 2....
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: HOEPA status must = 1 or 2....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["action_taken_type", "hoepa_status"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references 'action taken type' and 'HOEPA status'. In the schema, 'action taken type' maps directly to action_taken_type, and 'HOEPA status' maps directly to hoepa_status. The constraint is a conditional rule: when action_taken_type is one of 2-5, 7, or 8, hoepa_status must equal 2. No other columns are needed to scope or evaluate this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action_taken_type', 'hoepa_status']
+-> Step 3: Considering 92 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["hoepa_status"],
+  "implied_columns": [],
+  "reasoning": "The sentence 'HOEPA status must = 1 or 2.' directly references the HOEPA status field and constrains its allowed numeric values. In the provided schema, hoepa_status is the integer-encoded HOEPA status column, with observed values 1 and 2. The descriptive column hoepa_status_name is related but the constraint explicitly uses numeric values, so hoepa_status is the relevant column.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['hoepa_status']
+-> Step 3: Considering 16 predicate candidates
+-> Step 3: Selected 1 predicates: ['t1.hoepa_status NOT IN $values']
+-> Step 3.5 [GATE]: PASS — The concrete violation is a row where hoepa_status is not one of the allowed values 1 or 2. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.co_applicant_race_1 IN (1,2,3,4,5)', {'OR': [{'AND': ['t1.co_applicant_race_2 IS NOT NULL', 't1.co_applicant_race_2 NOT IN (1,2,3,4,5)']}, {'AND': ['t1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_3 NOT IN (1,2,3,4,5)']}, {'AND': ['t1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_4 NOT IN (1,2,3,4,5)']}, {'AND': ['t1.co_applicant_race_5 IS NOT NULL', 't1.co_applicant_race_5 NOT IN (1,2,3,4,5)']}]}]}]
+   A violation occurs when co-applicant race field 1 is 1, 2, 3, 4, or 5, but at least one of co-applicant race fields 2 through 5 is non-blank and has a value other than 1, 2, 3, 4, or 5.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If lien status = 3, then HOEPA status must = 2....
+-> Step 3.5 [GATE]: PASS — A violation occurs when a record meets the agency/action condition and any denial reason field is non-blank but not one of the allowed values 1 through 9. (confidence=high)
+-> Step 4: Constructing constraint with 9 predicates and 5 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["lien_status", "hoepa_status"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references 'lien status' and 'HOEPA status'. In the schema, lien_status is the integer code for lien status, and hoepa_status is the integer code for HOEPA status. The numeric values 3 and 2 correspond to coded values for these fields, so the code columns are the relevant predicate columns. The corresponding name columns are not needed because the constraint uses numeric codes.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['lien_status', 'hoepa_status']
+-> Step 3: Considering 92 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.lien_status = $int', 't1.hoepa_status != $int']
+-> Step 3: Selected 2 predicates: ['t1.action_taken_type IN $values', 't1.hoepa_status != $int']
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.hoepa_status NOT IN (1,2)']
+   A record violates the constraint if its HOEPA status is neither 1 nor 2.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Lien status must = 1, 2, 3, or 4....
+-> Step 3.5 [GATE]: PASS — The sentence specifies a concrete conditional value rule: when action_taken_type is one of {2,3,4,5,7,8}, hoepa_status must be 2, so a violation is a row with action_taken_type in that set and hoepa_status != 2. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — The rule defines a concrete violation where lien_status = 3 and hoepa_status is not 2. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.action_taken_type IN (2,3,4,5,7,8)', 't1.hoepa_status != 2']}]
+   A violation occurs when a record has action_taken_type equal to 2, 3, 4, 5, 7, or 8 but its hoepa_status is not 2.
+
+-> Verification iteration 1/2
+   [G1] Dead predicate — none of (2,3,4,5,7,8) found in 'action_taken_type': t1.action_taken_type IN (2,3,4,5,7,8)
+-> Step 5 [G1]: Invented constants detected — dead predicates: ['t1.action_taken_type IN (2,3,4,5,7,8)']
+-> Discarding: invented constant, refinement skipped
+
+============================================================
+Processing: If loan purpose = 1 or 3, then lien status must = 1, 2, or 4....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["loan_purpose", "lien_status"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references 'loan purpose' and 'lien status'. In the schema, loan_purpose is the numeric loan-purpose code with values 1, 2, and 3, matching the condition 'loan purpose = 1 or 3'. lien_status is the numeric lien status code, matching the requirement 'lien status must = 1, 2, or 4'. No additional scope or derived columns are needed.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['loan_purpose', 'lien_status']
+-> Step 3: Considering 92 predicate candidates
+-> Step 3: Selected 11 predicates: ['t1.agency = $int', 't1.action_taken_type IN $values', 't1.denial_reason_1 IS NULL', 't1.denial_reason_2 IS NULL', 't1.denial_reason_3 IS NULL', 't1.denial_reason_1 IS NOT NULL', 't1.denial_reason_1 NOT IN $values', 't1.denial_reason_2 IS NOT NULL', 't1.denial_reason_2 NOT IN $values', 't1.denial_reason_3 IS NOT NULL', 't1.denial_reason_3 NOT IN $values']
+-> Step 3.5 [GATE]: PASS — The sentence specifies a conditional data quality rule: when agency = 1 and action_taken_type is 3 or 7, at least one denial reason must be present and valid (1-9), and any provided denial reason must be valid or blank; a violation occurs if all denial reasons are null or any non-null denial reason is outside 1-9. (confidence=high)
+-> Step 4: Constructing constraint with 11 predicates and 5 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.lien_status = 3', 't1.hoepa_status != 2']}]
+   A record violates the constraint if its lien status is 3 and its HOEPA status is anything other than 2.
+
+-> Verification iteration 1/2
+-> Step 4: Constructed conditional with 4 rule(s)
+   [{'AND': ['t1.agency = 1', {'OR': ['t1.action_taken_type = 3', 't1.action_taken_type = 7']}, 't1.denial_reason_1 IS NULL']}, {'AND': ['t1.agency = 1', {'OR': ['t1.action_taken_type = 3', 't1.action_taken_type = 7']}, 't1.denial_reason_1 IS NOT NULL', 't1.denial_reason_1 NOT IN (1,2,3,4,5,6,7,8,9)']}, {'AND': ['t1.denial_reason_2 IS NOT NULL', 't1.denial_reason_2 NOT IN (1,2,3,4,5,6,7,8,9)']}, {'AND': ['t1.denial_reason_3 IS NOT NULL', 't1.denial_reason_3 NOT IN (1,2,3,4,5,6,7,8,9)']}]
+   A violation occurs when a record with agency code 1 and action taken type 3 or 7 has no first denial reason, or has a first denial reason outside 1-9. A violation also occurs when any second or third denial reason is present but outside 1-9.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: If action taken type = 1-5, 7 or 8, then lien status must = 1, 2, or 3....
+   [G1] Dead predicate — none of (1,2,3,4,5,6,7,8,9) found in 'denial_reason_1': t1.denial_reason_1 NOT IN (1,2,3,4,5,6,7,8,9)
+   [G1] Dead predicate — none of (1,2,3,4,5,6,7,8,9) found in 'denial_reason_2': t1.denial_reason_2 NOT IN (1,2,3,4,5,6,7,8,9)
+-> Step 2 response: {
+  "direct_columns": [
+    "lien_status"
+  ],
+  "implied_columns": [
+    "lien_status_name"
+  ],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": "The sentence explicitly constrains 'Lien status' to numeric values 1, 2, 3, or 4, which directly maps to lien_status. lien_status_name is included as a related descriptive column for the same lien status concept.",
+  "reasoning": "The constraint is an allowed-value check on the lien status code. The numeric values align with lien_status, while lien_status_name is the corresponding label column and is therefore related to the same concept."
+}...
+-> Step 2: Identified columns ['lien_status', 'lien_status_name']
+   [G1] Dead predicate — none of (1,2,3,4,5,6,7,8,9) found in 'denial_reason_3': t1.denial_reason_3 NOT IN (1,2,3,4,5,6,7,8,9)
+-> Step 5 [G1]: Invented constants detected — dead predicates: ['t1.denial_reason_1 NOT IN (1,2,3,4,5,6,7,8,9)', 't1.denial_reason_2 NOT IN (1,2,3,4,5,6,7,8,9)', 't1.denial_reason_3 NOT IN (1,2,3,4,5,6,7,8,9)']
+-> Discarding: invented constant, refinement skipped
+
+============================================================
+Processing: If action taken type = 6, then lien status must = 4....
+-> Step 3: Considering 26 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["action_taken_type", "lien_status"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly names 'action taken type' and 'lien status'. In the provided schema and predicate list, these map directly to action_taken_type and lien_status. The constraint is a conditional value restriction: when action_taken_type is in {1,2,3,4,5,7,8}, lien_status must be in {1,2,3}. No other columns are needed to scope or evaluate this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action_taken_type', 'lien_status']
+-> Step 3: Considering 92 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.action_taken_type IN $values', 't1.lien_status NOT IN $values']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a conditional value-range rule: a row violates the constraint if action_taken_type is in {1,2,3,4,5,7,8} and lien_status is not in {1,2,3}. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.lien_status = 2', 't1.rate_spread IS NOT NULL', {'OR': ['t1.rate_spread <= 3.5', 't1.rate_spread > 99.99']}]}]
+   A violation is a record with lien_status = 2 and a non-NA rate_spread that is not within the required range (> 3.5 and <= 99.99).
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Agency code must = 1, 2, 3, 5, 7, 9. The agency that submits the data must be th...
+-> Step 3: Selected 2 predicates: ['t1.loan_purpose IN $values', 't1.lien_status NOT IN $values']
+-> Step 3.5 [GATE]: PASS — The sentence specifies a concrete conditional value rule: a violation occurs when loan_purpose is 1 or 3 and lien_status is not one of 1, 2, or 4. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.action_taken_type IN (1,2,3,4,5,7,8)', 't1.lien_status NOT IN (1,2,3)']}]
+   A record violates the constraint if its action_taken_type is 1, 2, 3, 4, 5, 7, or 8 but its lien_status is not 1, 2, or 3.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Application/loan number must be unique....
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.loan_purpose IN (1,3)', 't1.lien_status NOT IN (1,2,4)']}]
+   A record violates the rule when its loan purpose is 1 or 3 but its lien status is not one of the allowed values 1, 2, or 4.
+
+-> Verification iteration 1/2
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["loan_number"],
+  "implied_columns": [],
+  "reasoning": "The sentence states that 'Application/loan number must be unique.' The schema contains a column named loan_number, described as a numeric loan identifier with 200,000 distinct values across 200,000 records, which directly matches the loan/application number concept. A uniqueness constraint applies to that column. No other columns are needed to scope or evaluate this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['loan_number']
+-> Step 3: Considering 14 predicate candidates
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Activity year must = year being processed (= 2014)....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "action_taken_type",
+    "lien_status"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references 'action taken type' with value 6, which maps directly to action_taken_type, and 'lien status' with required value 4, which maps directly to lien_status. These are the numeric code columns needed to express the conditional constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action_taken_type', 'lien_status']
+-> Step 3: Considering 92 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.action_taken_type = $int', 't1.lien_status != $int']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a conditional value rule: a row violates the constraint if action_taken_type = 6 and lien_status != 4. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3: Selected 1 predicates: ['t1.lien_status NOT IN $values']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "activity_year"
+  ],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly constrains 'Activity year', which maps directly to activity_year. The value 'year being processed (= 2014)' functions as an external/constant reference value rather than a separate schema column, so no additional columns are required.",
+  "missing_concepts": [
+    "year being processed"
+  ],
+  "reason": null
+}...
+-> Step 2: Identified columns ['activity_year']
+-> Step 3: Considering 16 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.action_taken_type = 6', 't1.lien_status != 4']}]
+   A record violates the constraint if its action_taken_type is 6 and its lien_status is not 4.
+
+-> Verification iteration 1/2
+-> Step 3: Selected 1 predicates: ['t1.activity_year != $int']
+-> Step 3.5 [GATE]: PASS — A violation occurs when lien_status is not one of the allowed values 1, 2, 3, or 4. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 2 columns
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Application/Loan number must not = blank or all zeros....
+-> Step 3.5 [GATE]: PASS — The sentence asserts that activity_year must equal the processed year 2014, so a concrete violation is any record where activity_year != 2014. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.activity_year != 2014']
+   A violation occurs when the activity year is not 2014.
+
+-> Verification iteration 1/2
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.lien_status NOT IN (1,2,3,4)']
+   A violation occurs when a record has a lien_status value other than 1, 2, 3, or 4.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Century (CC) and Year (YY) of action taken date must = activity century/year (CC...
+-> Step 5: Found 0 violations
+-> Step 3: Selected 1 predicates: ['t1.loan_number = t2.loan_number']
+-> Step 3.5 [GATE]: PASS — The concrete violation scenario is two distinct records having the same loan_number. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 1 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "action_taken_date",
+    "activity_year"
+  ],
+  "implied_columns": [],
+  "reasoning": "The constraint compares the century and year portion of the action taken date with the activity year for the processed period. 'action taken date' maps directly to action_taken_date, which is stored as YYYYMMDD, so its century/year component can be derived from it. 'activity century/year (CCYY)' and 'period being processed' map to activity_year.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action_taken_date', 'activity_year']
+-> Step 3: Considering 90 predicate candidates
+-> Step 2 response: {
+  "direct_columns": [
+    "loan_number"
+  ],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [
+    "A separate application number column is not present; the constraint appears to be covered by loan_number as the loan/application identifier."
+  ],
+  "reason": null,
+  "reasoning": "The constraint refers to the Application/Loan number not being blank or all zeros. The available schema contains loan_number, a numeric loan identifier, which is the closest and only relevant match. No other columns are needed to scope or evaluate this constraint."
+}...
+-> Step 2: Identified columns ['loan_number']
+-> Step 3: Considering 14 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.loan_number IS NULL', 't1.loan_number = $int']
+-> Step 3.5 [GATE]: PASS — The sentence asserts that loan_number cannot be null or equal to zero, yielding a concrete violation scenario where loan_number IS NULL OR loan_number = 0. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 1 columns
+-> Step 4: Constructed required with 1 rule(s)
+   [{'OR': ['t1.loan_number IS NULL', 't1.loan_number = 0']}]
+   In plain language: a record violates the rule if its loan number is missing or equals zero.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+-> Step 2 response: {
+  "direct_columns": [
+    "agency"
+  ],
+  "implied_columns": [
+    "agency_abbr",
+    "agency_name"
+  ],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": null,
+  "reasoning": "The phrase 'Agency code' directly maps to the numeric agency column, which must be one of 1, 2, 3, 5, 7, 9. The statement that the agency submitting the data must match the reported agency code implies a consistency check with other agency-identifying fields in the schema, specifically agency_name and agency_abbr."
+}...
+-> Step 2: Identified columns ['agency', 'agency_abbr', 'agency_name']
+-> Step 3: Considering 36 predicate candidates
+-> Step 4: Constructed uniqueness with 1 rule(s)
+   ['t1.loan_number = t2.loan_number']
+   A violation occurs when two different records share the same application/loan number.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+-> Step 3: Selected 1 predicates: ['t1.activity_year != t1.action_taken_date / $number']
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': [{'OR': ['t1.agency IN (2,3,5,7,9)', {'AND': ['t1.agency = 1', 't1.action_taken_type NOT IN (3,7)']}]}, {'OR': [{'AND': ['t1.denial_reason_1 IS NOT NULL', 't1.denial_reason_1 NOT IN (1,2,3,4,5,6,7,8,9)']}, {'AND': ['t1.denial_reason_2 IS NOT NULL', 't1.denial_reason_2 NOT IN (1,2,3,4,5,6,7,8,9)']}, {'AND': ['t1.denial_reason_3 IS NOT NULL', 't1.denial_reason_3 NOT IN (1,2,3,4,5,6,7,8,9)']}]}]}]
+   A violation is a record covered by the agency/action condition that has a nonblank denial reason value other than 1, 2, 3, 4, 5, 6, 7, 8, or 9.
+
+-> Verification iteration 1/2
+   [G1] Dead predicate — none of (3,7) found in 'action_taken_type': t1.action_taken_type NOT IN (3,7)
+-> Step 3.5 [GATE]: PASS — The sentence asserts that the century/year portion of action_taken_date must equal activity_year, so a concrete violation is a row where activity_year differs from the year extracted from action_taken_date. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 2 columns
+   [G1] Dead predicate — none of (1,2,3,4,5,6,7,8,9) found in 'denial_reason_1': t1.denial_reason_1 NOT IN (1,2,3,4,5,6,7,8,9)
+   [G1] Dead predicate — none of (1,2,3,4,5,6,7,8,9) found in 'denial_reason_2': t1.denial_reason_2 NOT IN (1,2,3,4,5,6,7,8,9)
+   [G1] Dead predicate — none of (1,2,3,4,5,6,7,8,9) found in 'denial_reason_3': t1.denial_reason_3 NOT IN (1,2,3,4,5,6,7,8,9)
+-> Step 5 [G1]: Invented constants detected — dead predicates: ['t1.action_taken_type NOT IN (3,7)', 't1.denial_reason_1 NOT IN (1,2,3,4,5,6,7,8,9)', 't1.denial_reason_2 NOT IN (1,2,3,4,5,6,7,8,9)', 't1.denial_reason_3 NOT IN (1,2,3,4,5,6,7,8,9)']
+-> Discarding: invented constant, refinement skipped
+-> Step 4: Constructed conditional with 1 rule(s)
+   ['t1.activity_year != t1.action_taken_date / 10000']
+   A record is invalid if the century/year part of action_taken_date does not match activity_year.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1000000 violations
+-> Step 5 [G2]: Too many single-row violations (1000000) — constraint too loose or logically inverted
+-> Step 3: Selected 2 predicates: ['t1.agency NOT IN $values', 't1.agency != t2.agency']
+-> Step 3.5 [GATE]: PASS — A concrete violation exists when agency is not one of {1, 2, 3, 5, 7, 9}, or when the submitting agency and reported agency code are inconsistent. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 3 columns
+-> Step 4: Constructed other with 2 rule(s)
+   ['t1.agency NOT IN (1,2,3,5,7,9)', 't1.agency != t2.agency']
+   A violation occurs if an agency code is not one of the allowed values, or if the submitting agency and reported agency code do not match.
+
+-> Verification iteration 1/2
+-> Step 5: SQL execution failed - Result exceeds 20000000 rows; query aborted
+  Evaluating pairwise quality (92 GT sentences)...
+  Evaluating aggregate violation (GT sentences pooled)...
+  Saving outputs...
+  Saved detailed results: hmda_checks_Multi-Step_|_Qwen3.8-2.4T-A95B_detailed.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 2124.91s  (92 GT sentences)
+
+  ── AGGREGATE VIOLATION DISCOVERY (GT sentences pooled) ───────────────
+     Precision: 0.995
+     Recall:    0.085
+     F1:        0.156  [PRIMARY]
+     Gold violations:      986491
+     Predicted violations: 83853
+     Overlap violations:   83410
+
+  ── CONSTRAINT EXACT MATCH (GT sentences) ─────────────────────────────
+     Precision: 0.805
+     Recall:    0.589
+     F1:        0.680  [PRIMARY]
+     TP: 66  FP: 16  FN: 46
+     Predicted: 82, Gold: 112
+
+  ── PAIRWISE SYNTACTIC QUALITY (n=92) ──────────────────────────────
+     Exact Match:       0.717 (66/92)
+     Predicate Jaccard: 0.804 (±0.350)
+
+  ── PAIRWISE VIOLATION DISCOVERY ───────────────────────────────────────
+     Exact Match:       0.750 (18/24)
+     Precision:         0.751 (±0.431)
+     Recall:            0.792 (±0.406)
+     F1:                0.753 (±0.428)
+     Violation Jaccard: 0.751 (±0.431)
+
+  INSIGHT: Syntactic vs Violation Gap = 0.033
+     3.3% of constraints find correct violations despite syntactic differences
+  Variant completed
+
+==================================================================================================================================
+COMPARISON TABLE  —  GT sentences only, no classifier
+==================================================================================================================================
+  Variant                                       Impl       Model                  AggViol F1   ConstExact F1   SynExact   SynJacc    ViolF1     ViolJacc   Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Multi-Step | Qwen3.8-2.4T-A95B                multi_step_refinement qwen/qwen3.8-2.4t-a95b 0.156        0.680           0.717      0.804      0.753      0.751      2124.91   
+
+  Best Aggregate Violation F1:   Multi-Step | Qwen3.8-2.4T-A95B (0.156)
+  Best Constraint Exact F1:      Multi-Step | Qwen3.8-2.4T-A95B (0.680)
+  Best Syntactic Exact Match:    Multi-Step | Qwen3.8-2.4T-A95B (0.717)
+  Best Pairwise Violation F1:    Multi-Step | Qwen3.8-2.4T-A95B (0.753)
+  Fastest:                       Multi-Step | Qwen3.8-2.4T-A95B (2124.91s)
+==================================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3/e2_mapping/hmda_e2_hmda_checks_qwen38a95b_multistep_20261014_124444
