@@ -230,6 +230,21 @@ class SeedTests(unittest.TestCase):
         self.assertEqual(create.call_args.kwargs["messages"][0]["content"], "p")
 
 
+class PairSemanticsTests(unittest.TestCase):
+    def test_asymmetric_pair_dc_finds_witnesses_in_both_tid_orders(self):
+        from src.dbms.db_interface import DBExecutor
+        from src.dbms.sql_translator import SQLTranslator
+        # tid 1 earns more and pays less than tid 2: a violation only when
+        # t1 is bound to the higher tid.
+        df = pd.DataFrame({"state": ["CO", "CO"], "salary": [200, 100], "rate": [1.0, 5.0]})
+        db = DBExecutor(df=df)
+        rule = {"AND": ["t1.state = t2.state", "t1.salary < t2.salary", "t1.rate > t2.rate"]}
+        result = SQLTranslator(db).execute_violation(rule)
+        self.assertTrue(result["success"])
+        self.assertEqual({tid for row in result["rows"] for tid in row}, {1, 2})
+        db.close()
+
+
 if __name__ == "__main__":
     unittest.main()
 

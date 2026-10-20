@@ -36,8 +36,11 @@ class SQLTranslator:
         """
         Returns {"success": bool, "sql": str|None, "error"?: str, ...}
 
-        Multi-tuple rules add: t1.tid < t2.tid < t3.tid ... to avoid matching a row with itself
-        and to avoid symmetric duplicates.
+        Multi-tuple rules require pairwise distinct tuples (t1.tid <> t2.tid ...).
+        An order such as t1.tid < t2.tid would drop violations of asymmetric DCs
+        (e.g. t1.salary < t2.salary AND t1.rate > t2.rate) whose witnesses appear
+        in the opposite tid order; symmetric pairs are reported twice, which does
+        not change the set of violating tuples.
         """
         try:
             table = self._table()
@@ -71,13 +74,11 @@ class SQLTranslator:
             # Multi-tuple: FROM table t1, table t2, ...
             from_clause = ", ".join([f"{table} {a}" for a in tuple_ids])
 
-            # Distinctness/order to prevent self-match and duplicates:
-            # t1.tid < t2.tid AND t2.tid < t3.tid ...
+            # Pairwise distinct tuples (no self-match), in both orders.
             distinctness = " AND ".join(
-                [
-                    f"{tuple_ids[i]}.{tid} < {tuple_ids[i+1]}.{tid}"
-                    for i in range(len(tuple_ids) - 1)
-                ]
+                f"{a}.{tid} <> {b}.{tid}"
+                for i, a in enumerate(tuple_ids)
+                for b in tuple_ids[i + 1 :]
             )
 
             where_clause = f"{distinctness} AND {where_expression}"
