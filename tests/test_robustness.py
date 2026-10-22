@@ -245,6 +245,29 @@ class PairSemanticsTests(unittest.TestCase):
         db.close()
 
 
+class ViolationShareGateTests(unittest.TestCase):
+    def make(self, share):
+        from src.mappers.multi_step_refinement import MultiStepRefinementMapper
+        from src.dbms.db_interface import DBExecutor
+        from src.dbms.sql_translator import SQLTranslator
+        mapper = MultiStepRefinementMapper.__new__(MultiStepRefinementMapper)
+        mapper.df = pd.DataFrame({"x": list(range(10))})
+        mapper.db_executor = DBExecutor(df=mapper.df)
+        mapper.sql_translator = SQLTranslator(mapper.db_executor)
+        mapper.max_violation_share, mapper._n_tuples = share, None
+        mapper.predicate_space = {}
+        mapper._check_predicate_satisfiability = lambda constraint: []
+        return mapper
+
+    def test_relative_share_rejects_near_universal_violations_only(self):
+        mapper = self.make(0.9)
+        broad = mapper._step5_verify_constraint(["t1.x >= 0"], "s")      # 10/10 tuples
+        narrow = mapper._step5_verify_constraint(["t1.x >= 2"], "s")     # 8/10 tuples
+        self.assertFalse(broad["is_valid"])
+        self.assertTrue(narrow["is_valid"])
+        mapper.db_executor.close()
+
+
 if __name__ == "__main__":
     unittest.main()
 

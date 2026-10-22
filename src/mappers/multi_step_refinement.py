@@ -20,13 +20,13 @@ Gates implemented:
        is checked against the actual data using LIMIT 1 for speed. If no rows
        contain that value the predicate is "dead" (invented) and the constraint
        is discarded immediately without attempting refinement.
-  G2 — Violation plausibility (cross-row): if violations exceed
-       violation_ratio_threshold × total_pairs the constraint is too loose /
-       logically inverted and is sent for refinement.
-  G3 — Zero-violation detection with inversion probe: if a cross-row constraint
-       finds 0 violations, the operator signs are flipped and re-executed. When
-       the inverted version produces violations the original was likely inverted
-       by the LLM; the corrected version is returned immediately.
+  G2 — Violation share: if more than max_violation_share (default 0.9) of the
+       tuples take part in a violation, the constraint most likely encodes the
+       valid state (inverted logic) and is discarded. Relative to the relation
+       size and identical for single- and two-tuple constraints.
+  G3 — Zero-violation inversion probe (currently disabled): flip the operators
+       of a cross-row constraint without violations and keep the inverted form
+       if it has violations.
 
 Usage:
     from src.mappers.multi_step_refinement import MultiStepRefinementMapper
@@ -254,6 +254,7 @@ class MultiStepRefinementMapper(BaseMapper):
         csv_path: Optional[str] = None,
         max_refinement_iterations: int = 2,
         violation_ratio_threshold: float = 0.2,
+        max_violation_share: Optional[float] = 0.9,
         max_candidate_predicates: int = 1000,
         prompt_file: str = "multi_step_refinement_less_restrict",
         chunk_size: Optional[int] = None,
@@ -280,6 +281,8 @@ class MultiStepRefinementMapper(BaseMapper):
         self.df = df
         self.max_refinement_iterations = max_refinement_iterations
         self.violation_ratio_threshold = violation_ratio_threshold
+        self.max_violation_share = max_violation_share
+        self._n_tuples: Optional[int] = None
         self.max_candidate_predicates = max_candidate_predicates
         self.enforce_rule_gate = enforce_rule_gate
         self.include_column_descriptions = include_column_descriptions
@@ -910,6 +913,18 @@ class MultiStepRefinementMapper(BaseMapper):
     # Step 5 — Verification  (gates G1, G2, G3)
     # ========================================================================
 
+    def _relation_size(self) -> int:
+        """Number of tuples of the checked relation (cached)."""
+        if self._n_tuples is None:
+            if self.df is not None:
+                self._n_tuples = len(self.df)
+            else:
+                result = self.db_executor.execute_sql(
+                    f'SELECT COUNT(*) FROM "{self.db_executor.table_name}"'
+                )
+                self._n_tuples = int(result["rows"][0][0]) if result.get("success") else 0
+        return self._n_tuples
+
     def _step5_verify_constraint(
         self, constraint: Any, sentence: str
     ) -> Dict[str, Any]:
@@ -917,7 +932,7 @@ class MultiStepRefinementMapper(BaseMapper):
 
         Gates applied in order:
           G1 — Satisfiability check: dead literals → discard (no refinement)
-          G2 — Violation ratio: too many → refine
+          G2 — Violation share: more than max_violation_share of the tuples → discard
           G3 — Zero-violation inversion probe: swap operators → auto-correct
         """
         if not self.sql_translator:
@@ -972,57 +987,25 @@ class MultiStepRefinementMapper(BaseMapper):
             "t2." in predicate for predicate in _predicate_strings(constraint)
         )
 
-        # ── G2: Violation ratio  ──────────────────────────
-        # if not is_single_row and self.df is not None:
-        #     total_pairs = len(self.df) * (len(self.df) - 1) // 2
-        #     if total_pairs > 0 and violation_count > total_pairs * self.violation_ratio_threshold:
-        #         print(f"-> Step 5 [G2]: Too many violations ({violation_count}/{total_pairs} pairs) "
-        #               f"— constraint too loose or logically inverted")
-        #         return {
-        #             'is_valid': False,
-        #             'message': (
-        #                 f"Too many violations ({violation_count} of {total_pairs} pairs), "
-        #                 f"constraint may be too loose or logically inverted"
-        #             ),
-        #             'violation_count': violation_count,
-        #             'constraint': constraint,
-        #         }
-
-        # ── G2: Violation count thresholds ────────────────────────────────
-        # Single-row constraints: flag if > 1000 violations
-        # Cross-row (pair) constraints: flag if > 10000 violations
-        if is_single_row:
-            # if violation_count > 1000:
-            if violation_count > 55000:
+        # ── G2: Violation share ───────────────────────────────────────────
+        # A DC that flags (almost) every tuple most likely encodes the valid
+        # state instead of the violation (inverted logic). The gate is relative
+        # to the relation size and uses the share of tuples involved in at least
+        # one violation, for single- and two-tuple DCs alike.
+        if self.max_violation_share is not None:
+            violating = {tid for result in results for row in (result.get("rows") or []) for tid in row}
+            total = self._relation_size()
+            share = len(violating) / total if total else 0.0
+            if total and share > self.max_violation_share:
                 print(
-                    f"-> Step 5 [G2]: Too many single-row violations ({violation_count}) "
-                    f"— constraint too loose or logically inverted"
+                    f"-> Step 5 [G2]: {len(violating)}/{total} tuples violate ({share:.1%} > "
+                    f"{self.max_violation_share:.0%}) — constraint likely inverted"
                 )
                 return {
                     "is_valid": False,
                     "message": (
-                        f"Too many violations ({violation_count} single-row matches), "
-                        f"constraint may be too loose or logically inverted"
-                    ),
-                    "violation_count": violation_count,
-                    "constraint": constraint,
-                }
-        else:
-            if violation_count > 10000:
-                total_pairs = (
-                    len(self.df) * (len(self.df) - 1) // 2
-                    if self.df is not None
-                    else "?"
-                )
-                print(
-                    f"-> Step 5 [G2]: Too many pair violations ({violation_count}/{total_pairs}) "
-                    f"— constraint too loose or logically inverted"
-                )
-                return {
-                    "is_valid": False,
-                    "message": (
-                        f"Too many violations ({violation_count} of {total_pairs} pairs), "
-                        f"constraint may be too loose or logically inverted"
+                        f"{share:.1%} of the tuples violate the constraint "
+                        f"(> {self.max_violation_share:.0%}); its logic is likely inverted"
                     ),
                     "violation_count": violation_count,
                     "constraint": constraint,

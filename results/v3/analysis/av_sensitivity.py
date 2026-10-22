@@ -11,7 +11,7 @@ Usage: .venv/bin/python results/v3/analysis/av_sensitivity.py [dataset ...]
 Writes results/v3/analysis/av_sensitivity_<datasets>.csv; with no argument (all
 datasets) also av_sensitivity.md.
 """
-import ast, glob, json, sys
+import ast, glob, json, os, sys
 from collections import defaultdict
 
 import pandas as pd
@@ -28,8 +28,13 @@ GT = {"hmdaz": "hmdaz_text2rule_gt.json", "hmda_checks": "hmda_regc_checks-text2
 DATE_EDITS = ("Q022", "S270")
 SHARE = 0.75
 
+# Output globs (comma-separated); default: the stored round-v3 E2 outputs.
+# version_fix: SENS_GLOBS="results/v3/e2_mapping/*singleprompt*/outputs/*.json,results/v3_fix/e2_mapping/*multistep*/outputs/*.json"
+SENS_GLOBS = os.environ.get("SENS_GLOBS", "results/v3/e2_mapping/*/outputs/*.json").split(",")
+OUT = os.environ.get("SENS_OUT", OUT)
+os.makedirs(OUT, exist_ok=True)
 runs = defaultdict(list)
-for f in glob.glob("results/v3/e2_mapping/*/outputs/*.json"):
+for f in [x for g in SENS_GLOBS for x in glob.glob(g)]:
     o = json.load(open(f))
     runs[o["dataset"]].append((o["variant"], o["outputs"], f))
 

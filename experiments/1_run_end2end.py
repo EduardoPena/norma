@@ -702,6 +702,7 @@ class MapperEvalFullExperiment(BaseExperiment):
                 prompt_file=mapper_config.get("prompt_file", "multi_step_refinement"),
                 max_tokens=mapper_config.get("max_tokens"),
                 structured_output=mapper_config.get("structured_output", True),
+                max_violation_share=mapper_config.get("max_violation_share", 0.9),
             )
         elif implementation == "llm":
             mapper = LLMMapper(

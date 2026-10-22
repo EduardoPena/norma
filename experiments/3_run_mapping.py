@@ -458,6 +458,7 @@ class MapperGTOnlyExperiment(BaseExperiment):
                 prompt_file=mapper_config.get("prompt_file", "multi_step_refinement"),
                 max_tokens=mapper_config.get("max_tokens"),
                 structured_output=mapper_config.get("structured_output", True),
+                max_violation_share=mapper_config.get("max_violation_share", 0.9),
                 enforce_rule_gate=mapper_config.get("enforce_rule_gate", True),
                 include_column_descriptions=mapper_config.get(
                     "include_column_descriptions", False

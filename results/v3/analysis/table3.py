@@ -30,9 +30,16 @@ PAPER = {  # P R F1 for classification, extraction, violation (None = n/a)
 COLS = ["clf_precision", "clf_recall", "clf_f1", "constraint_exact_precision", "constraint_exact_recall",
         "constraint_exact_f1", "aggregate_violation_precision", "aggregate_violation_recall", "aggregate_violation_f1"]
 
-files = glob.glob(f"{RES}/e3_end2end/*/results_summary.csv")
+# E3_ROOTS: comma-separated result roots whose E3 runs are averaged (repetitions)
+ROOTS = [r for r in os.environ.get("E3_ROOTS", RES).split(",") if r]
+files = [f for r in ROOTS for f in glob.glob(f"{r}/e3_end2end/*/results_summary.csv")]
 e3 = pd.concat(pd.read_csv(f) for f in files)
 e3["method"] = e3.variant_name.str.split(" | ", n=1, regex=False).str[0]
+e3["runs"] = 1
+num = [c for c in e3.columns if pd.api.types.is_numeric_dtype(e3[c]) and c != "runs"]
+std = e3.groupby(["dataset", "method"])[num].std().add_suffix("_std").reset_index()
+e3 = e3.groupby(["dataset", "method"]).agg({**{c: "mean" for c in num}, "runs": "sum"}).reset_index()
+e3 = e3.merge(std, on=["dataset", "method"])
 e3.to_csv(f"{OUT}/e3_raw.csv", index=False)
 
 rows = []
@@ -55,7 +62,7 @@ def fmt(v, bold):
 
 
 lines = [r"\begin{tabular}{llccccccccc}", r"\toprule",
-         r"\textbf{Family} & \textbf{Method} & \multicolumn{3}{c}{Constr. Classification} & \multicolumn{3}{c}{Constr. Extraction} & \multicolumn{3}{c}{Viol. Discovery} \\",
+         r"\textbf{Family} & \textbf{Method} & \multicolumn{3}{c}{Constr. Classification} & \multicolumn{3}{c}{Constr. Extraction} & \multicolumn{3}{c}{Viol. Detection} \\",
          r"\cmidrule(lr){3-5}  \cmidrule(lr){6-8}  \cmidrule(lr){9-11}",
          r" &  & P & R & F$_1$ & P & R & F$_1$ & P & R & F$_1$ \\", r"\midrule"]
 for i, ds in enumerate(DS):

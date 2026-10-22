@@ -50,6 +50,9 @@ MULTI_STEP = {
     "provider": "openrouter",
     "max_refinement_iterations": 2,
     "prompt_file": "multi_step_refinement",
+    # G2: discard a DC when more than this share of the tuples violates it
+    # (likely inverted logic); relative to the relation size since 2026-10-20.
+    "max_violation_share": 0.9,
 }
 
 
