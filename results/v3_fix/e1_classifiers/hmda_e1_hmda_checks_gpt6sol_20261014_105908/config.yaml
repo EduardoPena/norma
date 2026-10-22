@@ -1,0 +1,43 @@
+dataset_options:
+  hmda_checks:
+    drop_multi_rule_sentences: false
+    gt_file: hmda_regc_checks-text2rule-gt.json
+    predicate_space: v2
+    sample_rows: 1000000
+    stream_csv: true
+datasets:
+- hmda_checks
+experiment_name: hmda_e1_hmda_checks_gpt6sol
+experiment_type: classifier
+results_dir: results/v3/e1_classifiers
+variants:
+- batch_size: 10
+  implementation: llm
+  model: openai/gpt-6-sol
+  name: GPT-6 Sol | No Context
+  prompt_key: zero_shot
+  provider: openrouter
+  use_context: false
+- batch_size: 10
+  implementation: llm
+  model: openai/gpt-6-sol
+  name: GPT-6 Sol | Table Context
+  num_rows_context: 3
+  prompt_key: zero_shot_with_table
+  provider: openrouter
+  use_context: true
+- batch_size: 10
+  implementation: llm
+  model: openai/gpt-6-sol
+  name: GPT-6 Sol | Examples
+  prompt_key: with_examples
+  provider: openrouter
+  use_context: false
+- batch_size: 10
+  implementation: llm
+  model: openai/gpt-6-sol
+  name: GPT-6 Sol | Examples + Table Context
+  num_rows_context: 3
+  prompt_key: with_examples_and_table
+  provider: openrouter
+  use_context: true

@@ -1,0 +1,290 @@
+Execution artifacts: results/v3_fix/telemetry/20261021_212614_456531
+
+================================================================================
+FULL MAPPER EVALUATION: hmda_e3_hmdaz_C_MS
+================================================================================
+
+Results directory: results/v3_fix/e3_end2end/hmda_e3_hmdaz_c_ms_20261021_213045
+Timestamp: 20261021_213045
+
+Evaluation scope:
+  SENTENCE_DIRECT / FILTERED:
+    Classification metrics     → ALL sentences
+    Aggregate violation        → ALL sentences (all predicted vs all GT)
+    Pairwise mapping metrics   → GT constraint sentences only
+  DOCUMENT:
+    Aggregate violation        → all predicted rules vs all GT constraints
+    All other metrics          → N/A
+================================================================================
+
+Config YAML saved to: results/v3_fix/e3_end2end/hmda_e3_hmdaz_c_ms_20261021_213045/config.yaml
+Execution config saved to: results/v3_fix/e3_end2end/hmda_e3_hmdaz_c_ms_20261021_213045/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: hmdaz
+--------------------------------------------------------------------------------
+Loading hmdaz...
+Total sentences:          17
+GT constraint sentences:  9
+Non-constraint sentences: 8
+
+
+[1/1] Variant: C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5
+  Mode:           SENTENCE_FILTERED
+  Implementation: multi_step_refinement
+  Processing all 17 sentences (mode=SENTENCE_FILTERED)...
+
+[SENTENCE_FILTERED] Processing 17 sentences
+  Phase 1: 14 rules
+
+============================================================
+Processing: (1) The requirements of this section apply to a high-cost mortgage, which is any...
+
+============================================================
+Processing: (1) The requirements of this section apply to a high-cost mortgage, which is any...
+
+============================================================
+Processing: (1) The requirements of this section apply to a high-cost mortgage, which is any...
+
+============================================================
+Processing: (1) The requirements of this section apply to a high-cost mortgage, which is any...
+
+============================================================
+Processing: (2) Exemptions. This section does not apply to the following: (i) A reverse mort...
+
+============================================================
+Processing: (1) “Higher-priced mortgage loan” means a closed-end consumer credit transaction...
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate_spread","lien_status","lien_status_name","loan_amount","conforming_loan_limit","occupancy_type","occupancy_type_name","open_end_line_of_credit","interest_rate"],"implied_columns":["loan_purpose","loan_purpose_name","purchaser_type","purchaser_type_name","date_application_received","reverse_mortgage","reverse_mortgage_name","hoepa_status","hoepa_status_name","derived_loan_product_type","derived_dwelling_category","property_type_name","business_or_commercial_purpose","action_taken","action_taken_name","loan_type","loan_type_name"],"reasoning":"The definition covers closed-end (open_end_line_of_credit) consumer credit transactions secured by a principal dwelling (occupancy_type, occupancy_type_name), with an APR exceeding the average prime offer rate by 1.5 or more percentage points (rate_spread, interest_rate). It applies to first-lien loans (lien_status, lien_status_name) whose principal obligation (loan_amount) does not exceed the Freddie Mac limit (conforming_loan_limit). The date the rate is set relates to date_application_received. Other columns, such as business or commercial purpose, loan purpose, dwelling category, and loan product type, are loosely implied for scoping.","missing_concepts":["average prime offer rate","annual percentage rate (APR)","date the interest rate is set"],"reason":null}...
+-> Step 2: Identified columns ['rate_spread', 'lien_status', 'lien_status_name', 'loan_amount', 'conforming_loan_limit', 'occupancy_type', 'occupancy_type_name', 'open_end_line_of_credit', 'interest_rate', 'loan_purpose', 'loan_purpose_name', 'purchaser_type', 'purchaser_type_name', 'date_application_received', 'reverse_mortgage', 'reverse_mortgage_name', 'hoepa_status', 'hoepa_status_name', 'derived_loan_product_type', 'derived_dwelling_category', 'property_type_name', 'business_or_commercial_purpose', 'action_taken', 'action_taken_name', 'loan_type', 'loan_type_name']
+-> Step 2 response: {"is_valid":true,"direct_columns":["reverse_mortgage","reverse_mortgage_name"],"implied_columns":["loan_purpose","loan_purpose_name","construction_method","derived_loan_product_type","loan_type","loan_type_name","lei","purchaser_type","purchaser_type_name","lien_status","open_end_line_of_credit","business_or_commercial_purpose","derived_dwelling_category","property_type_name","action_taken","action_taken_name"],"reasoning":"The exemptions list reverse mortgage transactions (reverse_mortgage and its label), initial construction loans (loan_purpose codes such as 4 and 5, plus construction-related columns), Housing Finance Agency originations (no direct column; lei identifies the lender), and USDA Rural Development Section 502 Direct Loan Program loans (loan_type FSA/RHS and derived_loan_product_type relate loosely). Open-end and business-purpose columns are included as related scope for the section's coverage. Because the instruction is to be inclusive, loosely related columns are listed as implied.","missing_concepts":["Housing Finance Agency creditor status","USDA Rural Development Section 502 Direct Loan Program identifier","initial construction financing flag (loan purpose labels are not fully provided)"],"reason":null}...
+-> Step 2: Identified columns ['reverse_mortgage', 'reverse_mortgage_name', 'loan_purpose', 'loan_purpose_name', 'construction_method', 'derived_loan_product_type', 'loan_type', 'loan_type_name', 'lei', 'purchaser_type', 'purchaser_type_name', 'lien_status', 'open_end_line_of_credit', 'business_or_commercial_purpose', 'derived_dwelling_category', 'property_type_name', 'action_taken', 'action_taken_name']
+-> Step 2 response: {"is_valid":true,"direct_columns":["prepayment_penalty_term","hoepa_status","hoepa_status_name","occupancy_type","occupancy_type_name"],"implied_columns":["open_end_line_of_credit","loan_amount","lien_status","loan_purpose","reverse_mortgage","business_or_commercial_purpose","construction_method","property_type_name","derived_dwelling_category","action_taken","loan_term","loan_type"],"reasoning":"The sentence defines a high-cost mortgage (HOEPA) via a prepayment penalty trigger: a penalty applicable more than 36 months after consummation (prepayment_penalty_term) or exceeding 2% of the amount prepaid. prepayment_penalty_term is the directly matching column, and hoepa_status/hoepa_status_name capture the high-cost mortgage designation. The 'principal dwelling' concept maps to occupancy_type (1=Principal residence) and its label. Open-end credit agreement maps to open_end_line_of_credit; consumer credit relates to business_or_commercial_purpose; the secured dwelling scope relates to lien_status, property type and dwelling category; the prepaid amount relates to loan_amount.","missing_concepts":["prepayment penalty percentage cap (2% of amount prepaid)","consummation/account opening date","prepayment penalty definition in paragraph (b)(6)"],"reason":null}...
+-> Step 2: Identified columns ['prepayment_penalty_term', 'hoepa_status', 'hoepa_status_name', 'occupancy_type', 'occupancy_type_name', 'open_end_line_of_credit', 'loan_amount', 'lien_status', 'loan_purpose', 'reverse_mortgage', 'business_or_commercial_purpose', 'construction_method', 'property_type_name', 'derived_dwelling_category', 'action_taken', 'loan_term', 'loan_type']
+-> Step 2 response: {"is_valid":true,"direct_columns":["total_points_and_fees","loan_amount","hoepa_status","hoepa_status_name"],"implied_columns":["occupancy_type","occupancy_type_name","lien_status","lien_status_name","reverse_mortgage","reverse_mortgage_name","open_end_line_of_credit","business_or_commercial_purpose","total_loan_costs","origination_charges","discount_points","lender_credits","loan_purpose","loan_purpose_name","derived_loan_product_type","date_application_received","activity_year"],"reasoning":"The sentence defines a high-cost mortgage as a consumer credit transaction secured by the principal dwelling where total points and fees exceed the lesser of 8 percent of the total loan amount or $1,000 for loans under $20,000. Direct columns are total_points_and_fees and loan_amount, plus the hoepa_status fields, which flag high-cost mortgage status. Implied columns scope the constraint: occupancy_type (principal dwelling), business_or_commercial_purpose (consumer credit), reverse_mortgage and open_end_line_of_credit (transaction type and exclusions), and lien_status. The components of points and fees (origination_charges, discount_points, lender_credits, total_loan_costs) are also included. The date and year columns are included for the annual CPI adjustment of the thresholds.","missing_concepts":["Consumer Price Index annual adjustment values","paragraph (a)(2) exclusions","detailed definition of points and fees components"],"reason":null}...
+-> Step 2: Identified columns ['total_points_and_fees', 'loan_amount', 'hoepa_status', 'hoepa_status_name', 'occupancy_type', 'occupancy_type_name', 'lien_status', 'lien_status_name', 'reverse_mortgage', 'reverse_mortgage_name', 'open_end_line_of_credit', 'business_or_commercial_purpose', 'total_loan_costs', 'origination_charges', 'discount_points', 'lender_credits', 'loan_purpose', 'loan_purpose_name', 'derived_loan_product_type', 'date_application_received', 'activity_year']
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate_spread","lien_status","lien_status_name","loan_amount","hoepa_status","hoepa_status_name","derived_dwelling_category","construction_method","occupancy_type","occupancy_type_name"],"implied_columns":["derived_loan_product_type","loan_type","loan_type_name","manufactured_home_secured_property_type","manufactured_home_land_property_interest","property_type_name","reverse_mortgage","reverse_mortgage_name","open_end_line_of_credit","business_or_commercial_purpose","interest_rate","action_taken","action_taken_name","loan_purpose","loan_purpose_name","date_application_received","activity_year"],"reasoning":"The sentence defines a high-cost mortgage: a consumer credit transaction secured by the principal dwelling where APR exceeds APOR by more than 6.5 points (first lien), 8.5 points (first lien, personal-property dwelling and loan under $50,000), or 8.5 points (subordinate lien). rate_spread is the APR-minus-APOR spread. lien_status and lien_status_name distinguish first from subordinate lien. loan_amount covers the $50,000 threshold. Personal-property dwelling maps to construction_method, derived_dwelling_category and manufactured home fields. Principal dwelling maps to occupancy_type. hoepa_status flags high-cost status. Consumer credit and exclusions in paragraph (a)(2), such as reverse mortgages and open-end credit, map to business_or_commercial_purpose, reverse_mortgage and open_end_line_of_credit. The rate-spread tables also depend on loan type, interest rate and the dates.","missing_concepts":["average prime offer rate (APOR) for a comparable transaction","annual percentage rate (APR) as a distinct column"],"reason":null}...
+-> Step 2: Identified columns ['rate_spread', 'lien_status', 'lien_status_name', 'loan_amount', 'hoepa_status', 'hoepa_status_name', 'derived_dwelling_category', 'construction_method', 'occupancy_type', 'occupancy_type_name', 'derived_loan_product_type', 'loan_type', 'loan_type_name', 'manufactured_home_secured_property_type', 'manufactured_home_land_property_interest', 'property_type_name', 'reverse_mortgage', 'reverse_mortgage_name', 'open_end_line_of_credit', 'business_or_commercial_purpose', 'interest_rate', 'action_taken', 'action_taken_name', 'loan_purpose', 'loan_purpose_name', 'date_application_received', 'activity_year']
+-> Step 2 response: {"is_valid":true,"direct_columns":["total_points_and_fees","loan_amount","hoepa_status","hoepa_status_name"],"implied_columns":["occupancy_type","occupancy_type_name","lien_status","lien_status_name","reverse_mortgage","reverse_mortgage_name","open_end_line_of_credit","business_or_commercial_purpose","loan_purpose","loan_purpose_name","construction_method","derived_dwelling_category","property_type_name","manufactured_home_secured_property_type","action_taken","action_taken_name","activity_year","date_application_received","total_loan_costs","origination_charges","discount_points","total_units"],"reasoning":"The sentence defines a high-cost mortgage (HOEPA) as a consumer credit transaction secured by the principal dwelling where total points and fees exceed 5 percent of the total loan amount for loans of $20,000 or more. Direct columns are total_points_and_fees and loan_amount, along with hoepa_status/hoepa_status_name, which flag high-cost loans. The principal dwelling requirement maps to occupancy_type and its label, and the consumer credit scope (excluding business purpose, reverse mortgages, open-end lines) maps to related columns. The CPI-adjusted $20,000 threshold relates to the time of the transaction (activity_year, date_application_received). Components of points and fees (total_loan_costs, origination_charges, discount_points) are related. Dwelling type and lien status columns help scope the transaction.","missing_concepts":["Consumer Price Index annual adjustment","Paragraph (a)(2) exclusions","Detailed definition of points and fees under paragraphs (b)(1) and (2)"],"reason":null}...
+-> Step 2: Identified columns ['total_points_and_fees', 'loan_amount', 'hoepa_status', 'hoepa_status_name', 'occupancy_type', 'occupancy_type_name', 'lien_status', 'lien_status_name', 'reverse_mortgage', 'reverse_mortgage_name', 'open_end_line_of_credit', 'business_or_commercial_purpose', 'loan_purpose', 'loan_purpose_name', 'construction_method', 'derived_dwelling_category', 'property_type_name', 'manufactured_home_secured_property_type', 'action_taken', 'action_taken_name', 'activity_year', 'date_application_received', 'total_loan_costs', 'origination_charges', 'discount_points', 'total_units']
+-> Step 3: Considering 1000 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.prepayment_penalty_term > $float', 't1.hoepa_status != $int']
+-> Step 3.5 [GATE]: PASS — Regulatory rule: a loan with a prepayment penalty term over 36 months must be flagged as a HOEPA (high-cost mortgage) loan, so a violation is a row with prepayment_penalty_term > 36 and hoepa_status indicating not a HOEPA loan (hoepa_status != 1). (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 17 columns
+-> Step 3: Considering 1000 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.prepayment_penalty_term > 36', 't1.hoepa_status != 1']}]
+   A violation is a loan with a prepayment penalty term longer than 36 months that is not classified as a HOEPA (high-cost mortgage) loan.
+
+-> Verification iteration 1/2
+-> Step 5: Found 136 violations
+
+============================================================
+Processing: (1) “Higher-priced mortgage loan” means a closed-end consumer credit transaction...
+-> Step 3: Selected 5 predicates: ['t1.reverse_mortgage = $int', 't1.construction_method = $int', 't1.loan_purpose = $int', 't1.loan_type = $int', 't1.lei = $string']
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate_spread","lien_status","occupancy_type","loan_amount","conforming_loan_limit","interest_rate","open_end_line_of_credit"],"implied_columns":["lien_status_name","occupancy_type_name","purchaser_type","purchaser_type_name","loan_type","hoepa_status","reverse_mortgage","date_application_received","derived_loan_product_type","action_taken","business_or_commercial_purpose","county_code","state_code","derived_msa_md","construction_method","derived_dwelling_category","loan_purpose"],"reasoning":"The sentence defines a higher-priced mortgage loan (HPML): closed-end (open_end_line_of_credit), secured by principal dwelling (occupancy_type / occupancy_type_name), with APR exceeding APOR (rate_spread, interest_rate) by 2.5+ points for first-lien (lien_status, lien_status_name, derived_loan_product_type) loans whose principal obligation (loan_amount) exceeds the Freddie Mac conforming limit (conforming_loan_limit; purchaser_type for Freddie Mac context). The date the rate is set relates to date_application_received. Consumer-purpose context may use business_or_commercial_purpose and reverse_mortgage. County/state/MSA determine the limit.","missing_concepts":["annual percentage rate (APR) itself","average prime offer rate (APOR)","date the interest rate is set"],"reason":null}...
+-> Step 2: Identified columns ['rate_spread', 'lien_status', 'occupancy_type', 'loan_amount', 'conforming_loan_limit', 'interest_rate', 'open_end_line_of_credit', 'lien_status_name', 'occupancy_type_name', 'purchaser_type', 'purchaser_type_name', 'loan_type', 'hoepa_status', 'reverse_mortgage', 'date_application_received', 'derived_loan_product_type', 'action_taken', 'business_or_commercial_purpose', 'county_code', 'state_code', 'derived_msa_md', 'construction_method', 'derived_dwelling_category', 'loan_purpose']
+-> Step 3.5 [GATE]: REJECT — The sentence is a regulatory exemption clause stating when a section does not apply; it asserts no required value or forbidden combination in the data. The conditions (Housing Finance Agency as creditor, USDA Section 502 program, initial construction) cannot be checked from the columns, and the matched columns carry no concrete violation scenario. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: (1) “Higher-priced mortgage loan” means a closed-end consumer credit transaction...
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate_spread","lien_status","lien_status_name","occupancy_type","occupancy_type_name"],"implied_columns":["derived_loan_product_type","action_taken","action_taken_name","open_end_line_of_credit","reverse_mortgage","reverse_mortgage_name","business_or_commercial_purpose","interest_rate","date_application_received","hoepa_status","hoepa_status_name","loan_purpose","loan_purpose_name","loan_type","loan_type_name","derived_dwelling_category","property_type_name","construction_method"],"reasoning":"The sentence defines a higher-priced mortgage loan with a subordinate lien as an APR exceeding the average prime offer rate (APOR) by 3.5 or more percentage points. The rate_spread column is the APR-minus-APOR spread, so it is the direct match. lien_status and lien_status_name identify subordinate liens, and derived_loan_product_type also encodes lien position. The definition applies to closed-end consumer credit secured by the principal dwelling, which maps to occupancy_type (principal residence), open_end_line_of_credit (closed-end), business_or_commercial_purpose (consumer vs. business), and reverse_mortgage. interest_rate relates to the rate being set, and date_application_received is a loose proxy for the date the rate is set. Other columns are included inclusively as scope context.","missing_concepts":["average prime offer rate (APOR)","annual percentage rate (APR)"],"reason":null}...
+-> Step 2: Identified columns ['rate_spread', 'lien_status', 'lien_status_name', 'occupancy_type', 'occupancy_type_name', 'derived_loan_product_type', 'action_taken', 'action_taken_name', 'open_end_line_of_credit', 'reverse_mortgage', 'reverse_mortgage_name', 'business_or_commercial_purpose', 'interest_rate', 'date_application_received', 'hoepa_status', 'hoepa_status_name', 'loan_purpose', 'loan_purpose_name', 'loan_type', 'loan_type_name', 'derived_dwelling_category', 'property_type_name', 'construction_method']
+-> Step 3: Considering 1000 predicate candidates
+-> Step 3: Selected 4 predicates: ['t1.loan_amount < $int', 't1.total_points_and_fees > $float', 't1.total_points_and_fees > t1.loan_amount * $number', 't1.hoepa_status != $int']
+-> Step 3.5 [GATE]: PASS — A loan with loan_amount < 20000 whose total_points_and_fees exceeds the lesser of 8% of the loan amount or $1,000 is a high-cost mortgage, so a record with those values and hoepa_status indicating 'Not a HOEPA loan' violates the rule. (confidence=medium)
+-> Step 4: Constructing constraint with 4 predicates and 21 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.loan_amount < 20000', 't1.hoepa_status != 1', {'OR': ['t1.total_points_and_fees > 1000', 't1.total_points_and_fees > t1.loan_amount * 0.08']}]}]
+   A loan with amount under 20,000 whose total points and fees exceed 1,000 or 8% of the loan amount must be classified as a HOEPA loan (hoepa_status = 1); any such loan with another status is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: Except as provided in paragraph (b)(2) of this section, a creditor may not exten...
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate_spread","lien_status","lien_status_name","occupancy_type","occupancy_type_name"],"implied_columns":["loan_type","loan_type_name","derived_loan_product_type","action_taken","action_taken_name","hoepa_status","hoepa_status_name","reverse_mortgage","reverse_mortgage_name","open_end_line_of_credit","derived_dwelling_category","property_type_name","construction_method","manufactured_home_secured_property_type","manufactured_home_land_property_interest","loan_purpose","loan_purpose_name","business_or_commercial_purpose","interest_rate","loan_amount","date_application_received","activity_year"],"reasoning":"The sentence concerns higher-priced mortgage loans (HPML), identified in HMDA via rate_spread, secured by a first lien (lien_status/lien_status_name) on a consumer's principal dwelling (occupancy_type/occupancy_type_name). The scope is loans extended (action_taken, e.g. originated). Related scoping columns include loan type, dwelling/property type, reverse mortgage and open-end status, and the loan purpose and business purpose flags, since exemptions apply to some loan types. The escrow account requirement has no corresponding column in the table.","missing_concepts":["escrow account established before consummation","property taxes and mortgage-related insurance escrow","consummation date","higher-priced mortgage loan flag (only derivable from rate_spread)"],"reason":null}...
+-> Step 2: Identified columns ['rate_spread', 'lien_status', 'lien_status_name', 'occupancy_type', 'occupancy_type_name', 'loan_type', 'loan_type_name', 'derived_loan_product_type', 'action_taken', 'action_taken_name', 'hoepa_status', 'hoepa_status_name', 'reverse_mortgage', 'reverse_mortgage_name', 'open_end_line_of_credit', 'derived_dwelling_category', 'property_type_name', 'construction_method', 'manufactured_home_secured_property_type', 'manufactured_home_land_property_interest', 'loan_purpose', 'loan_purpose_name', 'business_or_commercial_purpose', 'interest_rate', 'loan_amount', 'date_application_received', 'activity_year']
+-> Step 3: Considering 1000 predicate candidates
+-> Step 3: Selected 5 predicates: ['t1.rate_spread > $float', 't1.lien_status = $int', 't1.construction_method = $int', 't1.loan_amount < $int', 't1.hoepa_status != $int']
+-> Step 3.5 [GATE]: PASS — This is a value-mapping rule: when rate_spread exceeds 6.5 for a first-lien loan (or 8.5 for a first-lien manufactured home with loan_amount < 50000, or 8.5 for a subordinate lien), the loan is a high-cost mortgage, so hoepa_status must indicate a HOEPA loan. A violation is a record with those rate_spread, lien_status, construction_method and loan_amount values and hoepa_status != 1. (confidence=medium)
+-> Step 4: Constructing constraint with 5 predicates and 27 columns
+-> Step 4: Constructed conditional with 4 rule(s)
+   [{'AND': ['t1.rate_spread > 6.5', 't1.lien_status = 1', 't1.construction_method = 1', 't1.hoepa_status != 1']}, {'AND': ['t1.rate_spread > 8.5', 't1.lien_status = 1', 't1.construction_method = 2', 't1.loan_amount < 50000', 't1.hoepa_status != 1']}, {'AND': ['t1.rate_spread > 6.5', 't1.lien_status = 1', 't1.construction_method = 2', 't1.loan_amount >= 50000', 't1.hoepa_status != 1']}, {'AND': ['t1.rate_spread > 8.5', 't1.lien_status = 2', 't1.hoepa_status != 1']}]
+   A loan whose rate spread exceeds the applicable threshold (6.5 for first-lien, 8.5 for first-lien manufactured under $50,000, 8.5 for subordinate-lien) but whose hoepa_status is not 'HOEPA loan' (1) is a violation.
+
+-> Verification iteration 1/2
+-> Step 3: Considering 1000 predicate candidates
+-> Step 5: Found 51 violations
+
+============================================================
+Processing: (4) Higher-priced covered transaction means a covered transaction with an annual...
+-> Step 3: Selected 6 predicates: ['t1.open_end_line_of_credit = $int', 't1.occupancy_type = $int', 't1.lien_status = $int', 't1.conforming_loan_limit = $string', 't1.rate_spread >= $float', 't1.hoepa_status != $int']
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate_spread","lien_status","lien_status_name"],"implied_columns":["interest_rate","derived_loan_product_type","loan_type","loan_type_name","date_application_received","hoepa_status","hoepa_status_name","open_end_line_of_credit","reverse_mortgage","loan_term","balloon_payment","interest_only_payment","negative_amortization","total_points_and_fees","total_loan_costs","loan_amount","action_taken","action_taken_name"],"reasoning":"The definition of a higher-priced covered transaction is based on the spread between the APR and the average prime offer rate (APOR), which maps to rate_spread (HMDA's rate spread is APR minus APOR). The lien position distinction (first-lien vs. subordinate-lien) maps to lien_status and lien_status_name; derived_loan_product_type also encodes lien position. interest_rate is related to the APR. The date the interest rate is set relates to date_application_received. The qualified mortgage distinction relates to loan features (balloon, interest-only, negative amortization, points and fees, loan term) and could not be captured directly. The 'covered transaction' scope may relate to action_taken, open_end_line_of_credit, and reverse_mortgage.","missing_concepts":["annual percentage rate (APR)","average prime offer rate (APOR)","qualified mortgage status","date interest rate is set"],"reason":null}...
+-> Step 2: Identified columns ['rate_spread', 'lien_status', 'lien_status_name', 'interest_rate', 'derived_loan_product_type', 'loan_type', 'loan_type_name', 'date_application_received', 'hoepa_status', 'hoepa_status_name', 'open_end_line_of_credit', 'reverse_mortgage', 'loan_term', 'balloon_payment', 'interest_only_payment', 'negative_amortization', 'total_points_and_fees', 'total_loan_costs', 'loan_amount', 'action_taken', 'action_taken_name']
+-> Step 3.5 [GATE]: REJECT — The sentence defines 'higher-priced mortgage loan' (a regulatory definition) rather than asserting a required outcome; the data has no 'higher-priced' flag column, and the average prime offer rate and Freddie Mac limit are not in the schema, so no concrete violation scenario is expressible from the matched columns. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: (d) Limitations. A high-cost mortgage shall not include the following terms: (1)...
+-> Step 3: Considering 1000 predicate candidates
+-> Step 3: Selected 3 predicates: ['t1.loan_amount >= $int', 't1.total_points_and_fees > t1.loan_amount * $number', 't1.hoepa_status != $int']
+-> Step 2 response: {"is_valid":true,"direct_columns":["balloon_payment","hoepa_status","hoepa_status_name"],"implied_columns":["loan_term","other_nonamortizing_features","interest_only_payment","negative_amortization","loan_amount","loan_purpose","loan_purpose_name","open_end_line_of_credit","reverse_mortgage","interest_rate","intro_rate_period","loan_type","loan_type_name","lien_status","lien_status_name","action_taken"],"reasoning":"The sentence limits high-cost mortgages (HOEPA loans) from having balloon payments, i.e. a payment more than twice a regular periodic payment. hoepa_status and hoepa_status_name identify high-cost mortgages, and balloon_payment is the balloon feature indicator. Loan term matters for the exceptions in (d)(1)(ii)-(iii), such as the 5-year term and bridge loan exceptions. Related payment-structure and loan-purpose fields (other_nonamortizing_features, interest_only_payment, negative_amortization, loan_purpose, open_end_line_of_credit, reverse_mortgage, interest_rate, intro_rate_period) are included as possibly relevant. Loan type, lien status and action_taken help scope the loans covered.","missing_concepts":["regular periodic payment amount","payment schedule","exceptions in paragraphs (d)(1)(ii) and (iii)"],"reason":null}...
+-> Step 2: Identified columns ['balloon_payment', 'hoepa_status', 'hoepa_status_name', 'loan_term', 'other_nonamortizing_features', 'interest_only_payment', 'negative_amortization', 'loan_amount', 'loan_purpose', 'loan_purpose_name', 'open_end_line_of_credit', 'reverse_mortgage', 'interest_rate', 'intro_rate_period', 'loan_type', 'loan_type_name', 'lien_status', 'lien_status_name', 'action_taken']
+-> Step 3.5 [GATE]: PASS — Value mapping: if loan_amount >= 20000 and total_points_and_fees exceeds 5% of loan_amount, the loan must be flagged as a HOEPA (high-cost) loan, so a violation is loan_amount >= 20000 AND total_points_and_fees > loan_amount*0.05 AND hoepa_status != 1. (confidence=medium)
+-> Step 4: Constructing constraint with 3 predicates and 26 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.loan_amount >= 20000', 't1.total_points_and_fees > t1.loan_amount * 0.05', 't1.hoepa_status != 1']}]
+   A loan of $20,000 or more with total points and fees above 5% of the loan amount is not flagged as a HOEPA (high-cost) loan.
+
+-> Verification iteration 1/2
+-> Step 5: Found 14 violations
+
+============================================================
+Processing: (d) Limitations. A high-cost mortgage shall not include the following terms: (2)...
+-> Step 2 response: {"is_valid":true,"direct_columns":["negative_amortization","hoepa_status"],"implied_columns":["hoepa_status_name","interest_only_payment","other_nonamortizing_features","balloon_payment","loan_term"],"reasoning":"The sentence prohibits negative amortization in a high-cost mortgage. 'High-cost mortgage' maps to the HOEPA status (hoepa_status, hoepa_status_name), and 'negative amortization' maps directly to negative_amortization. Related payment-structure features (interest_only_payment, other_nonamortizing_features, balloon_payment) and loan_term are implied as contextual or related to the payment schedule, so they are included on the basis of being inclusive.","missing_concepts":["payment schedule with regular periodic payments","principal balance increase"],"reason":null}...
+-> Step 2: Identified columns ['negative_amortization', 'hoepa_status', 'hoepa_status_name', 'interest_only_payment', 'other_nonamortizing_features', 'balloon_payment', 'loan_term']
+-> Step 3: Considering 1000 predicate candidates
+-> Step 3: Considering 1000 predicate candidates
+-> Step 3: Considering 1000 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.hoepa_status = $int', 't1.negative_amortization = $int']
+-> Step 3: Selected 4 predicates: ['t1.lien_status = $int', 't1.loan_amount > $int', 't1.rate_spread >= $float', 't1.hoepa_status != $int']
+-> Step 3.5 [GATE]: PASS — Conditional rule: a loan with hoepa_status indicating a high-cost (HOEPA) mortgage must not have negative_amortization = 1 (negative amortization present); violation is hoepa_status = 1 AND negative_amortization = 1. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 7 columns
+-> Step 3: Selected 2 predicates: ['t1.lien_status = $int', 't1.rate_spread >= $float']
+-> Step 3.5 [GATE]: PASS — Conditional rule: a first-lien loan (lien_status=1) whose loan_amount exceeds the conforming limit and whose rate_spread is >= 2.5 must be flagged as a higher-priced mortgage (hoepa_status = 2), so a violation is lien_status=1 AND loan_amount > limit AND rate_spread >= 2.5 AND hoepa_status != 2. (confidence=medium)
+-> Step 4: Constructing constraint with 4 predicates and 24 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.hoepa_status = 1', 't1.negative_amortization = 1']}]
+   A loan flagged as a HOEPA high-cost mortgage that also has negative amortization terms is a violation.
+
+-> Verification iteration 1/2
+-> Step 3.5 [GATE]: REJECT — The sentence is a regulatory definition of 'higher-priced mortgage loan' whose threshold is relative to the average prime offer rate, which is external to the schema. It does not assert a constraint on column values. The rate_spread column may encode the spread, but nothing in the sentence says a loan with lien_status=2 and rate_spread >= 3.5 must be flagged or labeled in any specific column, so no violation scenario can be formed from the data alone. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+-> Step 5: Found 27 violations
+
+============================================================
+
+============================================================
+Processing: (2) Limits on prepayment penalties. A prepayment penalty: (i) Must not apply aft...
+Processing: (d) Limitations. A high-cost mortgage shall not include the following terms: (6)...
+-> Step 3: Considering 1000 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.lien_status = 1', 't1.loan_amount > 766550', 't1.rate_spread >= 2.5', 't1.hoepa_status != 2']}]
+   A first-lien loan above the conforming loan limit with a rate spread of 2.5 or more percentage points is a violation if its hoepa_status is not the expected value.
+
+-> Verification iteration 1/2
+-> Step 5: Found 53 violations
+-> Step 2 response: {"is_valid":true,"direct_columns":["prepayment_penalty_term","hoepa_status"],"implied_columns":["hoepa_status_name","loan_term","action_taken","open_end_line_of_credit","reverse_mortgage","lien_status"],"reasoning":"The sentence prohibits prepayment penalties in a high-cost mortgage. The prepayment penalty concept maps to prepayment_penalty_term. The high-cost mortgage status maps to hoepa_status (HOEPA loan) and its label hoepa_status_name. Related columns that help scope the constraint are loan_term (penalty term relative to the loan), action_taken (originated loans), open_end_line_of_credit and reverse_mortgage (the HOEPA high-cost definitions vary with these), and lien_status.","missing_concepts":["definition of prepayment penalty per paragraph (b)(6)"],"reason":null}...-> Step 3: Considering 1000 predicate candidates
+
+-> Step 2: Identified columns ['prepayment_penalty_term', 'hoepa_status', 'hoepa_status_name', 'loan_term', 'action_taken', 'open_end_line_of_credit', 'reverse_mortgage', 'lien_status']
+-> Step 2 response: {"is_valid":true,"direct_columns":["prepayment_penalty_term"],"implied_columns":["loan_term","date_application_received","loan_type","lien_status","open_end_line_of_credit","reverse_mortgage","action_taken"],"reasoning":"The sentence limits the prepayment penalty period to no more than three years (36 months) after consummation. prepayment_penalty_term is the direct column holding the penalty term in months. loan_term is relevant because the penalty period may be compared with the loan term. date_application_received is the closest available date field, a weak proxy for the consummation start date. loan_type, lien_status, open_end_line_of_credit and reverse_mortgage help scope the loan category the rule applies to. action_taken is relevant because only originated loans are consummated.","missing_concepts":["consummation date","date the prepayment penalty period ends"],"reason":null}...
+-> Step 2: Identified columns ['prepayment_penalty_term', 'loan_term', 'date_application_received', 'loan_type', 'lien_status', 'open_end_line_of_credit', 'reverse_mortgage', 'action_taken']
+-> Step 3: Selected 2 predicates: ['t1.hoepa_status = $int', 't1.balloon_payment = $int']
+-> Step 3: Considering 1000 predicate candidates
+-> Step 3: Considering 1000 predicate candidates
+-> Step 3: Selected 4 predicates: ['t1.lien_status = $int', 't1.rate_spread >= $float', 't1.rate_spread >= $float', 't1.hoepa_status_name != $string']
+-> Step 3.5 [GATE]: PASS — Conditional rule: a HOEPA (high-cost mortgage) loan (hoepa_status=1) must not have a balloon payment (balloon_payment=1), so the violation is hoepa_status=1 AND balloon_payment=1, even though the stated exceptions in (d)(1)(ii)-(iii) cannot be checked from the schema. (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 19 columns
+-> Step 3: Considering 1000 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.hoepa_status = $int', 't1.prepayment_penalty_term > $float']
+-> Step 3: Selected 1 predicates: ['t1.prepayment_penalty_term > $float']
+-> Step 3.5 [GATE]: REJECT — The sentence defines 'higher-priced covered transaction' (a Regulation Z definition) but does not assert what a record's flag or field must be; no column in the schema holds a higher-priced indicator, and the thresholds are relative to the APOR, which is absent. The matched predicates (rate_spread >= threshold with lien_status) lack a required outcome column, so no concrete violation scenario can be formed. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.hoepa_status = 1', 't1.balloon_payment = 1']}]
+   A loan flagged as a HOEPA high-cost mortgage that also has a balloon payment is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 74 violations
+-> Step 3 failed: The core requirement (an escrow account established before consummation) has no corresponding column in the dataset, so a violation cannot be detected.
+-> Predicate selection failed: The core requirement (an escrow account established before consummation) has no corresponding column in the dataset, so a violation cannot be detected.
+-> Step 3.5 [GATE]: PASS — A high-cost (HOEPA) loan must not carry a prepayment penalty, so a violation is a record with hoepa_status indicating a HOEPA loan (e.g., 1) and prepayment_penalty_term greater than 0. (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 8 columns
+-> Step 3.5 [GATE]: PASS — The rule sets a concrete bound: a prepayment penalty must not apply after 36 months, so a violation is any record where prepayment_penalty_term > 36 (the term is stored as a string and would be cast to a number). (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 8 columns
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.prepayment_penalty_term > 36']
+   A record whose prepayment penalty term is longer than 36 months (three years) is a violation.
+
+-> Verification iteration 1/2
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.hoepa_status = 1', 't1.prepayment_penalty_term > 0']}]
+   A loan flagged as a high-cost mortgage (HOEPA) that has a prepayment penalty term greater than zero is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 136 violations
+-> Step 5: Found 112 violations
+  Phase 2: Mapped 14 rules
+  Evaluating classification (all 17 sentences)...
+  Evaluating pairwise mapping quality (GT sentences only)...
+  Evaluating aggregate violation (all 17 sentences)...
+  Saving outputs...
+  Saved detailed results to: results/v3_fix/e3_end2end/hmda_e3_hmdaz_c_ms_20261021_213045/metrics/hmdaz_C+MS_|_Qwen3.8-2.4T-A95B_+_Claude_Sonnet_5.5_detailed_results.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 169.32s
+
+  ── CLASSIFICATION (all 17 sentences) ──────────────────────────────
+     Accuracy:  0.882
+     Precision: 0.889
+     Recall:    0.889
+     F1:        0.889  [PRIMARY]
+     TP:   8  FP:   1
+     FN:   1  TN:   7
+
+  ── AGGREGATE VIOLATION DISCOVERY (all 17 sentences) ─────────────
+     Precision: 0.482
+     Recall:    1.000
+     F1:        0.650  [PRIMARY]
+     Gold violations:      209
+     Predicted violations: 434
+     Overlap violations:   209
+
+  ── CONSTRAINT EXACT MATCH (GT sentences only) ─────────────────────────
+     Precision: 0.000
+     Recall:    0.000
+     F1:        0.000  [PRIMARY]
+     TP: 0  FP: 11  FN: 9
+     Predicted: 11, Gold: 9
+
+  ── PAIRWISE SYNTACTIC QUALITY (GT sentences only, n=9) ──────────
+     Exact Match:       0.000 (0/9)
+     Predicate Jaccard: 0.231 (±0.111)
+
+  ── PAIRWISE VIOLATION DISCOVERY (GT sentences only) ────────────────────
+     Exact Match:       0.500 (4/8)
+     Precision:         0.621 (±0.455)
+     Recall:            0.969 (±0.083)
+     F1:                0.641 (±0.444)
+     Violation Jaccard: 0.621 (±0.455)
+
+  INSIGHT: Syntactic vs Violation Gap (pairwise) = 0.500
+     50.0% of constraints find correct violations despite syntactic differences
+  Variant completed
+
+========================================================================================================================
+COMPARISON TABLE
+========================================================================================================================
+
+Sentence Modes (DIRECT / FILTERED):
+  Left  (all sentences):      Clf F1 | Agg Viol F1
+  Right (GT sentences only):  Const F1 | Syn Exact | Viol F1
+  Variant                                Mode         Impl       [ALL] Clf F1   [ALL] AggViol F1   [GT] Const F1   [GT] Syn Exact   [GT] Viol F1 Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5 SENTENCE_FILTERED multi_step_refinement 0.889          0.650              0.000           0.000            0.641        169.32022292201873
+
+  Best Classification F1 [ALL]:        C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5 (0.889)
+  Best Aggregate Violation F1 [ALL]:   C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5 (0.650)
+  Best Constraint Exact F1 [GT]:       C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5 (0.000)
+  Best Violation F1 Pairwise [GT]:     C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5 (0.641)
+  Fastest Runtime:                     C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5 (169.32s)
+========================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3_fix/e3_end2end/hmda_e3_hmdaz_c_ms_20261021_213045

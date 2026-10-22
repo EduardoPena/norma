@@ -1,0 +1,22 @@
+experiment_name: hmda_e2_tax_gpt6luna_MultiStep
+experiment_type: mapper_gt_only
+results_dir: results/v3_fix/e2_mapping
+datasets:
+- tax
+dataset_options:
+  tax:
+    gt_file: tax_text2rule_gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+    predicate_space: v2
+variants:
+- name: Multi-Step | GPT-6 Luna
+  use_context: false
+  mapper:
+    implementation: multi_step_refinement
+    provider: openrouter
+    max_refinement_iterations: 2
+    prompt_file: multi_step_refinement
+    max_violation_share: 0.9
+    model: openai/gpt-6-luna

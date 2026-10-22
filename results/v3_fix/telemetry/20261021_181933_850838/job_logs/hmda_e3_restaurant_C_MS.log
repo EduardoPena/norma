@@ -1,0 +1,225 @@
+Execution artifacts: results/v3_fix/telemetry/20261021_181933_850838
+
+================================================================================
+FULL MAPPER EVALUATION: hmda_e3_restaurant_C_MS
+================================================================================
+
+Results directory: results/v3_fix/e3_end2end/hmda_e3_restaurant_c_ms_20261021_200949
+Timestamp: 20261021_200949
+
+Evaluation scope:
+  SENTENCE_DIRECT / FILTERED:
+    Classification metrics     → ALL sentences
+    Aggregate violation        → ALL sentences (all predicted vs all GT)
+    Pairwise mapping metrics   → GT constraint sentences only
+  DOCUMENT:
+    Aggregate violation        → all predicted rules vs all GT constraints
+    All other metrics          → N/A
+================================================================================
+
+Config YAML saved to: results/v3_fix/e3_end2end/hmda_e3_restaurant_c_ms_20261021_200949/config.yaml
+Execution config saved to: results/v3_fix/e3_end2end/hmda_e3_restaurant_c_ms_20261021_200949/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: restaurant
+--------------------------------------------------------------------------------
+Loading restaurant...
+Total sentences:          33
+GT constraint sentences:  7
+Non-constraint sentences: 26
+
+
+[1/1] Variant: C+MS | Qwen3.8-2.4T-A95B + GPT-6 Sol
+  Mode:           SENTENCE_FILTERED
+  Implementation: multi_step_refinement
+  Processing all 33 sentences (mode=SENTENCE_FILTERED)...
+
+[SENTENCE_FILTERED] Processing 33 sentences
+  Phase 1: 8 rules
+
+============================================================
+============================================================
+============================================================
+Processing: A restaurant may also be closed if it scores 28 or more points on three consecut...
+
+============================================================
+Processing: A score of 14-27 results in a grade of B....
+
+Processing: As of July 2010, certain types of food service establishments—including restaura...
+
+============================================================
+Processing: A score of 28 or more results in a grade of C....
+
+============================================================
+Processing: Letter grades are not issued to mobile food vending units, temporary food servic...
+
+Processing: A score of 0-13 results in a grade of A....
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade"],"implied_columns":[],"reasoning":"The constraint maps scores of 28 or more to grade C, so it involves the score and grade columns.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade"],"implied_columns":[],"reasoning":"The stated score range (14–27) determines the inspection grade (B).","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade"],"implied_columns":[],"reasoning":"The score range 0–13 is a condition on score, and grade A is the required result in grade.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 3: Selected 3 predicates: ['t1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 3: Selected 2 predicates: ['t1.score >= $float', 't1.grade != $string']
+-> Step 3: Selected 3 predicates: ['t1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","action","inspection_order"],"implied_columns":["camis","inspection_date"],"reasoning":"Score captures the 28-point threshold, action records closure, and inspection_order represents the sequence needed to identify three consecutive inspections. Restaurant ID groups inspections for the same restaurant, while inspection_date can establish their chronological order.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'action', 'inspection_order', 'camis', 'inspection_date']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["grade", "cuisine_description"],
+  "implied_columns": ["grade_date", "dba"],
+  "reasoning": "The rule concerns whether an establishment receives a letter grade. The food-service category may help identify covered establishments; the establishment name may provide clues about its operator. If no grade is issued, the associated grade date is also relevant.",
+  "missing_concepts": ["mobile vending status", "temporary establishment status", "school operation and school level", "hospital operation", "correctional facility status", "charitable organization status", "not-for-profit membership organization status", "whether food is served only to members"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['grade', 'cuisine_description', 'grade_date', 'dba']
+-> Step 3: Considering 110 predicate candidates
+-> Step 3.5 [GATE]: PASS — A row violates the rule if its score is between 14 and 27 inclusive but its grade is not 'B'. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 3: Considering 60 predicate candidates
+-> Step 3.5 [GATE]: PASS — A row violates the rule if its score is at least 28 and its grade is not 'C'. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — A violation occurs when score is between 0 and 13 inclusive but grade is not 'A'. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["cuisine_description", "score", "grade", "inspection_date", "inspection_year", "grade_date"],
+  "implied_columns": ["camis", "dba"],
+  "reasoning": "The requirement applies to specified establishment types, approximated by cuisine_description and potentially identifiable from dba. It links inspection scores to letter grades; inspection_date, inspection_year, and grade_date help assess timing relative to July 2010. camis identifies the establishment subject to the requirement.",
+  "missing_concepts": ["Explicit establishment-type classification for all listed types", "Whether a letter grade was actually posted or publicly displayed"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['cuisine_description', 'score', 'grade', 'inspection_date', 'inspection_year', 'grade_date', 'camis', 'dba']
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 14', 't1.score <= 27', "t1.grade != 'B'"]}]
+   A row has a score between 14 and 27 inclusive but its grade is not B.
+
+-> Verification iteration 1/2
+-> Step 5: Found 28 violations
+
+============================================================
+Processing: Every food service establishment is scheduled for at least one inspection per ye...
+-> Step 3: Considering 152 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.score >= 28', "t1.grade != 'C'"]}]
+   A row with a score of at least 28 has a grade other than C.
+
+-> Verification iteration 1/2
+-> Step 5: Found 123 violations
+
+============================================================
+Processing: The frequency of inspections depends on a restaurant's score....
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 0', 't1.score <= 13', "t1.grade != 'A'"]}]
+   A row has a score between 0 and 13 inclusive but its grade is not A.
+
+-> Verification iteration 1/2
+-> Step 5: Found 402 violations
+-> Step 3 failed: No available predicate can identify the establishment categories to which the prohibition applies.
+-> Predicate selection failed: No available predicate can identify the establishment categories to which the prohibition applies.
+-> Step 3 failed: A permission cannot be expressed as a denial constraint here. In addition, the available predicates cannot establish a run of three consecutive inspections.
+-> Predicate selection failed: A permission cannot be expressed as a denial constraint here. In addition, the available predicates cannot establish a run of three consecutive inspections.
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["camis", "inspection_date", "inspection_year"],
+  "implied_columns": ["days_to_next_inspection", "inspection_order", "inspection_type"],
+  "reasoning": "camis identifies each establishment. Inspection dates and years establish whether it has at least one inspection in each year; inspection_order and inspection_type can help distinguish inspection events. days_to_next_inspection is a proxy for inspection frequency, but it does not establish that an inspection was scheduled.",
+  "missing_concepts": ["Scheduled inspection date or scheduling status"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['camis', 'inspection_date', 'inspection_year', 'days_to_next_inspection', 'inspection_order', 'inspection_type']
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","inspection_date","days_to_next_inspection"],"implied_columns":["camis","inspection_year","inspection_order"],"reasoning":"Score is explicitly named. Inspection frequency can be measured from inspection dates or the days between inspections. The restaurant identifier groups inspections by establishment; inspection year supports frequency per year, and inspection order helps sequence inspections.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'inspection_date', 'days_to_next_inspection', 'camis', 'inspection_year', 'inspection_order']
+-> Step 3: Considering 132 predicate candidates
+-> Step 3: Considering 160 predicate candidates
+-> Step 3: Selected 1 predicates: ['t1.grade IS NULL']
+-> Step 3: Selected 1 predicates: ['t1.days_to_next_inspection > $float']
+-> Step 3.5 [GATE]: REJECT — The columns cannot verify whether an establishment posted a grade, and the sentence gives no specific score-to-grade mapping to check. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+-> Step 3.5 [GATE]: PASS — An establishment with more than 365 days between scheduled inspections violates the annual inspection requirement. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 6 columns
+-> Step 3: Selected 2 predicates: ['t1.score = t2.score', 't1.days_to_next_inspection != t2.days_to_next_inspection']
+-> Step 3.5 [GATE]: REJECT — The sentence gives no specific interval or rule requiring restaurants with the same score to have the same days to the next inspection, so the selected predicates do not establish a violation. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+-> Step 4: Constructed temporal with 1 rule(s)
+   ['t1.days_to_next_inspection > 365']
+   An establishment goes more than 365 days before its next inspection.
+
+-> Verification iteration 1/2
+-> Step 5: Found 52041 violations
+  Phase 2: Mapped 8 rules
+  Evaluating classification (all 33 sentences)...
+  Evaluating pairwise mapping quality (GT sentences only)...
+  Evaluating aggregate violation (all 33 sentences)...
+  Saving outputs...
+  Saved detailed results to: results/v3_fix/e3_end2end/hmda_e3_restaurant_c_ms_20261021_200949/metrics/restaurant_C+MS_|_Qwen3.8-2.4T-A95B_+_GPT-6_Sol_detailed_results.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 31.65s
+
+  ── CLASSIFICATION (all 33 sentences) ──────────────────────────────
+     Accuracy:  0.909
+     Precision: 1.000
+     Recall:    0.571
+     F1:        0.727  [PRIMARY]
+     TP:   4  FP:   0
+     FN:   3  TN:  26
+
+  ── AGGREGATE VIOLATION DISCOVERY (all 33 sentences) ─────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     Gold violations:      52311
+     Predicted violations: 52309
+     Overlap violations:   52309
+
+  ── CONSTRAINT EXACT MATCH (GT sentences only) ─────────────────────────
+     Precision: 1.000
+     Recall:    0.571
+     F1:        0.727  [PRIMARY]
+     TP: 4  FP: 0  FN: 3
+     Predicted: 4, Gold: 7
+
+  ── PAIRWISE SYNTACTIC QUALITY (GT sentences only, n=7) ──────────
+     Exact Match:       0.571 (4/7)
+     Predicate Jaccard: 0.571 (±0.495)
+
+  ── PAIRWISE VIOLATION DISCOVERY (GT sentences only) ────────────────────
+     Exact Match:       0.571 (4/7)
+     Precision:         0.571 (±0.495)
+     Recall:            0.571 (±0.495)
+     F1:                0.571 (±0.495)
+     Violation Jaccard: 0.571 (±0.495)
+
+  INSIGHT: Syntactic vs Violation Gap (pairwise) = 0.000
+  Variant completed
+
+========================================================================================================================
+COMPARISON TABLE
+========================================================================================================================
+
+Sentence Modes (DIRECT / FILTERED):
+  Left  (all sentences):      Clf F1 | Agg Viol F1
+  Right (GT sentences only):  Const F1 | Syn Exact | Viol F1
+  Variant                                Mode         Impl       [ALL] Clf F1   [ALL] AggViol F1   [GT] Const F1   [GT] Syn Exact   [GT] Viol F1 Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  C+MS | Qwen3.8-2.4T-A95B + GPT-6 Sol   SENTENCE_FILTERED multi_step_refinement 0.727          1.000              0.727           0.571            0.571        31.65214010499767
+
+  Best Classification F1 [ALL]:        C+MS | Qwen3.8-2.4T-A95B + GPT-6 Sol (0.727)
+  Best Aggregate Violation F1 [ALL]:   C+MS | Qwen3.8-2.4T-A95B + GPT-6 Sol (1.000)
+  Best Constraint Exact F1 [GT]:       C+MS | Qwen3.8-2.4T-A95B + GPT-6 Sol (0.727)
+  Best Violation F1 Pairwise [GT]:     C+MS | Qwen3.8-2.4T-A95B + GPT-6 Sol (0.571)
+  Fastest Runtime:                     C+MS | Qwen3.8-2.4T-A95B + GPT-6 Sol (31.65s)
+========================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3_fix/e3_end2end/hmda_e3_restaurant_c_ms_20261021_200949

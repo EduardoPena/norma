@@ -1,0 +1,29 @@
+dataset_options:
+  hmdaz:
+    drop_multi_rule_sentences: false
+    gt_file: hmdaz_text2rule_gt.json
+    predicate_space: v2
+    sample_rows: 1000000
+    stream_csv: true
+datasets:
+- hmdaz
+experiment_name: hmda_e3_hmdaz_C_MS_rep2
+experiment_type: mapper
+results_dir: results/v3_fix_rep2/e3_end2end
+variants:
+- classifier:
+    batch_size: 10
+    implementation: llm
+    model: qwen/qwen3.8-2.4t-a95b
+    prompt_key: with_examples
+    provider: openrouter
+  mapper:
+    implementation: multi_step_refinement
+    max_refinement_iterations: 2
+    max_violation_share: 0.9
+    model: anthropic/claude-sonnet-5.5
+    prompt_file: multi_step_refinement
+    provider: openrouter
+  mode: SENTENCE_FILTERED
+  name: C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5
+  use_context: false

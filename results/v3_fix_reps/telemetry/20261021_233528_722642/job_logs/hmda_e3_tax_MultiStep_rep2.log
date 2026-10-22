@@ -1,0 +1,1144 @@
+Execution artifacts: results/v3_fix_reps/telemetry/20261021_233528_722642
+
+================================================================================
+FULL MAPPER EVALUATION: hmda_e3_tax_MultiStep_rep2
+================================================================================
+
+Results directory: results/v3_fix_rep2/e3_end2end/hmda_e3_tax_multistep_rep2_20261022_003204
+Timestamp: 20261022_003204
+
+Evaluation scope:
+  SENTENCE_DIRECT / FILTERED:
+    Classification metrics     → ALL sentences
+    Aggregate violation        → ALL sentences (all predicted vs all GT)
+    Pairwise mapping metrics   → GT constraint sentences only
+  DOCUMENT:
+    Aggregate violation        → all predicted rules vs all GT constraints
+    All other metrics          → N/A
+================================================================================
+
+Config YAML saved to: results/v3_fix_rep2/e3_end2end/hmda_e3_tax_multistep_rep2_20261022_003204/config.yaml
+Execution config saved to: results/v3_fix_rep2/e3_end2end/hmda_e3_tax_multistep_rep2_20261022_003204/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: tax
+--------------------------------------------------------------------------------
+Loading tax...
+Total sentences:          126
+GT constraint sentences:  6
+Non-constraint sentences: 120
+
+
+[1/1] Variant: Multi-Step | Claude Sonnet 5.5
+  Mode:           SENTENCE_DIRECT
+  Implementation: multi_step_refinement
+  Processing all 126 sentences (mode=SENTENCE_DIRECT)...
+
+[SENTENCE_DIRECT] Processing 126 sentences
+
+============================================================
+Processing: The Tax Information Management System serves as the central repository for indiv...
+
+============================================================
+Processing: This system maintains personal identification details, geographic information, i...
+
+============================================================
+Processing: Implemented in 2018, the system replaced a legacy mainframe architecture that ha...
+
+============================================================
+Processing: The migration process involved transferring approximately one hundred thousand t...
+
+============================================================
+Processing: Staff members across multiple departments rely on this dataset for processing ex...
+
+============================================================
+Processing: The information contained here supports both day-to-day operations and periodic ...
+-> Step 2 response: {"is_valid":true,"direct_columns":["fname","lname","gender","areacode","phone","city","state","zip","salary","rate","singleexemp","marriedexemp","childexemp"],"implied_columns":["maritalstatus","haschild"],"reasoning":"The sentence names four concept groups. Personal identification details map to fname, lname, gender, and phone (areacode is part of the phone number). Geographic information maps to city, state, zip, and areacode. Income figures map to salary. Tax-related calculations map to rate and the exemption columns (singleexemp, marriedexemp, childexemp). maritalstatus and haschild are personal attributes that determine which exemptions apply, so they are included as implied columns.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['fname', 'lname', 'gender', 'areacode', 'phone', 'city', 'state', 'zip', 'salary', 'rate', 'singleexemp', 'marriedexemp', 'childexemp', 'maritalstatus', 'haschild']
+-> Step 2 response: {"is_valid":true,"direct_columns":["fname","lname"],"implied_columns":["gender","areacode","phone","city","state","zip","maritalstatus","haschild","salary","rate","singleexemp","marriedexemp","childexemp"],"reasoning":"The sentence describes a tax information system as the central repository for individual taxpayer data. 'Individual taxpayer' maps to the person identity columns (fname, lname). 'Taxpayer data' broadly implies the other attributes stored in the tax table: demographics (gender), contact and location details (areacode, phone, city, state, zip), family status (maritalstatus, haschild), and tax-related financial data (salary, rate, singleexemp, marriedexemp, childexemp). Being inclusive, all are included.","missing_concepts":["organization","central repository / system"],"reason":null}...
+-> Step 2: Identified columns ['fname', 'lname', 'gender', 'areacode', 'phone', 'city', 'state', 'zip', 'maritalstatus', 'haschild', 'salary', 'rate', 'singleexemp', 'marriedexemp', 'childexemp']
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes a system implementation in 2018 that replaced a legacy mainframe architecture operating since 1987. It concerns IT systems and years, none of which map to the tax table's personal, contact, location, marital, salary, rate, or exemption columns. The numbers 2018 and 1987 are years, not area codes, zips, or salary values.","missing_concepts":["system implementation date","legacy mainframe architecture","operational start year"],"reason":"No concept in the sentence corresponds to any column in the tax table; the sentence is about a system implementation and legacy architecture, not person or tax data."}...
+-> Step 2 failed: No concept in the sentence corresponds to any column in the tax table; the sentence is about a system implementation and legacy architecture, not person or tax data.
+-> Schema validation failed: No concept in the sentence corresponds to any column in the tax table; the sentence is about a system implementation and legacy architecture, not person or tax data.
+
+============================================================
+Processing: Access to the system requires multi-factor authentication and role-based permiss...
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","marriedexemp","childexemp","rate","state","city","zip"],"implied_columns":["maritalstatus","haschild","salary","areacode"],"reasoning":"The sentence mentions processing exemptions (singleexemp, marriedexemp, childexemp), verifying residency (state, city, zip, and possibly areacode as location indicators), and ensuring accurate rate assignments (rate). Exemptions depend on maritalstatus and haschild, and rate typically depends on salary, so these are included as implied columns. Staff members and departments have no matching column.","missing_concepts":["staff members","departments"],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'marriedexemp', 'childexemp', 'rate', 'state', 'city', 'zip', 'maritalstatus', 'haschild', 'salary', 'areacode']
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is a general statement about the purpose of the data (supporting daily operations and periodic audits by oversight teams). It does not mention or imply any specific attribute such as names, location, demographics, salary, tax rate, or exemptions. No concept maps to any column in the tax table.","missing_concepts":["day-to-day operations","periodic audits","oversight teams"],"reason":"The sentence describes general data usage and governance purposes and does not refer to any column or data value in the schema."}...
+-> Step 2 failed: The sentence describes general data usage and governance purposes and does not refer to any column or data value in the schema.
+-> Schema validation failed: The sentence describes general data usage and governance purposes and does not refer to any column or data value in the schema.
+
+============================================================
+Processing: All queries against the tax table are logged for compliance purposes and retaine...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes a data migration project: roughly 100,000 taxpayer records moved to a new platform over sixteen months. It states nothing about any attribute of a taxpayer such as name, location, salary, rate, exemptions, marital status or children. 'Taxpayer records' refers to the table as a whole, not to a specific column. The migration volume and duration have no corresponding columns in the schema.","missing_concepts":["migration process","record count","migration time period (sixteen months)","target platform"],"reason":"The sentence describes an operational migration (record volume and duration) and does not reference any column in the tax table's predicate list."}...
+-> Step 2 failed: The sentence describes an operational migration (record volume and duration) and does not reference any column in the tax table's predicate list.
+-> Schema validation failed: The sentence describes an operational migration (record volume and duration) and does not reference any column in the tax table's predicate list.
+
+============================================================
+Processing: The tax table contains fifteen distinct fields that capture a comprehensive prof...
+-> Step 3: Considering 422 predicate candidates
+-> Step 3: Considering 482 predicate candidates
+-> Step 3: Considering 482 predicate candidates
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about query logging and seven-year retention of logs for compliance with federal regulations. These are operational and audit concerns. It refers to the tax table only as a whole and does not mention any of its data attributes (name, location, salary, rate, exemptions, etc.). No column in the schema stores query logs, access timestamps, or retention information.","missing_concepts":["query logging","audit trail","retention period of seven years","compliance and federal regulations"],"reason":"The constraint describes query logging and data retention policy, which map to no column in the tax table's predicate list."}...
+-> Step 2 failed: The constraint describes query logging and data retention policy, which map to no column in the tax table's predicate list.
+-> Schema validation failed: The constraint describes query logging and data retention policy, which map to no column in the tax table's predicate list.
+
+============================================================
+Processing: Personal identifiers include first name, last name, and gender, while contact in...
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["fname","lname","gender","areacode","phone","city","state","zip","maritalstatus","haschild","salary","rate","singleexemp","marriedexemp","childexemp"],"reasoning":"The sentence refers to all fifteen fields of the tax table that together form a comprehensive taxpayer profile. No single column is named, but the count of fifteen matches the full column set, so every column in the predicate list is implied.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['fname', 'lname', 'gender', 'areacode', 'phone', 'city', 'state', 'zip', 'maritalstatus', 'haschild', 'salary', 'rate', 'singleexemp', 'marriedexemp', 'childexemp']
+-> Step 3: Considering 482 predicate candidates
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about system access control: multi-factor authentication, role-based permissions, and the Human Resources department. The schema is a tax table with personal demographics, location, salary, tax rate and exemption columns. None of these columns represent authentication, roles, permissions, departments, or system access.","missing_concepts":["multi-factor authentication","role-based permissions","Human Resources department","system access"],"reason":"No concept in the sentence maps to any column in the tax table's predicate list; the sentence concerns access control and organizational departments, which are not represented in the schema."}...
+-> Step 2 failed: No concept in the sentence maps to any column in the tax table's predicate list; the sentence concerns access control and organizational departments, which are not represented in the schema.
+-> Schema validation failed: No concept in the sentence maps to any column in the tax table's predicate list; the sentence concerns access control and organizational departments, which are not represented in the schema.
+
+============================================================
+Processing: Geographic data covers city, state, and ZIP code, providing a complete picture o...
+-> Step 3 failed: The sentence is a descriptive statement about dataset usage and contains no verifiable data constraint.
+-> Predicate selection failed: The sentence is a descriptive statement about dataset usage and contains no verifiable data constraint.
+
+============================================================
+Processing: Financial fields track salary, tax rate, and three types of exemptions: single, ...
+-> Step 3 failed: Descriptive statement about the system's role with no checkable data constraint; no predicates can express it.
+-> Predicate selection failed: Descriptive statement about the system's role with no checkable data constraint; no predicates can express it.
+
+============================================================
+Processing: Each field has been carefully designed to support specific regulatory requiremen...
+-> Step 3 failed: The sentence is descriptive and states no checkable constraint: it names no required field, threshold, dependency, or relationship between columns.
+-> Predicate selection failed: The sentence is descriptive and states no checkable constraint: it names no required field, threshold, dependency, or relationship between columns.
+
+============================================================
+Processing: The marital status and dependent information help determine which exemption cate...
+-> Step 2 response: {"is_valid":true,"direct_columns":["fname","lname","gender","areacode","phone"],"implied_columns":[],"reasoning":"The sentence explicitly lists personal identifiers (first name, last name, gender) and contact information (area code, phone number), which map directly to fname, lname, gender, areacode, and phone. All of these have predicates defined. No other columns are mentioned or needed.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['fname', 'lname', 'gender', 'areacode', 'phone']
+-> Step 3: Considering 82 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["salary","rate","singleexemp","marriedexemp","childexemp"],"implied_columns":["maritalstatus","haschild"],"reasoning":"The sentence names salary, tax rate, and three exemption types (single, married, child). These map directly to salary, rate, singleexemp, marriedexemp, and childexemp. The exemption types are tied to marital status (M/S) and having a child (Y/N), so maritalstatus and haschild are included as implied context columns.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['salary', 'rate', 'singleexemp', 'marriedexemp', 'childexemp', 'maritalstatus', 'haschild']
+-> Step 3: Considering 242 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state","zip"],"implied_columns":["fname","lname"],"reasoning":"The sentence explicitly names city, state, and ZIP code, which map to the city, state, and zip columns. The phrase 'each individual' implies a person-level identity, which in this table is represented by fname and lname. No other columns (e.g., areacode, phone) are about residence location in the sentence, though areacode is geographic-adjacent but not mentioned.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['city', 'state', 'zip', 'fname', 'lname']
+-> Step 3 failed: The sentence is a descriptive statement about the schema (the number of fields). It specifies no data constraint that could be expressed as a denial constraint.
+-> Predicate selection failed: The sentence is a descriptive statement about the schema (the number of fields). It specifies no data constraint that could be expressed as a denial constraint.
+
+============================================================
+Processing: Field definitions and permissible value ranges are documented in the Data Dictio...
+-> Step 3: Considering 90 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["maritalstatus","haschild"],"implied_columns":["singleexemp","marriedexemp","childexemp"],"reasoning":"The sentence names marital status (maritalstatus) and dependent information (haschild, which indicates whether the person has a child). These determine which exemption categories apply, which maps to the exemption columns: singleexemp for single status, marriedexemp for married status, and childexemp for dependents/children.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['maritalstatus', 'haschild', 'singleexemp', 'marriedexemp', 'childexemp']
+-> Step 3: Considering 138 predicate candidates
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is a general statement about design intent: fields support regulatory requirements in Title 26 of the US Code (the Internal Revenue Code). It names no specific field, value, condition, or relationship that maps to a column. Although the table is tax-related, 'each field' is generic and does not point to any particular column such as rate, salary, or the exemption columns. It describes no testable data constraint.","missing_concepts":["regulatory compliance with Title 26","generic reference to 'each field' with no specific column"],"reason":"The sentence is a generic statement about regulatory design intent and does not reference any specific column or data concept in the schema."}...
+-> Step 2 failed: The sentence is a generic statement about regulatory design intent and does not reference any specific column or data concept in the schema.
+-> Schema validation failed: The sentence is a generic statement about regulatory design intent and does not reference any specific column or data concept in the schema.
+
+============================================================
+Processing: Annual reviews of the schema ensure alignment with evolving tax code provisions ...
+-> Step 3 failed: The sentence is a descriptive classification of columns and does not impose a checkable data constraint.
+-> Predicate selection failed: The sentence is a descriptive classification of columns and does not impose a checkable data constraint.
+
+============================================================
+Processing: When working with taxpayer records, staff members need reliable ways to locate s...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence only says that field definitions and permissible value ranges are documented in a Data Dictionary maintained by the Information Systems division. This is a statement about documentation and governance. It names no specific field, value, or data condition, so it cannot be checked against any column in the tax table.","missing_concepts":["Data Dictionary","Information Systems division","documentation of field definitions and value ranges"],"reason":"The sentence is a documentation and governance statement. It does not refer to any specific column or data value in the schema."}...
+-> Step 2 failed: The sentence is a documentation and governance statement. It does not refer to any specific column or data value in the schema.
+-> Schema validation failed: The sentence is a documentation and governance statement. It does not refer to any specific column or data value in the schema.
+
+============================================================
+Processing: Each person is uniquely identified by area code and phone number....
+-> Step 3 failed: The sentence only describes the schema or contents of the financial fields and does not specify a constraint that can be expressed as a denial constraint.
+-> Predicate selection failed: The sentence only describes the schema or contents of the financial fields and does not specify a constraint that can be expressed as a denial constraint.
+
+============================================================
+Processing: This combination functions as the primary lookup mechanism throughout the system...
+-> Step 3: Selected 3 predicates: ['t1.city IS NULL', 't1.state IS NULL', 't1.zip IS NULL']
+-> Step 3: Selected 5 predicates: ['t1.maritalstatus = $string', 't1.haschild = $string', 't1.marriedexemp != $int', 't1.childexemp != $int', 't1.singleexemp != $int']
+-> Step 2 response: {"is_valid":true,"direct_columns":["fname","lname"],"implied_columns":["phone","areacode","city","state","zip","gender"],"reasoning":"The sentence is about locating specific individuals in taxpayer records, which implies identifying a person. The name columns (fname, lname) are the primary identifiers. Contact and location columns (phone, areacode, city, state, zip) can help narrow down or distinguish individuals with the same name. Gender is a weaker demographic attribute that could also help distinguish them. There is no explicit unique ID column in the schema.","missing_concepts":["unique taxpayer identifier (e.g., SSN or taxpayer ID)"],"reason":null}...
+-> Step 2: Identified columns ['fname', 'lname', 'phone', 'areacode', 'city', 'state', 'zip', 'gender']
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes a governance or process activity: annual reviews of the schema for alignment with tax code provisions and organizational needs. It does not state any data-level condition on row values. Although the table is about tax, the sentence names no column concept such as salary, rate or exemptions, and none can be checked by a predicate on a column. The schema review, the tax code alignment and the organizational needs are all meta-level concepts with no column mapping.","missing_concepts":["annual schema review","alignment with tax code provisions","organizational needs"],"reason":"The sentence describes a schema governance process, not a data constraint, so no concept maps to any column in the predicate list."}...
+-> Step 2 failed: The sentence describes a schema governance process, not a data constraint, so no concept maps to any column in the predicate list.
+-> Schema validation failed: The sentence describes a schema governance process, not a data constraint, so no concept maps to any column in the predicate list.
+
+============================================================
+Processing: The decision to use phone numbers as identifiers reflects historical practices d...
+-> Step 3: Considering 156 predicate candidates
+-> Step 3.5 [GATE]: PASS — The sentence says geographic data covers city, state, and ZIP for each individual, which is a required-field rule; a violation is any record where city IS NULL, state IS NULL, or zip IS NULL. (confidence=medium)
+-> Step 4: Constructing constraint with 3 predicates and 5 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":["areacode","phone"],"implied_columns":["fname","lname"],"reasoning":"The sentence says a person is uniquely identified by the combination of area code and phone number, so areacode and phone are the key columns. The person entity is represented by fname and lname, which are the attributes that should be unique per (areacode, phone) pair. Including them is inclusive but reasonable. There is no explicit person ID column in the schema.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['areacode', 'phone', 'fname', 'lname']
+-> Step 3: Considering 64 predicate candidates
+-> Step 3.5 [GATE]: REJECT — The sentence only says marital status and dependents 'help determine' which exemptions apply; it names no concrete value mapping or threshold (e.g., single implies marriedexemp = 0), so no specific violation scenario can be formalized. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Alternative identification schemes using social security numbers were considered...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence says a 'combination' acts as the primary lookup mechanism across the system. It does not name any column or data concept such as a name, location, phone number or salary. 'Combination' and 'primary lookup mechanism' are generic key terms that could refer to any set of columns. Nothing in the sentence points to a specific column in the tax table, so any selection would be a guess.","missing_concepts":["combination of columns (unspecified)","primary lookup mechanism / key identifier"],"reason":"The sentence is a vague statement about a key or lookup combination and does not reference any concept that maps to a column in the predicate list."}...
+-> Step 2 failed: The sentence is a vague statement about a key or lookup combination and does not reference any concept that maps to a column in the predicate list.
+-> Schema validation failed: The sentence is a vague statement about a key or lookup combination and does not reference any concept that maps to a column in the predicate list.
+
+============================================================
+Processing: Customer service representatives typically search using these two fields togethe...
+-> Step 2 response: {"is_valid":true,"direct_columns":["phone"],"implied_columns":["areacode"],"reasoning":"The sentence refers to phone numbers used as identifiers, which maps directly to the phone column. The areacode column is related because it forms part of a complete telephone number. The rest of the sentence (historical practices, initial system deployment) is background context with no column mapping.","missing_concepts":["historical practices","system initial deployment","identifier/key designation"],"reason":null}...
+-> Step 2: Identified columns ['phone', 'areacode']
+-> Step 3: Considering 36 predicate candidates
+-> Step 3 failed: The sentence is too vague to express as a denial constraint. It states a general goal about locating individuals, but it does not specify which columns identify a person or what must be unique, present, or related.
+-> Predicate selection failed: The sentence is too vague to express as a denial constraint. It states a general goal about locating individuals, but it does not specify which columns identify a person or what must be unique, present, or related.
+
+============================================================
+Processing: Call center training emphasizes the importance of collecting both components to ...
+-> Step 4: Constructed required with 3 rule(s)
+   ['t1.city IS NULL', 't1.state IS NULL', 't1.zip IS NULL']
+   A record is a violation if its city, state, or ZIP code is missing.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+
+============================================================
+Processing: Duplicate phone number detection routines run nightly to flag potential data qua...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes a design decision: alternative identification schemes using social security numbers were rejected for privacy and legal reasons. It states no data constraint. The tax table has no social security number or identifier column, and none of the listed columns (names, phone, address fields, salary, exemptions, etc.) corresponds to any concept in the sentence.","missing_concepts":["social security number","identification scheme","privacy concerns","legal restrictions"],"reason":"The sentence is about rejecting SSN-based identification for privacy and legal reasons. It does not map to any column in the predicate list, and the schema has no SSN or identifier column."}...
+-> Step 2 failed: The sentence is about rejecting SSN-based identification for privacy and legal reasons. It does not map to any column in the predicate list, and the schema has no SSN or identifier column.
+-> Schema validation failed: The sentence is about rejecting SSN-based identification for privacy and legal reasons. It does not map to any column in the predicate list, and the schema has no SSN or identifier column.
+
+============================================================
+Processing: Maintaining accurate location information presents ongoing challenges for data m...
+-> Step 3: Selected 2 predicates: ['t1.areacode = t2.areacode', 't1.phone = t2.phone']
+-> Step 3 failed: The sentence is descriptive background about a design decision and imposes no data constraint that can be expressed as predicates.
+-> Predicate selection failed: The sentence is descriptive background about a design decision and imposes no data constraint that can be expressed as predicates.
+
+============================================================
+Processing: The system tracks city, state, and ZIP code as separate fields, allowing for fle...
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["fname","lname","areacode","phone"],"reasoning":"The sentence refers to 'these two fields' used together by customer service representatives to look up a customer when responding to inquiries. The most plausible pair is a person's identifying name fields (fname and lname), which are the typical lookup keys for finding a person. Since the sentence does not name specific columns, and being inclusive, the contact fields areacode and phone are also included as alternative lookup identifiers. Both pairs fit the described search behavior.","missing_concepts":["Which two specific fields are meant is not named in the sentence","Customer service representative / inquiry context has no column"],"reason":null}...
+-> Step 2: Identified columns ['fname', 'lname', 'areacode', 'phone']
+-> Step 3: Considering 64 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state","zip"],"implied_columns":["areacode"],"reasoning":"The sentence refers to 'location information', which maps to the geographic columns: city, state, and zip. Area code is a telephone prefix that also correlates with geographic location, so it is included as an implied column under the inclusive approach. Other columns (names, salary, exemptions, etc.) are not location-related.","missing_concepts":["data management challenges (not representable as a column)"],"reason":null}...
+-> Step 2: Identified columns ['city', 'state', 'zip', 'areacode']
+-> Step 3: Considering 96 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["phone"],"implied_columns":["areacode"],"reasoning":"The sentence concerns detecting duplicate phone numbers, so the phone column is directly relevant. The areacode column is implied because a full telephone number comprises areacode plus the NNN-NNNN phone, so duplicate detection may need both. Other columns such as fname and lname could help investigators, but they are not part of the duplicate phone concept.","missing_concepts":["nightly scheduling of the routine","flagging or investigation status for data quality issues"],"reason":null}...
+-> Step 2: Identified columns ['phone', 'areacode']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["areacode","phone"],"implied_columns":["fname","lname"],"reasoning":"The sentence says 'both components' are collected for accurate record retrieval, but it never names them. The most plausible reading is the two parts of a telephone number, areacode and phone, since they are separate columns that only identify a record when combined. Another reading is that the two components are first and last name (fname, lname), which together identify a person's record. Being inclusive, the name columns are listed as implied, with the phone parts as direct.","missing_concepts":["Explicit identification of what the 'both components' refer to","Record retrieval / identifier concept"],"reason":null}...
+-> Step 2: Identified columns ['areacode', 'phone', 'fname', 'lname']
+-> Step 3: Considering 64 predicate candidates
+-> Step 3.5 [GATE]: PASS — Area code and phone number together act as a unique identifier, so two distinct person records sharing the same areacode and phone is a violation (t1.areacode = t2.areacode AND t1.phone = t2.phone AND the records differ in person identity, e.g. fname or lname). (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 4 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state","zip"],"implied_columns":["areacode"],"reasoning":"The sentence explicitly names city, state, and ZIP code as separate geographic fields, which map directly to the city, state, and zip columns. Area code is a related geographic indicator (telephone area), so it is included as an implied column given the instruction to be inclusive, though it is not named in the sentence.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['city', 'state', 'zip', 'areacode']
+-> Step 3: Considering 96 predicate candidates
+-> Step 3 failed: The sentence describes how people search records, not a data constraint. It does not say which fields determine which, and it does not say any value is required or restricted, so no denial constraint can be derived.
+-> Predicate selection failed: The sentence describes how people search records, not a data constraint. It does not say which fields determine which, and it does not say any value is required or restricted, so no denial constraint can be derived.
+
+============================================================
+Processing: Geographic encoding standards follow United States Postal Service guidelines to ...
+-> Step 3: Selected 2 predicates: ['t1.areacode IS NULL', 't1.phone IS NULL']
+-> Step 3 failed: The sentence is a general observation about data management challenges and does not state a checkable constraint on the columns.
+-> Predicate selection failed: The sentence is a general observation about data management challenges and does not state a checkable constraint on the columns.
+
+============================================================
+Processing: Regional offices submit quarterly reports on address accuracy metrics as part of...
+-> Step 4: Constructed uniqueness with 1 rule(s)
+   [{'AND': ['t1.areacode = t2.areacode', 't1.phone = t2.phone']}]
+   A violation occurs when two different rows have the same area code and the same phone number.
+
+-> Verification iteration 1/2
+-> Step 5: Found 4 violations
+
+============================================================
+Processing: Two persons with the same ZIP code must live in the same state....
+-> Step 3: Selected 2 predicates: ['t1.phone = t2.phone', 't1.areacode = t2.areacode']
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state","zip"],"implied_columns":["areacode"],"reasoning":"The sentence concerns geographic encoding standards that follow USPS address guidelines. The address-related columns are city, state (USPS two-letter abbreviations) and zip (ZIP code). Area code is a geographic telephone attribute, so it is included only as a loosely related column under the instruction to be inclusive.","missing_concepts":["street address / address line","national address database reference"],"reason":null}...
+-> Step 2: Identified columns ['city', 'state', 'zip', 'areacode']
+-> Step 3: Considering 96 predicate candidates
+-> Step 3 failed: The sentence is a descriptive statement about the system's data model, not a verifiable constraint on values. No violation condition can be derived from it.
+-> Predicate selection failed: The sentence is a descriptive statement about the system's data model, not a verifiable constraint on values. No violation condition can be derived from it.
+
+============================================================
+Processing: This relationship reflects the fundamental structure of the United States postal...
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip","state"],"implied_columns":[],"reasoning":"The sentence says that persons sharing the same ZIP code must live in the same state. This is a functional dependency from zip to state. Both columns exist in the tax table and have predicates. 'Persons' refers to the rows, so no additional column is needed.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['zip', 'state']
+-> Step 3: Considering 36 predicate candidates
+-> Step 3.5 [GATE]: REJECT — The sentence describes a nightly process that flags duplicate phone numbers for investigation; it asserts no specific condition on column values, and the matched predicates (same phone and same areacode) do not express a falsifiable functional dependency. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: For example, all individuals with ZIP code 58776 in the sample data reside in No...
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state","zip"],"implied_columns":["areacode","phone"],"reasoning":"The sentence mentions 'address accuracy metrics'. Address in this schema is represented by city, state, and zip, which are the address-related columns. Area code and phone are location/contact-related and might loosely relate to address accuracy, so they are included as implied columns per the inclusive guidance. Concepts like regional offices, quarterly reports, and performance evaluation procedures have no matching columns.","missing_concepts":["regional offices","quarterly report submission","report date/time period","performance evaluation procedures","accuracy metrics","street address"],"reason":null}...
+-> Step 2: Identified columns ['city', 'state', 'zip', 'areacode', 'phone']
+-> Step 3.5 [GATE]: REJECT — The sentence describes call center training (a human process) rather than asserting a checkable condition on column values; the required-field match on areacode and phone is opportunistic and the 'both components' claim is only implied by training emphasis, not a data rule. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: The Postal Service has maintained this organizational principle since the ZIP co...
+-> Step 3: Considering 110 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip","state"],"implied_columns":["city"],"reasoning":"The sentence says ZIP codes nest entirely within state boundaries, meaning each ZIP code maps to a single state. This is a zip-to-state relationship, so zip and state are the direct columns. City is a related geographic attribute that could be included under a wide-net reading, but it is not named in the sentence.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['zip', 'state', 'city']
+-> Step 3: Considering 62 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.state != t2.state']
+-> Step 3 failed: The sentence is a vague, aspirational statement about adherence to external USPS standards. It gives no checkable condition over the columns, so no predicates can express it.
+-> Predicate selection failed: The sentence is a vague, aspirational statement about adherence to external USPS standards. It gives no checkable condition over the columns, so no predicates can express it.
+
+============================================================
+Processing: Data entry personnel encounter this relationship frequently when processing addr...
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip","state"],"implied_columns":[],"reasoning":"The sentence says every individual with ZIP code 58776 resides in North Dakota. This is a ZIP-to-state dependency, so the zip column is the condition and the state column is the dependent value. City and areacode are location-related but are not mentioned, so they are not needed.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['zip', 'state']
+-> Step 3: Considering 36 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.state != t2.state']
+-> Step 3 failed: The sentence describes an organizational reporting process, not a checkable data constraint on the relevant columns.
+-> Predicate selection failed: The sentence describes an organizational reporting process, not a checkable data constraint on the relevant columns.-> Step 3.5 [GATE]: PASS — Functional dependency zip -> state: a violation is a pair of tuples with t1.zip = t2.zip but t1.state != t2.state, which is directly checkable from the data. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+
+
+============================================================
+Processing: Quality assurance checks often flag records where this alignment appears inconsi...
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip"],"implied_columns":["state","city"],"reasoning":"The sentence refers to the ZIP code system, which maps to the zip column. The 'organizational principle' of ZIP codes is geographic organization, so state and city are loosely implied as the geographic attributes ZIP codes are organized around. The 1963 introduction date is historical context, not a data constraint.","missing_concepts":["Postal Service as an entity","year 1963 / introduction date of the ZIP code system","time-based maintenance of the principle"],"reason":null}...
+-> Step 2: Identified columns ['zip', 'state', 'city']
+-> Step 3: Considering 62 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["city","state","zip","areacode"],"reasoning":"The sentence refers to a relationship encountered when processing address updates. In this schema, the address-related columns are city, state and zip, so a relationship among them (e.g., zip determines city/state) is implied. Areacode is a geographic attribute that is often tied to location, so it is included as a loosely related column. No columns are explicitly named in the sentence.","missing_concepts":["data entry personnel (no column)","specific relationship between address attributes is not stated","street address (no column)"],"reason":null}...
+-> Step 2: Identified columns ['city', 'state', 'zip', 'areacode']
+-> Step 3: Considering 96 predicate candidates
+-> Step 3.5 [GATE]: PASS — ZIP codes nesting within a single state is a functional dependency zip -> state; violation is two rows with the same zip but different state values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 3 columns
+-> Step 3: Selected 2 predicates: ['t1.zip = $int', 't1.state != $string']
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.state != t2.state']}]
+   Two records that share the same ZIP code but list different states are a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 14 violations
+
+============================================================
+Processing: Automated validation routines cross-reference entered ZIP codes against authorit...
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.state != t2.state']
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence refers to 'this alignment' without naming what is aligned, and it only describes QA checks flagging inconsistent records. No concept in it maps to a specific column in the tax table. 'Alignment' could in principle mean a match between city, state, zip, and areacode, but the sentence gives no basis for choosing those columns over any others.","missing_concepts":["unspecified 'alignment' referent","quality assurance flagging of records"],"reason":"The sentence is vague. It never says which attributes should be aligned, so no concept maps to any column in the predicate list."}...
+-> Step 2 failed: The sentence is vague. It never says which attributes should be aligned, so no concept maps to any column in the predicate list.
+-> Schema validation failed: The sentence is vague. It never says which attributes should be aligned, so no concept maps to any column in the predicate list.
+
+============================================================
+Processing: Staff members receive immediate feedback when attempting to save records with in...
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.state != t2.state']}]
+   Two records with the same ZIP code but different states are a violation, because a ZIP code must belong to exactly one state.
+
+-> Verification iteration 1/2
+-> Step 5: Found 14 violations
+
+============================================================
+Processing: Certain cities have strong associations with particular states that the system r...
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip"],"implied_columns":["city","state","areacode"],"reasoning":"The sentence concerns validating entered ZIP codes against authoritative postal data to prevent mismatches. The zip column is directly named. A postal database cross-reference would check ZIP consistency with location attributes, so city and state are implied. Areacode is a weaker geographic indicator, included because of the instruction to be inclusive.","missing_concepts":["authoritative postal database reference data","automated validation routine process"],"reason":null}...
+-> Step 2: Identified columns ['zip', 'city', 'state', 'areacode']
+-> Step 3: Considering 96 predicate candidates
+-> Step 3 failed: The sentence describes how often personnel encounter a relationship, not the relationship itself. It names no columns and states no constraint, so no predicates can be selected.
+-> Predicate selection failed: The sentence describes how often personnel encounter a relationship, not the relationship itself. It names no columns and states no constraint, so no predicates can be selected.
+
+============================================================
+Processing: If a person lives in Denver, their state must be Colorado....
+-> Step 3.5 [GATE]: PASS — Value mapping: a row with zip = 58776 and state != 'ND' violates the claim that ZIP 58776 maps to North Dakota; this is concrete and checkable from the two columns, though the 'in the sample data' phrasing and the state code format ('ND') are minor ambiguities. (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: REJECT — The sentence only gives historical context (the Postal Service has kept an unspecified 'organizational principle' since 1963) and never states which columns must determine which values, so the zip->state match is opportunistic and no concrete violation scenario is asserted. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: This reflects the common-sense geographic reality that major cities exist within...
+-> Step 2 response: {"is_valid":true,"direct_columns":["state","zip"],"implied_columns":["city","areacode"],"reasoning":"The sentence requires that state and ZIP code combinations be compatible, so state and zip are the directly named columns. City and areacode are geographic attributes that could help in validating location consistency, so they are included as loosely implied columns given the instruction to be inclusive. The 'immediate feedback when saving records' part is a system behavior with no data column.","missing_concepts":["immediate feedback on save (system/UI behavior)","staff members (user/role)"],"reason":null}...
+-> Step 2: Identified columns ['state', 'zip', 'city', 'areacode']
+-> Step 3: Considering 96 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state"],"implied_columns":[],"reasoning":"The sentence describes an association between cities and particular states. It maps directly to the city column (city names) and the state column (state abbreviations). The notion of the system 'recognizing explicitly' suggests a city-to-state mapping or enumerated pairing. No other columns such as zip or areacode are mentioned, so they are not included.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['city', 'state']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state"],"implied_columns":[],"reasoning":"The sentence is a conditional: if the person lives in Denver (city column), the state must be Colorado (state column). Both columns have predicates defined. Area code and zip are geographic but are not mentioned in the constraint, so they are not needed.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['city', 'state']
+-> Step 3: Considering 40 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.city != t2.city']
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state"],"implied_columns":["zip","areacode"],"reasoning":"The sentence says major cities exist within fixed state boundaries, i.e. a city maps to a single state. The city and state columns express this directly. Zip and areacode are geographic identifiers that also tie to a city and state, so they are included as possibly related.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['city', 'state', 'zip', 'areacode']
+-> Step 3: Considering 96 predicate candidates
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.zip = 58776', "t1.state != 'ND'"]}]
+   A record with ZIP code 58776 whose state is not ND (North Dakota) is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: Staff members processing records for residents must be careful in their handling...
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.state != t2.state']
+-> Step 3: Selected 2 predicates: ['t1.city = $string', 't1.state != $string']
+-> Step 3: Selected 2 predicates: ['t1.city = $string', 't1.state != $string']
+-> Step 3.5 [GATE]: REJECT — The sentence describes a validation process that cross-references ZIP codes against an external postal database, so the violation depends on information not in the schema; it does not itself assert a checkable ZIP-to-city rule, so the FD match is opportunistic. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Similar logical connections exist throughout the dataset....
+-> Step 3.5 [GATE]: PASS — The sentence asserts that state and ZIP code combinations must be compatible, which is a functional dependency zip -> state; a violation is two records with the same zip but different state. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 4 columns
+-> Step 3: Selected 2 predicates: ['t1.city = t2.city', 't1.state != t2.state']
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state","zip"],"implied_columns":["areacode"],"reasoning":"The sentence refers to 'geographic data' and avoiding 'mismatches', meaning consistency among geographic fields. In this table those are city, state, and zip. Area code is also a geographic indicator tied to location, so it is included as a possibly related field. 'Residents' and 'staff members' are just context and map to no specific column.","missing_concepts":["staff members (no staff column)","residents (no residency column)"],"reason":null}...
+-> Step 2: Identified columns ['city', 'state', 'zip', 'areacode']
+-> Step 3: Considering 96 predicate candidates
+-> Step 3.5 [GATE]: REJECT — The sentence is vague: it says 'certain cities' have associations with 'particular states' without naming any specific city-state pairs, so no concrete falsifiable mapping exists, and the $string constants in the predicates are unspecified. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Geographic reference tables maintained by the system list approximately 180 majo...
+-> Step 3.5 [GATE]: PASS — Value mapping with a concrete violation: a row where city = 'Denver' AND state != 'Colorado' cannot both be true; this is checkable from column values alone. (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence \"Similar logical connections exist throughout the dataset\" is a vague, generic statement. It names no specific field, value, condition, or relationship, so none of its concepts (\"logical connections\", \"dataset\") map to any column in the tax table or the predicate list.","missing_concepts":["logical connections","dataset-wide relationships"],"reason":"The sentence is too generic and refers to no concept that maps to any column in the predicate list."}...
+-> Step 2 failed: The sentence is too generic and refers to no concept that maps to any column in the predicate list.
+-> Schema validation failed: The sentence is too generic and refers to no concept that maps to any column in the predicate list.
+
+============================================================
+Processing: Updates to these reference tables follow a formal change control process oversee...
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.state != t2.state']}]
+   Two records with the same ZIP code but different states violate the constraint, because the state and ZIP code combination is incompatible.
+
+-> Verification iteration 1/2
+-> Step 5: Found 14 violations
+
+============================================================
+Processing: The relationship between income and tax rates follows logical patterns that ensu...
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state"],"implied_columns":[],"reasoning":"The sentence refers to geographic reference data listing metropolitan areas (cities) with explicit city-state associations. The city and state columns directly capture the city-state pairing. Zip and areacode are geographic but are not mentioned as part of the city-state association, so they are not included.","missing_concepts":["reference table of metropolitan areas","count of approximately 180 major metropolitan areas","system-maintained geographic reference tables"],"reason":null}...
+-> Step 2: Identified columns ['city', 'state']
+-> Step 3: Considering 40 predicate candidates
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ["t1.city = 'DENVER'", "t1.state != 'CO'"]}]
+   A record whose city is DENVER but whose state is not CO is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 8 violations
+
+============================================================
+Processing: Rate assignments consider multiple factors including geographic location and ear...
+-> Step 3 failed: The sentence is a vague procedural admonition with no concrete, checkable rule about the relationship between the geographic columns, so it cannot be expressed as a denial constraint.
+-> Predicate selection failed: The sentence is a vague procedural admonition with no concrete, checkable rule about the relationship between the geographic columns, so it cannot be expressed as a denial constraint.
+
+============================================================
+Processing: Tax policy specialists review rate schedules annually to ensure compliance with ...
+-> Step 3.5 [GATE]: REJECT — The sentence is a general statement about geography, and the predicates t1.city = t2.city, t1.state != t2.state would flag legitimate cases such as Washington or Wilmington appearing in several states, so the rule does not hold as a data quality constraint. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Constitutional requirements for equal protection influence the design of rate ca...
+-> Step 2 response: {"is_valid":true,"direct_columns":["salary","rate"],"implied_columns":["maritalstatus","haschild","singleexemp","marriedexemp","childexemp","state"],"reasoning":"The sentence discusses the relationship between income and tax rates. Income maps to salary and tax rate maps to rate. 'Equitable treatment across the taxpayer population' suggests the relationship may depend on taxpayer characteristics or groupings such as marital status, having children, exemptions, and state/jurisdiction, so these are included as implied columns given the instruction to be inclusive.","missing_concepts":["definition of 'logical patterns' (e.g., monotonic increase of rate with salary)","definition of 'equitable treatment'"],"reason":null}...
+-> Step 2: Identified columns ['salary', 'rate', 'maritalstatus', 'haschild', 'singleexemp', 'marriedexemp', 'childexemp', 'state']
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes an organizational governance process: formal change control for reference tables, overseen by a Data Governance Committee. It makes no statement about data values, ranges, relationships, or validity of any field in the tax table. None of the columns (names, phone, location, marital status, salary, rate, exemptions) correspond to change control, reference table updates, or committee oversight.","missing_concepts":["change control process","reference table updates","Data Governance Committee oversight"],"reason":"The sentence describes a process or governance policy, not a data constraint, and no concept maps to any column in the predicate list."}...
+-> Step 2 failed: The sentence describes a process or governance policy, not a data constraint, and no concept maps to any column in the predicate list.
+-> Schema validation failed: The sentence describes a process or governance policy, not a data constraint, and no concept maps to any column in the predicate list.
+
+============================================================
+Processing: Within the same state, a person with lower salary cannot have higher tax rate....
+-> Step 3: Considering 256 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate","state","salary"],"implied_columns":["city","zip","areacode"],"reasoning":"The sentence says rate assignments depend on geographic location and earning levels. 'Rate' maps to the rate column. 'Earning levels' maps to salary. 'Geographic location' maps most directly to state, and more loosely to city, zip and areacode, which are included because the guidance is to be inclusive.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['rate', 'state', 'salary', 'city', 'zip', 'areacode']
+-> Step 3: Considering 152 predicate candidates
+-> Step 3 failed: The sentence is descriptive. It does not state a checkable rule that can be turned into a denial constraint over city and state.
+-> Predicate selection failed: The sentence is descriptive. It does not state a checkable rule that can be turned into a denial constraint over city and state.
+
+============================================================
+Processing: This principle reflects some taxation concepts for income-based rate structures....
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate"],"implied_columns":[],"reasoning":"The sentence mentions 'rate schedules' reviewed by tax policy specialists, which maps to the 'rate' column (tax rate) in the tax table. The other concepts (annual review, legislative mandates, judicial precedents, compliance) describe process and legal context with no corresponding columns. Exemption columns and salary are part of a tax schedule in a broad sense but are not mentioned, so they are not included.","missing_concepts":["annual review frequency","legislative mandates","judicial precedents","tax policy specialists","compliance"],"reason":null}...
+-> Step 2: Identified columns ['rate']
+-> Step 3: Considering 22 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate"],"implied_columns":["salary","singleexemp","marriedexemp","childexemp","maritalstatus","haschild","state"],"reasoning":"The sentence refers to 'rate calculation algorithms', which maps directly to the rate column (tax rate). Equal protection implies that rates should be determined consistently from legitimate factors such as salary, exemptions, marital status, and child status, and jurisdiction (state). Protected characteristics like gender are possibly relevant for equal-protection concerns, but they are not clearly implied, so the list stays focused on the factors that feed the rate calculation. The legal concept of constitutional equal protection itself has no column.","missing_concepts":["constitutional equal protection requirement","algorithm design"],"reason":null}...
+-> Step 2: Identified columns ['rate', 'salary', 'singleexemp', 'marriedexemp', 'childexemp', 'maritalstatus', 'haschild', 'state']
+-> Step 3: Considering 256 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["state","salary","rate"],"implied_columns":[],"reasoning":"The constraint compares salary and tax rate between persons within the same state. 'State' is the grouping column, 'salary' is the lower/higher comparison value, and 'rate' is the tax rate (the table is a tax table and rate is described as likely a tax rate). No other columns are needed to scope the constraint.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['state', 'salary', 'rate']
+-> Step 3: Considering 58 predicate candidates
+-> Step 3: Selected 3 predicates: ['t1.state = t2.state', 't1.salary = t2.salary', 't1.rate != t2.rate']
+-> Step 3: Selected 2 predicates: ['t1.salary > t2.salary', 't1.rate < t2.rate']
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate","salary"],"implied_columns":["singleexemp","marriedexemp","childexemp","maritalstatus","haschild"],"reasoning":"The sentence refers to taxation concepts for income-based rate structures. 'Income-based' maps to salary, and 'rate structures' maps to the tax rate column. Taxation concepts also suggest the exemption columns (singleexemp, marriedexemp, childexemp), which depend on marital status and having a child, so those are included as implied columns given the instruction to be inclusive.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['rate', 'salary', 'singleexemp', 'marriedexemp', 'childexemp', 'maritalstatus', 'haschild']
+-> Step 3: Considering 242 predicate candidates
+-> Step 3 failed: The sentence describes a review process and a compliance goal, with no specific data constraint on the rate column that can be expressed as a denial constraint.
+-> Predicate selection failed: The sentence describes a review process and a compliance goal, with no specific data constraint on the rate column that can be expressed as a denial constraint.
+
+============================================================
+Processing: Looking at the sample data, Ohio residents demonstrate this pattern clearly acro...
+-> Step 3 failed: The sentence is a general, non-operational statement about constitutional influence on design and does not define a checkable data constraint.
+-> Predicate selection failed: The sentence is a general, non-operational statement about constitutional influence on design and does not define a checkable data constraint.
+
+============================================================
+Processing: State legislative assemblies establish bracket structures that determine applica...
+-> Step 3: Selected 3 predicates: ['t1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']
+-> Step 3.5 [GATE]: PASS — The sentence says rate is determined by geographic location and earning levels, so two tuples with the same state and salary but different rate violate it (FD: state, salary -> rate). (confidence=medium)
+-> Step 4: Constructing constraint with 3 predicates and 6 columns
+-> Step 3.5 [GATE]: REJECT — The sentence is vague ('follows logical patterns', 'equitable treatment') and does not state a specific monotonic rule; although predicates t1.salary > t2.salary AND t1.rate < t2.rate could encode a violation, the sentence never asserts that higher income must have a higher or equal rate, and it does not specify grouping (e.g., same state or marital status), so no concrete falsifiable condition is stated. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Analysts reviewing rate distributions examine these relationships to verify comp...
+-> Step 2 response: {"is_valid":true,"direct_columns":["state","salary"],"implied_columns":[],"reasoning":"\"Ohio residents\" maps to the state column, which holds state abbreviations such as OH. \"Different income levels\" maps to salary, the only income-like column. \"This pattern\" is not defined in the sentence, so no further columns can be identified. The rate and exemption columns could be related to the pattern, but the sentence does not mention them.","missing_concepts":["the specific pattern being referred to (\"this pattern\" is undefined)"],"reason":null}...
+-> Step 2: Identified columns ['state', 'salary']
+-> Step 3: Considering 36 predicate candidates
+-> Step 3.5 [GATE]: PASS — Comparative rule within a group: a violation is two tuples with the same state where t1.salary < t2.salary and t1.rate > t2.rate, which is directly checkable from the data. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":["state","salary","rate"],"implied_columns":[],"reasoning":"The sentence says state legislatures (state) set bracket structures that determine applicable rates (rate) for salary ranges (salary). So state, salary, and rate map directly. Exemption columns are not mentioned, so they are not included.","missing_concepts":["bracket structure / salary range boundaries (no explicit bracket column)"],"reason":null}...
+-> Step 2: Identified columns ['state', 'salary', 'rate']
+-> Step 3: Considering 58 predicate candidates
+-> Step 3 failed: The sentence is vague and descriptive. It does not specify a concrete constraint that can be expressed as a denial constraint.
+-> Predicate selection failed: The sentence is vague and descriptive. It does not specify a concrete constraint that can be expressed as a denial constraint.
+
+============================================================
+Processing: Anomalies in this pattern typically indicate data entry errors or system calcula...
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.state = t2.state', 't1.salary = t2.salary', 't1.rate != t2.rate']}]
+   Two records with the same state and the same salary must have the same rate. A violation is two such records whose rates differ.
+
+-> Verification iteration 1/2
+-> Step 5: Found 180 violations
+
+============================================================
+Processing: Monthly statistical reports track the distribution of taxpayers across rate brac...
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate"],"implied_columns":["salary","maritalstatus","haschild","singleexemp","marriedexemp","childexemp","state"],"reasoning":"The sentence mentions 'rate distributions', which maps directly to the rate column (tax rate). 'These relationships' and 'computational accuracy' suggest the rate is computed from, or related to, other columns. Rate in a tax table likely depends on salary, and on state (jurisdiction) and the exemption columns, which are tied to marital status and child status. Because the sentence is vague, these related columns are included as implied.","missing_concepts":["specific relationships being verified","computational accuracy rule/formula"],"reason":null}...
+-> Step 2: Identified columns ['rate', 'salary', 'maritalstatus', 'haschild', 'singleexemp', 'marriedexemp', 'childexemp', 'state']
+-> Step 3: Considering 256 predicate candidates
+-> Step 3 failed: The sentence names no concrete constraint ('this pattern' is undefined), and it is just an observation about sample data. Ohio is also absent from the state values in the profile.
+-> Predicate selection failed: The sentence names no concrete constraint ('this pattern' is undefined), and it is just an observation about sample data. Ohio is also absent from the state values in the profile.
+
+============================================================
+Processing: Budget forecasting models rely on these distributions to project revenue expecta...
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']}]
+   Two people in the same state where the one with the lower salary has a higher tax rate than the one with the higher salary is a violation.
+
+-> Verification iteration 1/2
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is a generic commentary about anomalies in an unspecified pattern indicating data entry errors or system calculation issues. It names no specific data concept (such as salary, rate, exemptions, location, or personal attributes) and gives no pattern or condition that maps to any column in the tax table.","missing_concepts":["unspecified pattern","anomaly definition","data entry error indicator","system calculation issue indicator"],"reason":"The sentence is a vague statement about anomalies and investigation with no concept that maps to any column in the predicate list."}...
+-> Step 2 failed: The sentence is a vague statement about anomalies and investigation with no concept that maps to any column in the predicate list.
+-> Schema validation failed: The sentence is a vague statement about anomalies and investigation with no concept that maps to any column in the predicate list.
+
+============================================================
+Processing: Geographic proximity creates additional expectations for rate coherence beyond s...
+-> Step 3: Selected 3 predicates: ['t1.state = t2.state', 't1.salary >= t2.salary', 't1.rate < t2.rate']
+-> Step 3 failed: The sentence describes an analyst activity, not a data constraint. It names no specific relationship, condition, or expected value that could be expressed as a denial constraint.
+-> Predicate selection failed: The sentence describes an analyst activity, not a data constraint. It names no specific relationship, condition, or expected value that could be expressed as a denial constraint.
+
+============================================================
+Processing: Taxpayers sharing the same postal zone generally experience similar tax structur...
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate","state"],"implied_columns":["salary","city","zip"],"reasoning":"The sentence refers to rate brackets, which map to the rate column (the tax rate), and to jurisdiction, which maps to state (a state or jurisdiction abbreviation). Taxpayers are the rows of the table. Salary determines the bracket, so it may be relevant. City and zip are alternative or finer jurisdiction levels, so I include them to be inclusive. Monthly reporting has no date column.","missing_concepts":["monthly time period / report date","taxpayer identifier (count of taxpayers)"],"reason":null}...
+-> Step 2: Identified columns ['rate', 'state', 'salary', 'city', 'zip']
+-> Step 3: Considering 118 predicate candidates
+-> Step 5: Found 362 violations
+
+============================================================
+Processing: Municipal boundaries often align with ZIP code territories, creating natural gro...
+-> Step 2 response: {"is_valid":true,"direct_columns":["salary","rate"],"implied_columns":["singleexemp","marriedexemp","childexemp","state","maritalstatus","haschild"],"reasoning":"The sentence talks about distributions used to project revenue expectations. In a tax table, revenue is driven by salary (income base) and tax rate, so these are the closest matches. Exemption columns reduce taxable income and affect revenue, and the grouping/distribution dimensions (state, marital status, has child) could scope the distributions. No column represents fiscal years or forecasts.","missing_concepts":["fiscal year / time period","forecasted revenue","budget"],"reason":null}...
+-> Step 2: Identified columns ['salary', 'rate', 'singleexemp', 'marriedexemp', 'childexemp', 'state', 'maritalstatus', 'haschild']
+-> Step 3: Considering 256 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate","state"],"implied_columns":["zip","city","areacode"],"reasoning":"The sentence concerns rate coherence (rate) and states that expectations go beyond state-level considerations (state). Geographic proximity is captured by finer-grained location columns: zip and city, and loosely areacode, as telephone area codes also reflect geographic region.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['rate', 'state', 'zip', 'city', 'areacode']
+-> Step 3: Considering 118 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip","rate"],"implied_columns":["singleexemp","marriedexemp","childexemp","city","state"],"reasoning":"\"Postal zone\" maps to zip. \"Tax structures\" refers to the tax rate and the exemption amounts, so rate is the primary column and singleexemp, marriedexemp and childexemp are included as parts of the tax structure. \"Overlapping local jurisdictions\" suggests city and state, which are geographic jurisdiction columns related to zip. Including them is the inclusive choice.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['zip', 'rate', 'singleexemp', 'marriedexemp', 'childexemp', 'city', 'state']
+-> Step 3.5 [GATE]: PASS — Within the same state, a higher or equal salary must not have a lower rate (monotonic progressive brackets); violation: t1.state = t2.state AND t1.salary >= t2.salary AND t1.rate < t2.rate. (confidence=medium)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 3: Considering 258 predicate candidates
+-> Step 3 failed: The sentence describes a reporting process, not a data integrity constraint. There is no condition that records can violate.
+-> Predicate selection failed: The sentence describes a reporting process, not a data integrity constraint. There is no condition that records can violate.
+
+============================================================
+Processing: Within the same ZIP code, one person cannot earn less but have a higher tax rate...
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","zip"],"implied_columns":["state"],"reasoning":"The sentence relates municipal boundaries (city) to ZIP code territories (zip), implying a grouping or alignment between the two. State is included as an implied scoping column because city names are not unique across states and municipalities belong to a state jurisdiction.","missing_concepts":["administrative purposes"],"reason":null}...
+-> Step 2: Identified columns ['city', 'zip', 'state']
+-> Step 3: Considering 62 predicate candidates
+-> Step 3 failed: The sentence describes a usage or purpose (forecasting revenue) and does not impose any checkable rule on the data values.
+-> Predicate selection failed: The sentence describes a usage or purpose (forecasting revenue) and does not impose any checkable rule on the data values.
+
+============================================================
+Processing: This ensures that neighbors facing identical local tax environments see rates th...
+-> Step 3: Selected 3 predicates: ['t1.state = t2.state', 't1.areacode = t2.areacode', 't1.rate != t2.rate']
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.rate != t2.rate']
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip","salary","rate"],"implied_columns":[],"reasoning":"The constraint groups by ZIP code (zip), compares earnings (salary) between two people, and compares tax rate (rate). It states that within the same zip, a lower salary cannot come with a higher rate. Other columns such as exemptions, city, or state are not mentioned or needed for this constraint.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['zip', 'salary', 'rate']
+-> Step 3: Considering 78 predicate candidates
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.state = t2.state', 't1.salary >= t2.salary', 't1.rate < t2.rate']}]
+   Within the same state, a row with a higher or equal salary must not have a lower rate than a row with a lower salary.
+
+-> Verification iteration 1/2
+-> Step 3 failed: The sentence is descriptive and uses 'often', so it states a tendency, not an enforceable constraint. No exact denial constraint can be derived from it.
+-> Predicate selection failed: The sentence is descriptive and uses 'often', so it states a tendency, not an enforceable constraint. No exact denial constraint can be derived from it.
+
+============================================================
+Processing: The principle prevents situations where lower earners would paradoxically face s...
+-> Step 3.5 [GATE]: PASS — Read as a functional dependency, two records with the same state and same areacode must have the same rate; the violation is t1.state = t2.state AND t1.areacode = t2.areacode AND t1.rate != t2.rate. (confidence=medium)
+-> Step 4: Constructing constraint with 3 predicates and 5 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate","salary"],"implied_columns":["zip","city","state","areacode"],"reasoning":"The sentence says neighbors in identical local tax environments should see rates that align logically with their incomes. 'Rates' maps to the tax rate column and 'incomes' maps to salary. 'Neighbors facing identical local tax environments' is a location grouping, so zip is the most likely identifier. City, state and areacode are included as related geographic scoping columns.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['rate', 'salary', 'zip', 'city', 'state', 'areacode']
+-> Step 3: Considering 152 predicate candidates
+-> Step 3.5 [GATE]: PASS — The sentence asserts that taxpayers with the same zip share the same tax rate, so a violation is two rows with t1.zip = t2.zip but t1.rate != t2.rate. The word 'generally' is hedging, but the underlying claim still maps to a functional dependency zip -> rate. (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 7 columns
+-> Step 5: Found 452 violations
+
+============================================================
+Processing: Auditors examining rate fairness at the local level rely on this consistency whe...
+-> Step 3: Selected 3 predicates: ['t1.zip = t2.zip', 't1.salary < t2.salary', 't1.rate > t2.rate']
+-> Step 3: Selected 3 predicates: ['t1.zip = t2.zip', 't1.salary > t2.salary', 't1.rate < t2.rate']-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.state = t2.state', 't1.areacode = t2.areacode', 't1.rate != t2.rate']}]
+   Two records with the same state and the same area code but different rates are a violation.
+
+-> Verification iteration 1/2
+
+-> Step 2 response: {"is_valid":true,"direct_columns":["salary","rate"],"implied_columns":["city","state","zip"],"reasoning":"The sentence describes a progressive-tax principle: lower earners (salary) must not face a higher percentage burden (rate) than higher earners in the same community. 'Earners' maps to salary and 'percentage burdens' maps to the tax rate. 'Same community' is a grouping scope, best matched by city, with state and zip as related location columns that could also define the community. Exemption columns could influence effective burden but are not mentioned.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['salary', 'rate', 'city', 'state', 'zip']
+-> Step 3: Considering 118 predicate candidates
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.rate != t2.rate']}]
+   Two records with the same zip code but different tax rates is a violation.
+
+-> Verification iteration 1/2
+-> Step 3.5 [GATE]: PASS — Comparative ordering rule within a group: a violation is two tuples with the same zip where t1.salary < t2.salary but t1.rate > t2.rate, which is directly checkable from the data. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate"],"implied_columns":["city","state","zip","areacode"],"reasoning":"The sentence refers to 'rate fairness' (the rate column, a tax rate) evaluated 'at the local level', which implies a geographic scope such as city, state, zip, or areacode. 'This consistency' suggests the rate should be consistent within a locality. Salary and exemptions could influence the rate, but they are not mentioned, so they are excluded. City is the most likely local unit; zip, state, and areacode are included as other possible local identifiers.","missing_concepts":["auditor/evaluator role","specific definition of consistency or fairness"],"reason":null}...
+-> Step 2: Identified columns ['rate', 'city', 'state', 'zip', 'areacode']
+-> Step 3: Considering 118 predicate candidates
+-> Step 3.5 [GATE]: PASS — Comparative rule: within the same zip (same local tax environment), a higher salary must not come with a lower tax rate; violation is t1.zip = t2.zip AND t1.salary > t2.salary AND t1.rate < t2.rate. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 6 columns
+-> Step 3: Selected 4 predicates: ['t1.city = t2.city', 't1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']
+-> Step 3: Selected 3 predicates: ['t1.city = t2.city', 't1.state = t2.state', 't1.rate != t2.rate']
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.salary < t2.salary', 't1.rate > t2.rate']}]
+   Two people in the same ZIP code where one has a lower salary but a higher tax rate than the other is a violation.
+
+-> Verification iteration 1/2
+-> Step 3.5 [GATE]: PASS — Comparative rule: within the same city and state, a lower salary must not have a higher rate; violation is t1.city=t2.city AND t1.state=t2.state AND t1.salary<t2.salary AND t1.rate>t2.rate. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 5 columns
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.salary > t2.salary', 't1.rate < t2.rate']}]
+   Two records in the same zip code where the one with the higher salary has a lower tax rate than the one with the lower salary is a violation.
+
+-> Verification iteration 1/2
+-> Step 3.5 [GATE]: REJECT — The sentence only says auditors rely on 'this consistency' when evaluating rate fairness; it never states that the same city and state must have the same rate, so the functional dependency is inferred from vague context rather than asserted, and the column match is opportunistic. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Community advocacy groups occasionally request analyses of within-ZIP rate patte...
+-> Step 5: SQL execution failed - Result exceeds 20000000 rows; query aborted
+
+============================================================
+Processing: Public records requests for aggregated ZIP-level statistics are processed throug...
+-> Step 5: Found 124994 violations
+
+============================================================
+Processing: Tax exemptions reduce the amount of income subject to taxation, providing financ...
+-> Step 5: Found 2 violations
+
+============================================================
+Processing: The system tracks three exemption categories separately: single, married, and ch...
+-> Step 5: Found 2 violations
+
+============================================================
+Processing: These values appear as integer fields measured in dollars....
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.city = t2.city', 't1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']}]
+   Two rows from the same city and state where the lower-salary row has a strictly higher tax rate than the higher-salary row is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: Legislative updates to exemption amounts typically occur during regular sessions...
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip","rate"],"implied_columns":["city","state","salary"],"reasoning":"The sentence refers to \"within-ZIP rate patterns\" for equity in local taxation. ZIP is the grouping column and rate (the tax rate) is the value being analyzed. City and state are related geographic columns that could scope or refine the local area. Salary is a plausible comparison dimension for assessing equity, since rates are usually tied to income.","missing_concepts":["equity/fairness measure","advocacy group requests (not a data attribute)"],"reason":null}...
+-> Step 2: Identified columns ['zip', 'rate', 'city', 'state', 'salary']
+-> Step 3: Considering 118 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","marriedexemp","childexemp","maritalstatus","haschild"],"implied_columns":["salary","rate"],"reasoning":"The sentence discusses tax exemptions (singleexemp, marriedexemp, childexemp) that vary by filing status (maritalstatus: M/S) and family circumstances (haschild). Income subject to taxation relates to salary, and taxation relates to rate, so these are included as implied columns.","missing_concepts":["taxable income (derived value after exemptions)"],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'marriedexemp', 'childexemp', 'maritalstatus', 'haschild', 'salary', 'rate']
+-> Step 3: Considering 242 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","marriedexemp","childexemp"],"implied_columns":["maritalstatus","haschild"],"reasoning":"The sentence names three exemption categories (single, married, child), which map directly to singleexemp, marriedexemp, and childexemp. The maritalstatus and haschild columns are the status attributes underlying the single/married and child categories, so they are included as implied columns.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'marriedexemp', 'childexemp', 'maritalstatus', 'haschild']
+-> Step 3: Considering 138 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","marriedexemp","childexemp"],"implied_columns":["state"],"reasoning":"The sentence refers to exemption amounts, which map to singleexemp, marriedexemp and childexemp. The state assembly implies jurisdiction-specific legislation, so state is relevant for scoping. The timing of legislative sessions has no column.","missing_concepts":["legislative session timing","date of legislative update"],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'marriedexemp', 'childexemp', 'state']
+-> Step 3: Considering 116 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip"],"implied_columns":[],"reasoning":"The sentence mentions 'ZIP-level statistics', which maps to the zip column. The rest of the sentence (public records requests, Communications Office, fifteen business days) describes an administrative process with no columns in the schema. Aggregated statistics could involve salary or rate, but they are not named, so they are not included.","missing_concepts":["public records requests","Communications Office processing","fifteen business days turnaround time","request date/processing date"],"reason":null}...
+-> Step 2: Identified columns ['zip']
+-> Step 3: Considering 22 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["salary","singleexemp","marriedexemp","childexemp"],"implied_columns":[],"reasoning":"The sentence says values are integer fields measured in dollars. The integer monetary columns are salary and the exemption amounts (singleexemp, marriedexemp, childexemp). Rate is a float percentage, and areacode and zip are integers but are identifiers, not dollar amounts, so they are excluded.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['salary', 'singleexemp', 'marriedexemp', 'childexemp']
+-> Step 3: Considering 148 predicate candidates
+-> Step 3 failed: The sentence describes an occasional analysis request and states no testable data constraint, so no violation condition can be expressed.
+-> Predicate selection failed: The sentence describes an occasional analysis request and states no testable data constraint, so no violation condition can be expressed.
+
+============================================================
+Processing: Changes to exemption formulas require coordination between the tax commission, l...
+-> Step 3: Selected 5 predicates: ['t1.maritalstatus = $string', 't1.haschild = $string', 't1.singleexemp != $int', 't1.marriedexemp != $int', 't1.childexemp != $int']
+-> Step 3 failed: The sentence is descriptive of schema organization (separate exemption columns) and states no checkable constraint. Requiring non-null values would add a rule the sentence does not state.
+-> Predicate selection failed: The sentence is descriptive of schema organization (separate exemption columns) and states no checkable constraint. Requiring non-null values would add a rule the sentence does not state.
+
+============================================================
+Processing: A person single tax exemption cannot be greater than his salary....
+-> Step 3 failed: The constraint concerns request-processing office and a fifteen-business-day deadline, but the only available column is zip, which has no relation to either. No predicates over zip can express it.
+-> Predicate selection failed: The constraint concerns request-processing office and a fifteen-business-day deadline, but the only available column is zip, which has no relation to either. No predicates over zip can express it.
+
+============================================================
+Processing: This boundary ensures that exemption claims remain proportional to actual earnin...
+-> Step 3 failed: The sentence is about the timing of legislative updates, which is not representable with the available columns (no date or session information). It is also a soft, non-enforceable statement ('typically').
+-> Predicate selection failed: The sentence is about the timing of legislative updates, which is not representable with the available columns (no date or session information). It is also a soft, non-enforceable statement ('typically').
+
+============================================================
+Processing: Finance teams reviewing exemption totals watch for cases approaching these natur...
+-> Step 3 failed: The sentence describes data type and unit (integer dollars), not a violable constraint on values, so no denial constraint predicates can be derived from it.
+-> Predicate selection failed: The sentence describes data type and unit (integer dollars), not a violable constraint on values, so no denial constraint predicates can be derived from it.
+
+============================================================
+Processing: The sample data shows exemption values ranging from $0 to $6,600, all falling we...
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","marriedexemp","childexemp"],"implied_columns":[],"reasoning":"The sentence mentions 'exemption formulas', which map to the exemption amount columns singleexemp, marriedexemp and childexemp. The rest of the sentence is about organizational coordination between the tax commission, legislative counsel and information systems staff. It is not a data constraint and has no column mappings.","missing_concepts":["tax commission","legislative counsel","information systems staff","coordination requirement for changes"],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'marriedexemp', 'childexemp']
+-> Step 3: Considering 102 predicate candidates
+-> Step 3.5 [GATE]: REJECT — The sentence is a general explanation of how tax exemptions work and gives no specific exemption amount or condition mapping marital status or child status to a required value, so no concrete violation scenario can be derived. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Historical analysis of exemption utilization patterns informs policy discussions...
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","salary"],"implied_columns":["maritalstatus"],"reasoning":"The sentence compares the single tax exemption (singleexemp) to the person's salary (salary), so both are directly relevant. 'Single' in singleexemp already refers to single status, but maritalstatus is included as a possible scoping column given the instruction to be inclusive.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'salary', 'maritalstatus']
+-> Step 3: Considering 74 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","marriedexemp","childexemp"],"implied_columns":["maritalstatus","haschild"],"reasoning":"The sentence concerns exemption totals approaching natural limits (maximums). The exemption amount columns singleexemp, marriedexemp and childexemp are the direct subjects. The 'natural limits' are the upper bounds of these columns (e.g., 12,750, 24,500, 3,300). Marital status and has-child flags determine which exemptions apply, so they are implied for scoping.","missing_concepts":["explicit threshold values for the natural limits","definition of 'approaching' (proximity margin)"],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'marriedexemp', 'childexemp', 'maritalstatus', 'haschild']
+-> Step 3: Considering 138 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["salary","singleexemp","marriedexemp","childexemp"],"implied_columns":["maritalstatus","haschild"],"reasoning":"The sentence says exemption claims must stay proportional to actual earnings. 'Exemption claims' maps to singleexemp, marriedexemp and childexemp. 'Actual earnings' maps to salary. Which exemption applies depends on maritalstatus (single vs married) and haschild (child exemption), so these are included as scoping columns. The rate column is a tax rate rather than earnings or exemptions, so it is not included.","missing_concepts":["specific proportionality threshold or ratio"],"reason":null}...
+-> Step 2: Identified columns ['salary', 'singleexemp', 'marriedexemp', 'childexemp', 'maritalstatus', 'haschild']
+-> Step 3: Considering 184 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","marriedexemp","childexemp","salary"],"implied_columns":["maritalstatus","haschild"],"reasoning":"The sentence refers to exemption values ($0 to $6,600) compared against salary. The exemption columns (singleexemp, marriedexemp, childexemp) are the exemption values; the 6,600 maximum in the sample matches marriedexemp, but all three exemption columns are included since the sentence does not specify which. Salary is directly mentioned as the comparison target. maritalstatus and haschild are implied because they determine which exemption applies to a person.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'marriedexemp', 'childexemp', 'salary', 'maritalstatus', 'haschild']
+-> Step 3: Considering 184 predicate candidates
+-> Step 3 failed: The sentence states a procedural or governance requirement about coordination between organizations. It does not constrain the values of the exemption columns, so it cannot be expressed as a denial constraint.
+-> Predicate selection failed: The sentence states a procedural or governance requirement about coordination between organizations. It does not constrain the values of the exemption columns, so it cannot be expressed as a denial constraint.
+
+============================================================
+Processing: Taxpayer assistance centers provide guidance on claiming appropriate exemptions ...
+-> Step 3: Selected 1 predicates: ['t1.singleexemp > t1.salary']
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","marriedexemp","childexemp"],"implied_columns":["maritalstatus","haschild"],"reasoning":"The sentence refers to exemptions and statutory limits on them. The exemption columns (singleexemp, marriedexemp, childexemp) hold the exemption amounts, which are the limits in question. maritalstatus and haschild determine which exemption applies, so they are included as implied columns. Historical analysis and policy discussion have no matching columns.","missing_concepts":["historical time dimension (no date/year column)","policy discussion","statutory limit thresholds as separate values"],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'marriedexemp', 'childexemp', 'maritalstatus', 'haschild']
+-> Step 3: Considering 138 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","marriedexemp","childexemp"],"implied_columns":["maritalstatus","haschild"],"reasoning":"The sentence refers to claiming appropriate exemptions, which maps to the exemption columns (single, married, child). Which exemption is appropriate depends on marital status and whether the person has a child, so those columns are implied. The taxpayer assistance centers and filing season concepts have no matching columns.","missing_concepts":["taxpayer assistance centers","filing season","guidance provision"],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'marriedexemp', 'childexemp', 'maritalstatus', 'haschild']
+-> Step 3: Considering 138 predicate candidates
+-> Step 3 failed: The sentence describes a monitoring practice and refers to unspecified 'natural limits'. It gives no explicit constraint that can be expressed as a denial constraint.
+-> Predicate selection failed: The sentence describes a monitoring practice and refers to unspecified 'natural limits'. It gives no explicit constraint that can be expressed as a denial constraint.
+
+============================================================
+Processing: Daily operations involve numerous interactions with the tax table across differe...
+-> Step 3.5 [GATE]: PASS — Comparative rule within a single row: a violation occurs when t1.singleexemp > t1.salary, which is checkable directly from the two integer columns. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 3 columns
+-> Step 3: Selected 3 predicates: ['t1.singleexemp > t1.salary', 't1.marriedexemp > t1.salary', 't1.childexemp > $int']
+-> Step 3: Selected 1 predicates: ['t1.singleexemp > t1.salary']
+-> Step 3 failed: The sentence is a narrative statement about policy analysis and contains no verifiable constraint on the data values.
+-> Predicate selection failed: The sentence is a narrative statement about policy analysis and contains no verifiable constraint on the data values.
+
+============================================================
+Processing: Customer service representatives frequently look up records when taxpayers call ...
+-> Step 3 failed: The sentence describes an advisory service and imposes no verifiable constraint on the values of the exemption, marital status, or child columns.
+-> Predicate selection failed: The sentence describes an advisory service and imposes no verifiable constraint on the values of the exemption, marital status, or child columns.
+
+============================================================
+Processing: Data entry teams process updates when individuals report changes to addresses, i...
+-> Step 4: Constructed comparative with 1 rule(s)
+   ['t1.singleexemp > t1.salary']
+   A record is a violation when the single tax exemption amount is greater than the salary.
+
+-> Verification iteration 1/2
+-> Step 5: Found 89 violations
+
+============================================================
+Processing: The average call volume to the taxpayer hotline peaks between January and April ...
+-> Step 3.5 [GATE]: PASS — The sentence asserts that exemption values (single, married, child) must not exceed the salary, so a violation is a row where singleexemp > salary or marriedexemp > salary; this is checkable from column values alone. (confidence=medium)
+-> Step 4: Constructing constraint with 3 predicates and 6 columns
+-> Step 3.5 [GATE]: PASS — The sentence bounds exemption claims by salary, so a violation is a row where singleexemp exceeds salary (t1.singleexemp > t1.salary), which is checkable from column values alone. (confidence=medium)
+-> Step 4: Constructing constraint with 1 predicates and 6 columns
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence only mentions 'daily operations', 'interactions' and 'departmental functions' in relation to the tax table as a whole. It names no data attribute, value, condition or field. The tax table itself is not a column, and nothing in the sentence maps to any column in the predicate list (areacode, childexemp, city, fname, gender, haschild, lname, maritalstatus, marriedexemp, phone, rate, salary, singleexemp, state, zip). There is also no concept of departments, operations or interactions in the schema.","missing_concepts":["daily operations","interactions with table","departmental functions"],"reason":"The sentence is a general statement about usage of the tax table and does not reference any specific column or data attribute that a constraint could be defined on."}...
+-> Step 2 failed: The sentence is a general statement about usage of the tax table and does not reference any specific column or data attribute that a constraint could be defined on.
+-> Schema validation failed: The sentence is a general statement about usage of the tax table and does not reference any specific column or data attribute that a constraint could be defined on.
+
+============================================================
+Processing: Temporary staff augmentation during peak periods requires accelerated training o...
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate","fname","lname"],"implied_columns":["phone","areacode","salary","maritalstatus","haschild","singleexemp","marriedexemp","childexemp","city","state","zip"],"reasoning":"The sentence mentions taxpayers (records identified by fname and lname) and their rates (the rate column, a tax rate). 'Status' most plausibly maps to maritalstatus and the filing-related attributes (haschild, exemptions). Since representatives look up records when taxpayers call, phone and areacode are implied as contact identifiers, and location columns (city, state, zip) and salary can also identify or characterize a taxpayer record. No column exists for call logs, customer service reps, or lookup frequency.","missing_concepts":["customer service representative","record lookup events","call events/frequency"],"reason":null}...
+-> Step 2: Identified columns ['rate', 'fname', 'lname', 'phone', 'areacode', 'salary', 'maritalstatus', 'haschild', 'singleexemp', 'marriedexemp', 'childexemp', 'city', 'state', 'zip']
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state","zip","areacode","phone","salary","maritalstatus","haschild"],"implied_columns":["rate","singleexemp","marriedexemp","childexemp"],"reasoning":"The sentence mentions updates to addresses, income, and family circumstances. Address maps to city, state, and zip (areacode and phone are related contact/location details). Income maps to salary. Family circumstances map to maritalstatus and haschild. Rate and the exemption columns (singleexemp, marriedexemp, childexemp) are derived from income and family status, so they are implied. The data entry teams, the process of reporting, and the update events have no column.","missing_concepts":["data entry team","update/report event or timestamp","street address"],"reason":null}...
+-> Step 2: Identified columns ['city', 'state', 'zip', 'areacode', 'phone', 'salary', 'maritalstatus', 'haschild', 'rate', 'singleexemp', 'marriedexemp', 'childexemp']
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about call volume to a taxpayer hotline across months (January to April) and filing deadlines. The tax table holds personal demographic, location, salary, and tax rate/exemption data. It has no call, hotline, volume, date, or month columns. Phone and areacode are taxpayer contact details, not call counts or timing, so they do not capture the concept.","missing_concepts":["call volume","hotline calls","month/date of call","filing deadlines","time period (January to April)"],"reason":"No concept in the sentence (call volume, months, filing deadlines) maps to any column in the tax table; the schema has no call-activity or date/time columns."}...
+-> Step 2 failed: No concept in the sentence (call volume, months, filing deadlines) maps to any column in the tax table; the schema has no call-activity or date/time columns.-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.singleexemp > t1.salary']
+   A record is a violation if its single exemption amount is greater than its salary.
+-> Schema validation failed: No concept in the sentence (call volume, months, filing deadlines) maps to any column in the tax table; the schema has no call-activity or date/time columns.
+
+============================================================
+Processing: Supervisors run periodic reports examining rate distributions across geographic ...
+
+
+-> Verification iteration 1/2
+-> Step 5: Found 89 violations
+
+============================================================
+Processing: Auditors conduct spot checks comparing reported income against assigned rates to...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about temporary staff augmentation, peak periods, and accelerated training on system navigation and data verification. These are operational and HR concepts. The schema is a tax table holding personal demographics, location, salary, tax rate and exemption values. No concept in the sentence (staffing, peak periods, training, system navigation, data verification) maps to any column in the predicate list.","missing_concepts":["temporary staff augmentation","peak periods","training","system navigation","data verification protocols"],"reason":"The sentence describes staffing and training procedures, which have no corresponding columns in the tax table schema."}...
+-> Step 2 failed: The sentence describes staffing and training procedures, which have no corresponding columns in the tax table schema.
+-> Schema validation failed: The sentence describes staffing and training procedures, which have no corresponding columns in the tax table schema.
+
+============================================================
+Processing: Training materials for new staff members emphasize understanding the relationshi...
+-> Step 4: Constructed bound with 3 rule(s)
+   ['t1.singleexemp > t1.salary', 't1.marriedexemp > t1.salary', {'OR': ['t1.childexemp > 6600', 't1.childexemp < 0']}]
+   A record is a violation if its single exemption or married exemption exceeds the salary, or if its child exemption is outside the range 0 to 6600.
+
+-> Verification iteration 1/2
+-> Step 5: Found 902 violations
+
+============================================================
+Processing: Certification examinations assess staff competency in record lookup, update proc...
+-> Step 3: Considering 436 predicate candidates
+-> Step 3: Considering 464 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["salary","rate"],"implied_columns":["state","maritalstatus","haschild","singleexemp","marriedexemp","childexemp"],"reasoning":"The sentence compares reported income (salary) against assigned rates (rate), so these are the direct columns. The tax rate may depend on jurisdiction (state), filing status (maritalstatus), dependents (haschild), and the exemption amounts (singleexemp, marriedexemp, childexemp) that adjust taxable income, so they are included as implied context. Auditors, spot checks, and system accuracy have no column mapping.","missing_concepts":["auditor identity","spot check / sampling indicator","audit date or verification status"],"reason":null}...
+-> Step 2: Identified columns ['salary', 'rate', 'state', 'maritalstatus', 'haschild', 'singleexemp', 'marriedexemp', 'childexemp']
+-> Step 3: Considering 256 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate"],"implied_columns":["state","city","zip","areacode"],"reasoning":"The sentence mentions 'rate distributions', which maps directly to the rate column (tax rate). 'Geographic regions' is a location concept that maps to the geographic columns state, city, zip, and areacode. State is the most likely region grouping, but city, zip, and areacode are also geographic, so they are included. 'Supervisors' and 'periodic reports' have no column mapping.","missing_concepts":["supervisors (role/user)","periodic reporting (time/period)"],"reason":null}...
+-> Step 2: Identified columns ['rate', 'state', 'city', 'zip', 'areacode']
+-> Step 3: Considering 118 predicate candidates
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes certification examinations assessing staff competency in record lookup, update procedures, and exception handling. This is a training and process concept about staff skills. The schema is a tax table of personal demographics, location, salary, and exemption data. None of its columns (names, gender, phone, address, marital status, salary, rate, exemptions) represent certification, exams, staff competency, or procedures.","missing_concepts":["certification examinations","staff competency","record lookup","update procedures","exception handling"],"reason":"No concept in the sentence maps to any column in the tax table; it concerns staff certification and procedural competency, which is not represented in the schema."}...
+-> Step 2 failed: No concept in the sentence maps to any column in the tax table; it concerns staff certification and procedural competency, which is not represented in the schema.
+-> Schema validation failed: No concept in the sentence maps to any column in the tax table; it concerns staff certification and procedural competency, which is not represented in the schema.
+
+============================================================
+Processing: Performance metrics track average handle time for taxpayer inquiries while maint...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about training materials for new staff members and how they teach understanding of field relationships instead of memorizing values. It names no specific data concept such as a person attribute, location, salary, tax rate, or exemption, and it states no data constraint that maps to a column in the tax table. The words 'fields' and 'values' are generic and do not identify any particular column.","missing_concepts":["training materials","new staff members","understanding relationships between fields","memorizing individual values"],"reason":"The sentence describes training practices and does not reference any concept that corresponds to a column in the tax table."}...
+-> Step 2 failed: The sentence describes training practices and does not reference any concept that corresponds to a column in the tax table.
+-> Schema validation failed: The sentence describes training practices and does not reference any concept that corresponds to a column in the tax table.
+
+============================================================
+Processing: When taxpayers relocate, staff members update city, state, and ZIP code fields t...
+-> Step 3 failed: The sentence describes an organizational process (data entry teams processing reported changes) and states no verifiable data constraint on the listed columns. Nothing in the data records reports or update events, so no denial constraint can be formed.
+-> Predicate selection failed: The sentence describes an organizational process (data entry teams processing reported changes) and states no verifiable data constraint on the listed columns. Nothing in the data records reports or update events, so no denial constraint can be formed.
+
+============================================================
+Processing: Processing teams verify that new addresses reflect valid combinations before com...
+-> Step 3 failed: The sentence describes how records are used in a business process and states no verifiable constraint on the data values.
+-> Predicate selection failed: The sentence describes how records are used in a business process and states no verifiable constraint on the data values.
+
+============================================================
+Processing: Cross-referencing against postal databases helps confirm that reported locations...
+-> Step 3 failed: The sentence describes a reporting process, not a data integrity constraint, so it cannot be expressed as a denial constraint.
+-> Predicate selection failed: The sentence describes a reporting process, not a data integrity constraint, so it cannot be expressed as a denial constraint.
+
+============================================================
+Processing: Updates to geographic information may trigger recalculations of applicable rates...
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state","zip"],"implied_columns":["areacode"],"reasoning":"The sentence explicitly names city, state, and ZIP code fields that must be updated together to keep geographic coherence, which maps to city, state, and zip. Telephone area code is also geographically tied to location and may change on relocation, so it is included as an implied column. The constraint is about the consistency of these location fields with each other.","missing_concepts":["relocation event or change history (no column tracks when a taxpayer moves)","staff member or update actor (no column)"],"reason":null}...
+-> Step 2: Identified columns ['city', 'state', 'zip', 'areacode']
+-> Step 3: Considering 96 predicate candidates
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes call-center performance metrics: average handle time for taxpayer inquiries and an accuracy standard above 98 percent. The tax table holds personal demographics, location, salary, tax rate, and exemption data. It has no column for handle time, inquiries, or accuracy. The 'rate' column is a tax rate, not an accuracy percentage, so it does not match. 'Taxpayer' is only a loose domain link and does not map to a specific column.","missing_concepts":["average handle time","taxpayer inquiries","accuracy percentage","performance metrics"],"reason":"No concept in the sentence maps to any available column. The schema has no handle time, inquiry, or accuracy data."}...
+-> Step 2 failed: No concept in the sentence maps to any available column. The schema has no handle time, inquiry, or accuracy data.
+-> Schema validation failed: No concept in the sentence maps to any available column. The schema has no handle time, inquiry, or accuracy data.
+
+============================================================
+Processing: Documentation of address change requests supports audit trails and helps resolve...
+-> Step 3 failed: The sentence describes an auditing procedure and does not specify a concrete constraint between salary and rate (no thresholds, brackets, or mapping), so no denial constraint can be expressed without inventing details.
+-> Predicate selection failed: The sentence describes an auditing procedure and does not specify a concrete constraint between salary and rate (no thresholds, brackets, or mapping), so no denial constraint can be expressed without inventing details.
+
+============================================================
+Processing: Electronic imaging systems capture supporting documentation such as utility bill...
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state","zip"],"implied_columns":["areacode"],"reasoning":"The sentence is about confirming that reported locations exist by cross-referencing postal databases. The location columns are city, state, and zip (postal code), which would be validated against postal data. Area code is a geographic indicator and might be loosely related to location, so it is included for inclusiveness.","missing_concepts":["postal database reference data (external source not in schema)"],"reason":null}...
+-> Step 2: Identified columns ['city', 'state', 'zip', 'areacode']
+-> Step 3: Considering 96 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state","zip","areacode"],"implied_columns":["phone"],"reasoning":"The sentence is about verifying that new addresses reflect valid combinations. In this schema, address components are city, state and zip, and validity of combinations means these must be consistent with each other (e.g., a zip belongs to a given city and state). Area code is also a location-related field that may be checked against state/city, so it is included inclusively. Phone is only weakly implied as part of the area code and phone number pair, so it is listed as implied.","missing_concepts":["street address","new vs. existing record status","commit/change process"],"reason":null}...
+-> Step 2: Identified columns ['city', 'state', 'zip', 'areacode', 'phone']
+-> Step 3: Considering 110 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["state","city","zip","rate"],"implied_columns":["areacode"],"reasoning":"The sentence says changes to geographic information (state, city, zip) can trigger recalculation of applicable rates for the new jurisdiction. Geographic columns are state (jurisdiction), city and zip. The rate column is the tax rate that is recalculated. Areacode is a weaker geographic indicator and is included because of the instruction to be inclusive. The exemption columns could also change by jurisdiction, but the sentence only mentions rates, so they are excluded.","missing_concepts":["update/change event tracking (no timestamp or history column)"],"reason":null}...
+-> Step 2: Identified columns ['state', 'city', 'zip', 'rate', 'areacode']
+-> Step 3: Considering 118 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.city != t2.city']
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.state != t2.state']
+-> Step 3 failed: The constraint depends on an external postal database that is not part of the data, so it cannot be expressed with the available predicates.
+-> Predicate selection failed: The constraint depends on an external postal database that is not part of the data, so it cannot be expressed with the available predicates.
+
+============================================================
+Processing: Retention policies specify that address change documentation must be preserved f...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about documenting address change requests for audit trails and dispute resolution. This concerns audit/change-log records, such as request documentation, timestamps and change history. The tax table has current address-related fields (city, state, zip, areacode) but they only store current values. None of them represent documentation, change requests, or audit trails, so no sentence concept maps to a column. Mentioning 'address' alone is not enough to select city/state/zip, because the constraint is about documentation of changes, not the address values.","missing_concepts":["address change request documentation","audit trail","dispute resolution","change history or timestamps"],"reason":"The sentence describes audit documentation of address change requests, but the schema has no columns for change requests, audit logs, or documentation; it only holds current address values."}...
+-> Step 2 failed: The sentence describes audit documentation of address change requests, but the schema has no columns for change requests, audit logs, or documentation; it only holds current address values.
+-> Schema validation failed: The sentence describes audit documentation of address change requests, but the schema has no columns for change requests, audit logs, or documentation; it only holds current address values.
+
+============================================================
+Processing: Year-end procedures involve comprehensive examinations of the tax table to ident...
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.rate != t2.rate']
+-> Step 3.5 [GATE]: REJECT — The sentence describes a process of staff updating fields together when taxpayers relocate, not a static data condition; although zip->city is a plausible FD, the sentence does not assert that same zip must yield same city, and the update procedure cannot be checked from the data alone. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Teams generate exception reports highlighting records that warrant closer attent...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes electronic imaging systems capturing supporting documents (utility bills, lease agreements) as proof of residency. This is about document capture and storage. The schema is a tax table with personal, location, and exemption fields. No column stores documents, document types, imaging, or proof-of-residency data. Address-related columns (city, state, zip) hold location values but are not mentioned or implied by the sentence, which concerns documentation rather than address values.","missing_concepts":["electronic imaging systems","supporting documentation","utility bills","lease agreements","proof of residency"],"reason":"No concept in the sentence maps to any column in the tax table; the sentence is about document capture and storage for residency proof, which has no corresponding column."}...
+-> Step 2 failed: No concept in the sentence maps to any column in the tax table; the sentence is about document capture and storage for residency proof, which has no corresponding column.
+-> Schema validation failed: No concept in the sentence maps to any column in the tax table; the sentence is about document capture and storage for residency proof, which has no corresponding column.
+
+============================================================
+Processing: Quality metrics track the percentage of records passing automated consistency ch...
+-> Step 3.5 [GATE]: REJECT — The sentence describes a process step (teams verifying addresses before committing changes) and only vaguely mentions 'valid combinations' without naming a specific rule; the selected predicates (same zip, different state) are inferred rather than asserted by the sentence. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Supervisors allocate investigation assignments based on exception severity and p...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about retaining address change documentation for three years after a transaction date. The tax table holds personal demographic, location and tax data. It has no columns for documents, retention periods, transaction dates or address change events. City, state, zip and areacode hold address-like values, but the constraint concerns document retention duration, not address values.","missing_concepts":["address change documentation","retention period","transaction date","three-year duration"],"reason":"No concept in the sentence maps to any available column. The retention and transaction date concepts have no counterpart in the tax table schema."}...
+-> Step 2 failed: No concept in the sentence maps to any available column. The retention and transaction date concepts have no counterpart in the tax table schema.
+-> Schema validation failed: No concept in the sentence maps to any available column. The retention and transaction date concepts have no counterpart in the tax table schema.
+
+============================================================
+Processing: Resolution documentation captures findings and any corrections applied to bring ...
+-> Step 3.5 [GATE]: REJECT — The sentence describes a process (updates to geographic info may trigger recalculation of rates) using 'may', which is a possibility rather than a checkable condition, and it does not assert that the same zip must always have the same rate, since rates can legitimately vary by city or jurisdiction within a zip. (confidence=medium)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: The annual data quality report submitted to executive leadership summarizes exce...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes a general year-end procedure of examining the tax table for accumulated anomalies. It names the table as a whole but no specific attribute, value, condition, or relationship that maps to any column. No column-level concept (salary, rate, exemptions, location, personal attributes) is mentioned or implied, so no predicate-eligible column applies.","missing_concepts":["year-end procedure timing","anomaly identification","comprehensive examination of table"],"reason":"The sentence refers only to the tax table as a whole and to a general anomaly-review process; it does not reference any specific column or data attribute."}...
+-> Step 2 failed: The sentence refers only to the tax table as a whole and to a general anomaly-review process; it does not reference any specific column or data attribute.
+-> Schema validation failed: The sentence refers only to the tax table as a whole and to a general anomaly-review process; it does not reference any specific column or data attribute.
+
+============================================================
+Processing: Continuous improvement initiatives draw on year-end findings to refine validatio...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes a process (teams generating exception reports to flag records needing closer attention). It names no data attribute, value, or condition. Nothing in it corresponds to a column in the tax table (personal details, location, salary, tax rate, exemptions). No exception criteria are given, so no column can be tied to the sentence.","missing_concepts":["exception report generation","teams","records warranting closer attention (criteria undefined)"],"reason":"The sentence describes an organizational reporting process and does not reference any data attribute or concept that maps to a column in the tax table."}...
+-> Step 2 failed: The sentence describes an organizational reporting process and does not reference any data attribute or concept that maps to a column in the tax table.
+-> Schema validation failed: The sentence describes an organizational reporting process and does not reference any data attribute or concept that maps to a column in the tax table.
+
+============================================================
+Processing: Business continuity planning addresses scenarios where primary system access bec...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes data-quality metrics: the percentage of records passing automated consistency checks. This is a meta-level statement about monitoring and reporting, not about any domain attribute. None of the schema columns (names, gender, phone, location, marital status, salary, tax rate, exemptions) correspond to quality metrics, pass percentages, or consistency check results. No column in the tax table stores check outcomes or quality scores.","missing_concepts":["quality metrics","percentage of records passing","automated consistency checks"],"reason":"The sentence is about data quality monitoring and does not reference any concept that maps to the tax table columns."}...
+-> Step 2 failed: The sentence is about data quality monitoring and does not reference any concept that maps to the tax table columns.
+-> Schema validation failed: The sentence is about data quality monitoring and does not reference any concept that maps to the tax table columns.
+
+============================================================
+Processing: Backup systems maintained at geographically dispersed data centers ensure servic...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes a workflow in which supervisors assign investigations according to exception severity and potential impact. The schema is a tax/personal demographic table with name, location, marital status, salary, tax rate and exemption columns. It has no columns for supervisors, investigation assignments, exceptions, severity or impact. Salary and rate are not reasonable proxies for these concepts, so no concept in the sentence maps to any available column.","missing_concepts":["supervisor","investigation assignment","exception severity","potential impact"],"reason":"The sentence concerns supervisor assignment of investigations by exception severity and impact, and none of these concepts correspond to any column in the tax table schema."}...
+-> Step 2 failed: The sentence concerns supervisor assignment of investigations by exception severity and impact, and none of these concepts correspond to any column in the tax table schema.
+-> Schema validation failed: The sentence concerns supervisor assignment of investigations by exception severity and impact, and none of these concepts correspond to any column in the tax table schema.
+
+============================================================
+Processing: Quarterly disaster recovery exercises validate the effectiveness of failover pro...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes resolution documentation: findings and corrections applied to records to align them with expected patterns. This is a process or metadata concept about data-quality remediation. The tax table holds person, location, and tax attributes (names, phone, city, state, zip, salary, rate, exemptions) and has no column for resolution notes, findings, or corrections. No concept in the sentence maps to any available column.","missing_concepts":["resolution documentation","findings","corrections applied","expected patterns"],"reason":"The sentence describes documentation of findings and corrections, a process-level concept. No column in the tax schema represents it."}...
+-> Step 2 failed: The sentence describes documentation of findings and corrections, a process-level concept. No column in the tax schema represents it.
+-> Schema validation failed: The sentence describes documentation of findings and corrections, a process-level concept. No column in the tax schema represents it.
+
+============================================================
+Processing: System performance monitoring tracks query response times, transaction throughpu...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes an organizational reporting process: an annual data quality report sent to executive leadership that summarizes exception trends and remediation efforts. None of these concepts (reports, leadership, exceptions, remediation, annual cadence) correspond to any column in the tax table, which holds personal demographics, location, salary, tax rate and exemption amounts. It is not a data-level constraint on any available column.","missing_concepts":["annual reporting cadence","data quality report","executive leadership recipients","exception trends","remediation efforts"],"reason":"The sentence describes a governance/reporting process and no concept maps to any column in the tax table's predicate list."}...
+-> Step 2 failed: The sentence describes a governance/reporting process and no concept maps to any column in the tax table's predicate list.
+-> Schema validation failed: The sentence describes a governance/reporting process and no concept maps to any column in the tax table's predicate list.
+
+============================================================
+Processing: Database optimization routines execute during scheduled maintenance windows to r...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about business continuity planning, meaning system access unavailability from technical failures or natural disasters. The schema is a tax/personal demographics table (names, phone, location, marital status, salary, tax rate, exemptions). None of the columns represent system access, failures, disasters, or continuity planning. City and state could relate to geography, but the sentence does not mention location or any person attribute.","missing_concepts":["business continuity planning","system access availability","technical failures","natural disasters"],"reason":"No concept in the sentence maps to any column in the tax table; the sentence concerns IT/business continuity, which is unrelated to the personal and tax attributes available."}...
+-> Step 2 failed: No concept in the sentence maps to any column in the tax table; the sentence concerns IT/business continuity, which is unrelated to the personal and tax attributes available.
+-> Schema validation failed: No concept in the sentence maps to any column in the tax table; the sentence concerns IT/business continuity, which is unrelated to the personal and tax attributes available.
+
+============================================================
+Processing: Capacity planning models project future storage and processing requirements base...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes organizational process: continuous improvement initiatives using year-end findings to refine validation rules and staff training curricula. It states no data-level constraint and mentions no concept such as names, location, demographics, salary, tax rate, or exemptions. None of the concepts (improvement initiatives, findings, validation rules, training curricula) correspond to any column in the tax table.","missing_concepts":["continuous improvement initiatives","year-end findings","validation rules","staff training curricula"],"reason":"The sentence concerns organizational process improvement and training, which has no mapping to any column in the tax table's predicate list."}...
+-> Step 2 failed: The sentence concerns organizational process improvement and training, which has no mapping to any column in the tax table's predicate list.
+-> Schema validation failed: The sentence concerns organizational process improvement and training, which has no mapping to any column in the tax table's predicate list.
+
+============================================================
+Processing: The Information Security Office conducts annual penetration testing to identify ...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about IT infrastructure: backup systems at geographically dispersed data centers and service restoration within four hours of a disruption. The tax table holds personal demographics (name, gender, phone, city, state, zip), marital and child status, salary, tax rate and exemptions. The 'geographically dispersed' wording might loosely suggest city/state/zip, but it refers to data center locations, not to people's addresses, so no column in the schema is meaningfully related. Nothing represents backups, data centers, restoration, disruptions or time durations.","missing_concepts":["backup systems","data center locations","service restoration","disruption events","four-hour recovery time"],"reason":"The sentence describes disaster recovery and backup infrastructure requirements, which have no corresponding columns in the tax table's personal and tax data."}...
+-> Step 2 failed: The sentence describes disaster recovery and backup infrastructure requirements, which have no corresponding columns in the tax table's personal and tax data.
+-> Schema validation failed: The sentence describes disaster recovery and backup infrastructure requirements, which have no corresponding columns in the tax table's personal and tax data.
+
+============================================================
+Processing: Encryption protocols protect sensitive taxpayer data both in transit across netw...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about quarterly disaster recovery exercises, failover procedures validation, and operational enhancement. These are IT operations concepts. The schema is a tax/personal demographics table (names, phone, location, salary, tax rate, exemptions), and none of its columns relate to disaster recovery, failover, exercises, or operational improvement.","missing_concepts":["disaster recovery exercises","quarterly frequency","failover procedures","operational enhancement"],"reason":"No concept in the sentence maps to any column in the tax table; the sentence describes IT disaster recovery practices unrelated to the available person/tax data columns."}...
+-> Step 2 failed: No concept in the sentence maps to any column in the tax table; the sentence describes IT disaster recovery practices unrelated to the available person/tax data columns.
+-> Schema validation failed: No concept in the sentence maps to any column in the tax table; the sentence describes IT disaster recovery practices unrelated to the available person/tax data columns.
+
+============================================================
+Processing: Privacy impact assessments evaluate new features or data elements before deploym...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about system performance monitoring: query response times, transaction throughput, and resource utilization across modules. The schema is a tax/personal-demographics table (names, phone, address, salary, tax rate, exemptions). None of the columns map to system performance metrics, response times, throughput, resource utilization, or modules.","missing_concepts":["query response times","transaction throughput","resource utilization","system modules"],"reason":"The sentence describes system performance monitoring concepts, none of which correspond to any column in the tax table's predicate list."}...
+-> Step 2 failed: The sentence describes system performance monitoring concepts, none of which correspond to any column in the tax table's predicate list.
+-> Schema validation failed: The sentence describes system performance monitoring concepts, none of which correspond to any column in the tax table's predicate list.
+
+============================================================
+Processing: Interagency data sharing agreements specify permissible uses and safeguarding re...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes database administration activities (optimization routines, scheduled maintenance windows, index rebuilding, statistics updates). These are operational/system concepts unrelated to the tax table's data columns, which hold personal demographic, location, salary, and tax rate/exemption information. No concept in the sentence maps to any column in the predicate list.","missing_concepts":["database optimization routines","scheduled maintenance windows","index rebuilding","statistics updates"],"reason":"The sentence concerns database maintenance operations, and none of its concepts correspond to any column in the tax table."}...
+-> Step 2 failed: The sentence concerns database maintenance operations, and none of its concepts correspond to any column in the tax table.
+-> Schema validation failed: The sentence concerns database maintenance operations, and none of its concepts correspond to any column in the tax table.
+
+============================================================
+Processing: External auditors from the Office of the Inspector General review system control...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes capacity planning models that project future storage and processing requirements from historical growth trends and demographic forecasts. These concepts (storage, processing, historical growth, forecasts) are IT infrastructure and time-series ideas. The tax table holds personal, location and tax data (names, phone, city, state, zip, salary, rate, exemptions). 'Demographic' might loosely relate to gender, maritalstatus or haschild, but the sentence is about forecasting system capacity and does not constrain any of those attributes. No column represents storage, processing, growth trends over time, or projections.","missing_concepts":["storage requirements","processing requirements","historical growth trends","future projections/forecasts","capacity planning model"],"reason":"The sentence concerns IT capacity planning and forecasting, and no concept in it maps to any column in the tax table's predicate list."}...
+-> Step 2 failed: The sentence concerns IT capacity planning and forecasting, and no concept in it maps to any column in the tax table's predicate list.
+-> Schema validation failed: The sentence concerns IT capacity planning and forecasting, and no concept in it maps to any column in the tax table's predicate list.
+
+============================================================
+Processing: Recommendations from audit findings drive corrective action plans with defined t...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes an organizational security practice: the Information Security Office conducting annual penetration testing to find vulnerabilities in system defenses. The schema is a tax table with personal demographic, location, and tax/salary data. No concept in the sentence (security office, penetration testing, annual frequency, vulnerabilities, system defenses) maps to any column such as name, phone, city, salary, rate, or exemptions.","missing_concepts":["Information Security Office","penetration testing","annual frequency","vulnerabilities","system defenses"],"reason":"The sentence concerns IT security testing procedures, and none of its concepts correspond to any column in the tax table."}...
+-> Step 2 failed: The sentence concerns IT security testing procedures, and none of its concepts correspond to any column in the tax table.
+-> Schema validation failed: The sentence concerns IT security testing procedures, and none of its concepts correspond to any column in the tax table.
+
+============================================================
+Processing: Public transparency reports disclose aggregate statistics on taxpayer demographi...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about encryption protocols protecting taxpayer data in transit and at rest. This is a security and infrastructure policy statement. The tax table holds personal, demographic, and tax attributes (names, phone, salary, rate, exemptions), but none of them record encryption, transmission, or storage characteristics. The mention of 'taxpayer data' is generic and does not point to any particular column's value or constraint.","missing_concepts":["encryption protocols","data in transit across networks","data at rest in storage systems","data protection or security status"],"reason":"The sentence describes security controls (encryption in transit and at rest), which cannot be expressed using any column in the tax table; no concept maps to a column with a predicate."}...
+-> Step 2 failed: The sentence describes security controls (encryption in transit and at rest), which cannot be expressed using any column in the tax table; no concept maps to a column with a predicate.
+-> Schema validation failed: The sentence describes security controls (encryption in transit and at rest), which cannot be expressed using any column in the tax table; no concept maps to a column with a predicate.
+
+============================================================
+Processing: Legislative liaison staff coordinate with committee members to provide data supp...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes a governance process: privacy impact assessments of new features or data elements before deployment, to ensure regulatory compliance. It makes no reference to any data attribute in the tax table, such as names, location, phone, salary, rate or exemptions, and it states no value-level condition on any column. The table has no columns for assessments, deployment status, features or regulatory compliance.","missing_concepts":["privacy impact assessment","new features or data elements","deployment","regulatory compliance"],"reason":"The sentence is about an organizational privacy-assessment process and does not map to any column in the tax table's predicate list."}...
+-> Step 2 failed: The sentence is about an organizational privacy-assessment process and does not map to any column in the tax table's predicate list.
+-> Schema validation failed: The sentence is about an organizational privacy-assessment process and does not map to any column in the tax table's predicate list.
+
+============================================================
+Processing: System enhancements undergo rigorous testing in development and staging environm...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about interagency data sharing agreements, permissible uses, and safeguarding requirements for taxpayer information crossing organizational boundaries. This is a governance/policy statement about agreements and data handling. The tax table has personal, demographic, and tax-rate/exemption columns, but none represent agencies, agreements, permitted uses, safeguards, or data-sharing status. 'Taxpayer information' is only a general reference to the table's subject matter and does not point to any specific column.","missing_concepts":["interagency data sharing agreement","permissible uses","safeguarding requirements","organizational boundaries / agency identity"],"reason":"No concept in the sentence maps to any column in the tax table; it describes inter-organizational data governance policy, which has no corresponding data attributes."}...
+-> Step 2 failed: No concept in the sentence maps to any column in the tax table; it describes inter-organizational data governance policy, which has no corresponding data attributes.
+-> Schema validation failed: No concept in the sentence maps to any column in the tax table; it describes inter-organizational data governance policy, which has no corresponding data attributes.
+
+============================================================
+Processing: Release management procedures require sign-off from business stakeholders, techn...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about audit findings, recommendations, corrective action plans, timelines, and responsible parties. The schema is a tax table of personal demographics (name, phone, address), salary, tax rate, and exemption amounts. None of the audit or corrective-action concepts map to any column. Names (fname, lname) identify persons but not 'responsible parties' in an action-plan sense, and there are no date, timeline, finding, or recommendation columns.","missing_concepts":["audit findings","recommendations","corrective action plans","timelines","responsible parties"],"reason":"The sentence describes audit/corrective action management concepts, none of which correspond to any column in the tax table schema."}...
+-> Step 2 failed: The sentence describes audit/corrective action management concepts, none of which correspond to any column in the tax table schema.
+-> Schema validation failed: The sentence describes audit/corrective action management concepts, none of which correspond to any column in the tax table schema.
+
+============================================================
+Processing: User acceptance testing involves representative staff members validating new fun...
+-> Step 2 response: {"is_valid":true,"direct_columns":["rate","singleexemp","marriedexemp","childexemp","gender","maritalstatus","haschild","salary"],"implied_columns":["state","city","zip","areacode","fname","lname","phone"],"reasoning":"The sentence mentions aggregate statistics on taxpayer demographics (gender, marital status, has child, salary, and location such as state, city, zip), rate distributions (rate), and exemption utilization (singleexemp, marriedexemp, childexemp). The 'without revealing individual identities' clause relates to personally identifying columns (fname, lname, phone, areacode), and geographic fields could be quasi-identifiers, so they are included as implied.","missing_concepts":["public transparency report","aggregation/anonymization mechanism"],"reason":null}...
+-> Step 2: Identified columns ['rate', 'singleexemp', 'marriedexemp', 'childexemp', 'gender', 'maritalstatus', 'haschild', 'salary', 'state', 'city', 'zip', 'areacode', 'fname', 'lname', 'phone']
+-> Step 3: Considering 482 predicate candidates
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes an organizational audit process: external auditors from the Office of the Inspector General reviewing system controls and data handling practices every two years. None of its concepts (auditor, audit frequency, system controls, data handling practices) correspond to the tax table columns, which hold personal demographics, location, and tax/salary/exemption data. The table has no audit, reviewer, or date/time column.","missing_concepts":["external auditors","Office of the Inspector General","system controls review","data handling practices","biennial review frequency","audit date/time"],"reason":"The sentence concerns audit procedures and review frequency, and no column in the tax table or in the predicate list represents any of these concepts."}...
+-> Step 2 failed: The sentence concerns audit procedures and review frequency, and no column in the tax table or in the predicate list represents any of these concepts.
+-> Schema validation failed: The sentence concerns audit procedures and review frequency, and no column in the tax table or in the predicate list represents any of these concepts.
+
+============================================================
+Processing: Post-implementation reviews assess whether delivered capabilities meet original ...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes a software release process: enhancements are tested in development and staging environments before being promoted to production. The tax table holds personal, contact, and tax data (names, location, salary, rate, exemptions). None of its columns correspond to system enhancements, testing, environments, or promotion.","missing_concepts":["system enhancements","testing","development environment","staging environment","production promotion"],"reason":"The sentence concerns software deployment and testing practices. No concept in it maps to any column in the tax table."}...
+-> Step 2 failed: The sentence concerns software deployment and testing practices. No concept in it maps to any column in the tax table.
+-> Schema validation failed: The sentence concerns software deployment and testing practices. No concept in it maps to any column in the tax table.
+
+============================================================
+Processing: Help desk support staff resolve technical issues and answer user questions throu...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes legislative liaison staff coordinating with committee members to provide data supporting policy deliberations and amendments. These are organizational and process concepts (staff roles, committees, policy deliberation, amendments). The schema is a tax table of personal demographics (name, gender, phone, location, marital status) and tax figures (salary, rate, exemptions). None of the sentence concepts correspond to any of these columns.","missing_concepts":["legislative liaison staff","committee members","policy deliberations","proposed amendments","data provision/coordination"],"reason":"No concept in the sentence maps to any column in the tax table; it concerns legislative coordination processes, not personal or tax data."}...
+-> Step 2 failed: No concept in the sentence maps to any column in the tax table; it concerns legislative coordination processes, not personal or tax data.
+-> Schema validation failed: No concept in the sentence maps to any column in the tax table; it concerns legislative coordination processes, not personal or tax data.
+
+============================================================
+Processing: Knowledge base articles document common problems and solutions, enabling staff t...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes a software testing process (user acceptance testing by representative staff validating new functionality against real-world scenarios). The schema is a tax table of personal demographic and tax data (name, location, salary, rate, exemptions). No concept in the sentence maps to any of these columns.","missing_concepts":["user acceptance testing","representative staff members","new functionality","real-world scenarios","validation"],"reason":"The sentence is about a software testing process and has no relationship to any column in the tax table's predicate list."}...
+-> Step 2 failed: The sentence is about a software testing process and has no relationship to any column in the tax table's predicate list.
+-> Schema validation failed: The sentence is about a software testing process and has no relationship to any column in the tax table's predicate list.
+
+============================================================
+Processing: Escalation procedures ensure that complex technical problems reach appropriate s...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence concerns release management sign-off by business stakeholders, technical architects, and QA teams. The schema is a tax/personal demographics table (names, phone, city, state, salary, tax rate, exemptions) with no concepts related to releases, approvals, sign-offs, stakeholders, or roles.","missing_concepts":["release management procedures","sign-off/approval","business stakeholders","technical architects","quality assurance teams"],"reason":"No concept in the sentence maps to any column in the tax table; the sentence is about software release approvals, which is unrelated to the available person and tax data columns."}...
+-> Step 2 failed: No concept in the sentence maps to any column in the tax table; the sentence is about software release approvals, which is unrelated to the available person and tax data columns.
+-> Schema validation failed: No concept in the sentence maps to any column in the tax table; the sentence is about software release approvals, which is unrelated to the available person and tax data columns.
+
+============================================================
+Processing: User satisfaction surveys collect feedback on system usability, performance, and...
+-> Step 3 failed: The sentence is a descriptive statement about report publication and privacy. It has no row-level or cross-row data condition that can be expressed as a denial constraint.
+-> Predicate selection failed: The sentence is a descriptive statement about report publication and privacy. It has no row-level or cross-row data condition that can be expressed as a denial constraint.
+
+============================================================
+Processing: Advisory committees representing diverse user communities provide input on prior...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes project management post-implementation reviews: assessing delivered capabilities against original requirements and capturing lessons learned. The schema is a tax/personal demographic table (names, contact details, location, marital status, salary, tax rate, exemptions). None of its columns correspond to projects, capabilities, requirements, reviews, or lessons.","missing_concepts":["post-implementation review","delivered capabilities","original requirements","lessons learned","future projects"],"reason":"No concept in the sentence maps to any column in the tax table; the sentence concerns project management reviews, which are unrelated to the available person/tax data columns."}...
+-> Step 2 failed: No concept in the sentence maps to any column in the tax table; the sentence concerns project management reviews, which are unrelated to the available person/tax data columns.
+-> Schema validation failed: No concept in the sentence maps to any column in the tax table; the sentence concerns project management reviews, which are unrelated to the available person/tax data columns.
+
+============================================================
+Processing: Strategic planning aligns system evolution with long-term organizational goals a...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about knowledge base articles, common problems and solutions, and staff troubleshooting independently. These are IT support or documentation concepts. The schema is a tax table with personal demographic and tax data (names, phone, city, state, salary, rate, exemptions). No concept in the sentence maps to any of these columns.","missing_concepts":["knowledge base articles","common problems","solutions","staff","troubleshooting"],"reason":"The sentence describes knowledge base documentation and staff troubleshooting, which has no relationship to any column in the tax table's predicate list."}...
+-> Step 2 failed: The sentence describes knowledge base documentation and staff troubleshooting, which has no relationship to any column in the tax table's predicate list.
+-> Schema validation failed: The sentence describes knowledge base documentation and staff troubleshooting, which has no relationship to any column in the tax table's predicate list.
+
+============================================================
+Processing: Budget allocation for system maintenance and enhancement reflects the critical i...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes the duties of help desk support staff: resolving technical issues and answering user questions via phone, email, and web portal. The schema is a tax table with personal demographics, location, salary, tax rate, and exemption data. 'Phone' as a support channel is not the same as the phone number column, since the sentence describes a communication channel and not a person's phone number value. No concept in the sentence maps to any tax-table column.","missing_concepts":["help desk support staff role","technical issue resolution","user questions","support channels (phone, email, web portal)"],"reason":"The sentence is about help desk job duties and support channels, which have no corresponding columns in the tax table schema. The mention of 'phone' refers to a support channel, not the phone number attribute."}...
+-> Step 2 failed: The sentence is about help desk job duties and support channels, which have no corresponding columns in the tax table schema. The mention of 'phone' refers to a support channel, not the phone number attribute.
+-> Schema validation failed: The sentence is about help desk job duties and support channels, which have no corresponding columns in the tax table schema. The mention of 'phone' refers to a support channel, not the phone number attribute.
+
+============================================================
+Processing: Stakeholder engagement ensures that taxpayers, staff members, and oversight bodi...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about user satisfaction surveys collecting feedback on system usability, performance, and feature adequacy. The schema is a tax table holding personal demographic, location, salary, tax rate and exemption data. None of these columns relate to survey feedback, usability, system performance, or feature adequacy.","missing_concepts":["user satisfaction survey","feedback","system usability","performance","feature adequacy"],"reason":"No concept in the sentence maps to any column in the tax table; it concerns survey feedback on system usability, which has no counterpart in the available columns."}...
+-> Step 2 failed: No concept in the sentence maps to any column in the tax table; it concerns survey feedback on system usability, which has no counterpart in the available columns.
+-> Schema validation failed: No concept in the sentence maps to any column in the tax table; it concerns survey feedback on system usability, which has no counterpart in the available columns.
+
+============================================================
+Processing: The ongoing success of the Tax Information Management System depends on sustaine...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about IT/support escalation procedures: technical problems, specialists, and timeframes. The schema is a tax table with personal demographics (name, phone, location), salary, tax rate, and exemption amounts. Nothing in the sentence maps to any of these columns. There is no problem, ticket, specialist, escalation, or timestamp/duration concept in the schema.","missing_concepts":["escalation procedures","technical problems","specialists","defined timeframes","ticket/incident data"],"reason":"The sentence concerns support escalation of technical problems to specialists within timeframes, which has no corresponding columns in the tax table schema."}...
+-> Step 2 failed: The sentence concerns support escalation of technical problems to specialists within timeframes, which has no corresponding columns in the tax table schema.
+-> Schema validation failed: The sentence concerns support escalation of technical problems to specialists within timeframes, which has no corresponding columns in the tax table schema.
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about strategic planning, system evolution, organizational goals, and emerging technological capabilities. The schema is a tax/personal-demographic table (names, phone, address, marital status, salary, tax rate, exemptions). None of the concepts in the sentence correspond to any of these columns.","missing_concepts":["strategic planning","system evolution","long-term organizational goals","emerging technological capabilities"],"reason":"The sentence describes abstract organizational strategy concepts with no mapping to any column in the tax table's predicate list."}...
+-> Step 2 failed: The sentence describes abstract organizational strategy concepts with no mapping to any column in the tax table's predicate list.
+-> Schema validation failed: The sentence describes abstract organizational strategy concepts with no mapping to any column in the tax table's predicate list.
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes governance of enhancement requests, with advisory committees representing user communities giving input on prioritization. The tax table only holds personal demographics (name, gender, phone, location, marital status, child flag) and tax data (salary, rate, exemptions). None of these columns relates to committees, user communities, enhancement requests, or prioritization.","missing_concepts":["advisory committees","diverse user communities","enhancement requests","prioritization"],"reason":"No concept in the sentence maps to any column in the tax table; it concerns committee governance and request prioritization, not personal or tax data."}...
+-> Step 2 failed: No concept in the sentence maps to any column in the tax table; it concerns committee governance and request prioritization, not personal or tax data.
+-> Schema validation failed: No concept in the sentence maps to any column in the tax table; it concerns committee governance and request prioritization, not personal or tax data.
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about stakeholder engagement and channels for raising concerns and suggesting improvements. It refers to taxpayers, staff, and oversight bodies as groups, but none of the columns in the tax table (names, contact info, location, marital status, salary, rate, exemptions) describe engagement channels, concerns, feedback, or stakeholder roles. 'Taxpayers' is only the general subject of the table, not a specific column.","missing_concepts":["stakeholder engagement","feedback/concern channels","stakeholder type (taxpayer, staff, oversight body)","suggestions for improvement"],"reason":"The sentence describes a process or policy statement about stakeholder engagement and feedback channels, and no concept in it maps to any available column in the tax table."}...
+-> Step 2 failed: The sentence describes a process or policy statement about stakeholder engagement and feedback channels, and no concept in it maps to any available column in the tax table.
+-> Schema validation failed: The sentence describes a process or policy statement about stakeholder engagement and feedback channels, and no concept in it maps to any available column in the tax table.
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is a general statement about the ongoing success of a Tax Information Management System depending on commitment to data quality, security, and responsive service delivery. It names no specific data field, value, condition, or relationship that can be checked against a column such as salary, rate, state, or the exemption amounts. The terms 'data quality', 'security', and 'service delivery' are organizational or process concepts, not row-level attributes in the tax table.","missing_concepts":["data quality","security","responsive service delivery","system success/commitment"],"reason":"The sentence is a high-level organizational statement with no concept that maps to any column in the tax table's predicate list."}...
+-> Step 2 failed: The sentence is a high-level organizational statement with no concept that maps to any column in the tax table's predicate list.
+-> Schema validation failed: The sentence is a high-level organizational statement with no concept that maps to any column in the tax table's predicate list.
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence is about budget allocation for system maintenance and enhancement of tax administration infrastructure. It describes organizational spending priorities, not any attribute of the person-level tax records. 'Tax' appears only as a general topic and does not point to a specific column. The rate column is a tax rate, but the sentence does not discuss rates. None of the available columns (names, gender, phone, location, marital status, child, salary, rate, exemptions) correspond to budget, system maintenance, enhancement, or infrastructure.","missing_concepts":["budget allocation","system maintenance","system enhancement","tax administration infrastructure","reliability"],"reason":"The sentence describes budget and infrastructure priorities, and no concept in it maps to any column in the tax table's predicate list."}...
+-> Step 2 failed: The sentence describes budget and infrastructure priorities, and no concept in it maps to any column in the tax table's predicate list.
+-> Schema validation failed: The sentence describes budget and infrastructure priorities, and no concept in it maps to any column in the tax table's predicate list.
+  Mapped: 17/126
+  Evaluating classification (all 126 sentences)...
+  Evaluating pairwise mapping quality (GT sentences only)...
+  Evaluating aggregate violation (all 126 sentences)...
+  Saving outputs...
+  Saved detailed results to: results/v3_fix_rep2/e3_end2end/hmda_e3_tax_multistep_rep2_20261022_003204/metrics/tax_Multi-Step_|_Claude_Sonnet_5.5_detailed_results.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 132.28s
+
+  ── CLASSIFICATION (all 126 sentences) ──────────────────────────────
+     Accuracy:  0.913
+     Precision: 0.353
+     Recall:    1.000
+     F1:        0.522  [PRIMARY]
+     TP:   6  FP:  11
+     FN:   0  TN: 109
+
+  ── AGGREGATE VIOLATION DISCOVERY (all 126 sentences) ─────────────
+     Precision: 0.012
+     Recall:    1.000
+     F1:        0.025  [PRIMARY]
+     Gold violations:      468
+     Predicted violations: 37633
+     Overlap violations:   468
+
+  ── CONSTRAINT EXACT MATCH (GT sentences only) ─────────────────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     TP: 6  FP: 0  FN: 0
+     Predicted: 6, Gold: 6
+
+  ── PAIRWISE SYNTACTIC QUALITY (GT sentences only, n=6) ──────────
+     Exact Match:       1.000 (6/6)
+     Predicate Jaccard: 1.000 (±0.000)
+
+  ── PAIRWISE VIOLATION DISCOVERY (GT sentences only) ────────────────────
+     Exact Match:       1.000 (6/6)
+     Precision:         1.000 (±0.000)
+     Recall:            1.000 (±0.000)
+     F1:                1.000 (±0.000)
+     Violation Jaccard: 1.000 (±0.000)
+
+  INSIGHT: Syntactic vs Violation Gap (pairwise) = 0.000
+  Variant completed
+
+========================================================================================================================
+COMPARISON TABLE
+========================================================================================================================
+
+Sentence Modes (DIRECT / FILTERED):
+  Left  (all sentences):      Clf F1 | Agg Viol F1
+  Right (GT sentences only):  Const F1 | Syn Exact | Viol F1
+  Variant                                Mode         Impl       [ALL] Clf F1   [ALL] AggViol F1   [GT] Const F1   [GT] Syn Exact   [GT] Viol F1 Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Multi-Step | Claude Sonnet 5.5         SENTENCE_DIRECT multi_step_refinement 0.522          0.025              1.000           1.000            1.000        132.2786152960034
+
+  Best Classification F1 [ALL]:        Multi-Step | Claude Sonnet 5.5 (0.522)
+  Best Aggregate Violation F1 [ALL]:   Multi-Step | Claude Sonnet 5.5 (0.025)
+  Best Constraint Exact F1 [GT]:       Multi-Step | Claude Sonnet 5.5 (1.000)
+  Best Violation F1 Pairwise [GT]:     Multi-Step | Claude Sonnet 5.5 (1.000)
+  Fastest Runtime:                     Multi-Step | Claude Sonnet 5.5 (132.28s)
+========================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3_fix_rep2/e3_end2end/hmda_e3_tax_multistep_rep2_20261022_003204

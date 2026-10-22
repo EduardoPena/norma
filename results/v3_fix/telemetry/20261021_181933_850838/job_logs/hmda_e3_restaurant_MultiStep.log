@@ -1,0 +1,588 @@
+Execution artifacts: results/v3_fix/telemetry/20261021_181933_850838
+
+================================================================================
+FULL MAPPER EVALUATION: hmda_e3_restaurant_MultiStep
+================================================================================
+
+Results directory: results/v3_fix/e3_end2end/hmda_e3_restaurant_multistep_20261021_200814
+Timestamp: 20261021_200814
+
+Evaluation scope:
+  SENTENCE_DIRECT / FILTERED:
+    Classification metrics     → ALL sentences
+    Aggregate violation        → ALL sentences (all predicted vs all GT)
+    Pairwise mapping metrics   → GT constraint sentences only
+  DOCUMENT:
+    Aggregate violation        → all predicted rules vs all GT constraints
+    All other metrics          → N/A
+================================================================================
+
+Config YAML saved to: results/v3_fix/e3_end2end/hmda_e3_restaurant_multistep_20261021_200814/config.yaml
+Execution config saved to: results/v3_fix/e3_end2end/hmda_e3_restaurant_multistep_20261021_200814/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: restaurant
+--------------------------------------------------------------------------------
+Loading restaurant...
+Total sentences:          33
+GT constraint sentences:  7
+Non-constraint sentences: 26
+
+
+[1/1] Variant: Multi-Step | GPT-6 Sol
+  Mode:           SENTENCE_DIRECT
+  Implementation: multi_step_refinement
+  Processing all 33 sentences (mode=SENTENCE_DIRECT)...
+
+[SENTENCE_DIRECT] Processing 33 sentences
+
+============================================================
+Processing: The Health Department may order a restaurant to temporarily close to correct a p...
+
+============================================================
+Processing: A restaurant may also be closed if it scores 28 or more points on three consecut...
+
+============================================================
+Processing: Prior to closure, an inspector will contact a supervisor, who will determine whe...
+
+============================================================
+============================================================
+Processing: The Department will monitor the establishment to ensure it remains closed and wi...
+
+Processing: If it is closed, Health Department closure signs must be immediately posted in t...
+============================================================
+Processing: To reopen, the establishment must submit a written statement to the Health Depar...
+
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["action", "inspection_type", "violation_code", "violation_description"],
+  "implied_columns": ["camis", "inspection_date", "inspection_order"],
+  "reasoning": "The action and inspection type can identify closure and reopening. Violation code and description identify the violations that must be corrected. The establishment identifier and inspection timing or order can link a reopening to the establishment's earlier closure and violations.",
+  "missing_concepts": ["written statement", "submission to the Health Department", "confirmation that all closure-causing violations were corrected", "explicit link between particular violations and the closure"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action', 'inspection_type', 'violation_code', 'violation_description', 'camis', 'inspection_date', 'inspection_order']
+-> Step 3: Considering 122 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["score", "action", "inspection_order"],
+  "implied_columns": ["camis", "inspection_date", "inspection_type"],
+  "reasoning": "The score must be at least 28 on three consecutive inspections. Inspection order and date help establish that sequence for the same restaurant, identified by camis. Inspection type may help distinguish inspection stages. Closure is recorded in action.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['score', 'action', 'inspection_order', 'camis', 'inspection_date', 'inspection_type']
+-> Step 3: Considering 128 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["action", "inspection_type"],
+  "implied_columns": ["camis", "inspection_date", "inspection_order", "days_to_next_inspection"],
+  "reasoning": "The action records closure and reopening outcomes, while inspection_type can identify a reopening inspection. The restaurant identifier and inspection chronology help determine whether an establishment remained closed until reopening; days_to_next_inspection may help assess the interval. None of these fields establishes whether signs were posted or operations ceased.",
+  "missing_concepts": ["whether closure signs were posted", "when signs were posted", "whether all operations ceased", "whether the restaurant remained closed between inspections", "explicit Health Department authorization to reopen"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action', 'inspection_type', 'camis', 'inspection_date', 'inspection_order', 'days_to_next_inspection']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["action", "camis"],
+  "implied_columns": ["inspection_date", "inspection_order"],
+  "reasoning": "The action field can record an establishment's closure, and camis identifies the establishment. Inspection date and order could help place recorded inspection events in sequence, but neither establishes when a supervisor was contacted or made a decision.",
+  "missing_concepts": ["inspector–supervisor contact and its time", "supervisor's closure decision or order and its time"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action', 'camis', 'inspection_date', 'inspection_order']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["camis", "action", "violation_code", "violation_description"],
+  "implied_columns": ["inspection_date", "inspection_order", "inspection_type", "days_to_next_inspection"],
+  "reasoning": "The establishment is identified by camis. Action records closure, reopening, and cited violations; violation_code and violation_description can identify violations for disobeying a closing order. Inspection dates, order, type, and the interval to the next inspection help assess subsequent monitoring and whether the establishment remained closed.",
+  "missing_concepts": ["A continuous open-or-closed status between inspections", "The closing order and its terms", "A dedicated record of compliance with the closing order"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['camis', 'action', 'violation_code', 'violation_description', 'inspection_date', 'inspection_order', 'inspection_type', 'days_to_next_inspection']
+-> Step 3: Considering 76 predicate candidates
+-> Step 3: Considering 128 predicate candidates
+-> Step 3: Considering 156 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["action", "violation_code", "violation_description", "critical_flag", "inspection_date", "inspection_type"],
+  "implied_columns": ["camis", "inspection_order", "days_to_next_inspection"],
+  "reasoning": "The closure order maps to action. Violation fields and critical_flag can identify the health hazard. Inspection fields provide the inspection context, while camis identifies the restaurant and inspection_order and days_to_next_inspection may help track a temporary closure and subsequent inspection. A pre-permit inspection type provides permit-related context but does not establish whether a permit is valid.",
+  "missing_concepts": ["valid permit status", "whether the hazard could be corrected before the inspection ended", "explicit hazard-correction status"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action', 'violation_code', 'violation_description', 'critical_flag', 'inspection_date', 'inspection_type', 'camis', 'inspection_order', 'days_to_next_inspection']
+-> Step 3: Considering 174 predicate candidates
+-> Step 3 failed: No predicate can represent the required supervisor contact before closure.
+-> Predicate selection failed: No predicate can represent the required supervisor contact before closure.
+
+============================================================
+Processing: The operator may be asked to attend an informal meeting with Health Department s...
+-> Step 3 failed: No available predicate can represent the required written statement or its contents.
+-> Predicate selection failed: No available predicate can represent the required written statement or its contents.
+
+============================================================
+Processing: If it appears that sanitary conditions have improved, an inspector will conduct ...
+-> Step 3 failed: No denial constraint follows from this permissive statement, and the available predicates cannot fully express three consecutive inspections.
+-> Predicate selection failed: No denial constraint follows from this permissive statement, and the available predicates cannot fully express three consecutive inspections.
+
+============================================================
+Processing: Health Department supervisors will determine whether it may reopen....
+-> Step 3 failed: No available predicates can express the triggering noncompliance or the required enforcement action as a denial constraint.
+-> Predicate selection failed: No available predicates can express the triggering noncompliance or the required enforcement action as a denial constraint.
+
+============================================================
+Processing: After re-opening, the establishment will be inspected for compliance with the He...
+-> Step 3 failed: The required conduct is not represented in the relevant columns.
+-> Predicate selection failed: The required conduct is not represented in the relevant columns.
+
+============================================================
+Processing: If it is in sufficient compliance, it may remain open and will be inspected agai...
+-> Step 3 failed: No violating predicate combination follows from a permissive “may” statement; the listed columns also do not identify whether a hazard could be corrected before the inspection ended or whether a permit was valid.
+-> Predicate selection failed: No violating predicate combination follows from a permissive “may” statement; the listed columns also do not identify whether a hazard could be corrected before the inspection ended or whether a permit was valid.
+
+============================================================
+Processing: Repeated violations may prompt the Health Department to initiate procedures for ...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["action", "inspection_type"],
+  "implied_columns": ["camis"],
+  "reasoning": "The sentence concerns whether an establishment may reopen. The action column can record a reopening outcome, inspection_type identifies reopening inspections, and camis identifies the establishment in question.",
+  "missing_concepts": ["Health Department supervisor identity", "supervisor authorization or decision on whether reopening is permitted"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action', 'inspection_type', 'camis']
+-> Step 3: Considering 58 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["action"],"implied_columns":["camis"],"reasoning":"The request to attend a meeting is a potential Health Department action concerning an establishment, making action the closest available field. camis identifies the establishment to which that action would apply. The schema does not indicate that meeting requests are actually recorded in action.","missing_concepts":["meeting request or attendance","operator identity","Health Department supervisors"],"reason":null}...
+-> Step 2: Identified columns ['action', 'camis']
+-> Step 3: Considering 40 predicate candidates
+-> Step 3 failed: No available predicate can express the discretionary meeting request.
+-> Predicate selection failed: No available predicate can express the discretionary meeting request.
+
+============================================================
+Processing: This may result in the establishment being closed for a longer period of time, o...
+-> Step 3 failed: No available predicate can express the supervisors’ decision or authority to permit reopening.
+-> Predicate selection failed: No available predicate can express the supervisors’ decision or authority to permit reopening.
+
+============================================================
+Processing: Consumers may check an establishment's inspection history....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["violation_code", "violation_description", "action"],
+  "implied_columns": ["camis", "inspection_date", "inspection_order"],
+  "reasoning": "Violation fields identify cited violations, while action records inspection outcomes. The establishment identifier and inspection date or order help determine whether violations recur for the same operator over multiple inspections.",
+  "missing_concepts": ["permit revocation or suspension status", "initiation of permit proceedings", "OATH hearing"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['violation_code', 'violation_description', 'action', 'camis', 'inspection_date', 'inspection_order']
+-> Step 3: Considering 104 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "score",
+    "grade",
+    "violation_code",
+    "violation_description",
+    "critical_flag",
+    "action",
+    "inspection_type",
+    "inspection_date",
+    "days_to_next_inspection"
+  ],
+  "implied_columns": ["camis", "inspection_order"],
+  "reasoning": "Sufficient compliance relates to inspection scores, grades, and violations. The inspection action can indicate closure or reopening, while inspection type, date, and days to the next inspection relate to being inspected again in about three months. The restaurant identifier and inspection order help associate successive inspections with the same establishment.",
+  "missing_concepts": [
+    "An explicit threshold for sufficient compliance",
+    "A current open/closed status distinct from the recorded inspection action"
+  ],
+  "reason": null
+}...
+-> Step 2: Identified columns ['score', 'grade', 'violation_code', 'violation_description', 'critical_flag', 'action', 'inspection_type', 'inspection_date', 'days_to_next_inspection', 'camis', 'inspection_order']
+-> Step 3: Considering 238 predicate candidates
+-> Step 3 failed: No denial constraint can express a discretionary action that is not represented in the available columns.
+-> Predicate selection failed: No denial constraint can express a discretionary action that is not represented in the available columns.
+
+============================================================
+Processing: Restaurant scores, grades and the details of inspection results are available on...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["action"],
+  "implied_columns": ["camis", "inspection_date", "inspection_type", "inspection_order", "days_to_next_inspection"],
+  "reasoning": "The action records whether an establishment was closed or reopened. The establishment identifier, inspection dates, inspection type, and inspection order could help link closure and reopening events. Days to next inspection is a possible timing proxy, but it does not measure how long the establishment was closed.",
+  "missing_concepts": ["closure duration", "permanent-closure status", "the antecedent of 'This'"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action', 'camis', 'inspection_date', 'inspection_type', 'inspection_order', 'days_to_next_inspection']
+-> Step 3: Considering 128 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["inspection_type", "action", "violation_description", "score"],
+  "implied_columns": ["violation_code", "critical_flag", "grade", "camis", "inspection_date", "inspection_order", "days_to_next_inspection"],
+  "reasoning": "A reopening inspection is identified by inspection_type. Action records closure and reopening outcomes. Violation details, score, critical flag, and grade can help assess sanitary conditions. Comparing conditions across inspections requires identifying the same establishment and the inspection sequence; dates and the gap to the next inspection can help establish timing.",
+  "missing_concepts": ["A direct assessment that sanitary conditions appear to have improved", "Whether the establishment remains closed to the public at the time of inspection"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['inspection_type', 'action', 'violation_description', 'score', 'violation_code', 'critical_flag', 'grade', 'camis', 'inspection_date', 'inspection_order', 'days_to_next_inspection']
+-> Step 3: Considering 238 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["camis", "inspection_date"],
+  "implied_columns": ["dba", "boro", "building", "street", "zipcode", "inspection_year", "inspection_order", "inspection_type", "action", "violation_code", "violation_description", "critical_flag", "score", "grade", "grade_date", "days_to_next_inspection"],
+  "reasoning": "An establishment’s inspection history is a sequence of inspections linked by its identifier and dates. The other inspection fields describe each inspection’s type, findings, outcome, and grade; the name and address help consumers identify the establishment.",
+  "missing_concepts": ["Consumer access to inspection history is not represented by a column."],
+  "reason": null
+}...
+-> Step 2: Identified columns ['camis', 'inspection_date', 'dba', 'boro', 'building', 'street', 'zipcode', 'inspection_year', 'inspection_order', 'inspection_type', 'action', 'violation_code', 'violation_description', 'critical_flag', 'score', 'grade', 'grade_date', 'days_to_next_inspection']
+-> Step 3 failed: No denial constraint can be derived from this possibility using the available predicates.
+-> Predicate selection failed: No denial constraint can be derived from this possibility using the available predicates.
+
+============================================================
+Processing: As of July 2010, certain types of food service establishments—including restaura...
+-> Step 3: Selected 1 predicates: ['t1.days_to_next_inspection > $float']
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade","action","violation_code","violation_description","critical_flag","inspection_date","inspection_type","grade_date"],"implied_columns":["camis","dba"],"reasoning":"Score and grade are named explicitly. Inspection-result details can include the recorded action, violations, criticality, inspection date and type; grade_date dates the grade. Restaurant identifiers associate those results with an establishment.","missing_concepts":["Website URL and whether the information is available or searchable online"],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade', 'action', 'violation_code', 'violation_description', 'critical_flag', 'inspection_date', 'inspection_type', 'grade_date', 'camis', 'dba']
+-> Step 3: Considering 368 predicate candidates
+-> Step 3: Considering 198 predicate candidates
+-> Step 3.5 [GATE]: REJECT — “Sufficient compliance” has no checkable definition in the columns, and “about three months” does not establish a precise inspection deadline, so no concrete violation scenario can be identified. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: A score of 0-13 results in a grade of A....
+-> Step 3 failed: The rule’s triggering condition and required closure status cannot be represented with the available predicates.
+-> Predicate selection failed: The rule’s triggering condition and required closure status cannot be represented with the available predicates.
+
+============================================================
+Processing: A score of 14-27 results in a grade of B....
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade"],"implied_columns":[],"reasoning":"The sentence specifies that a score from 0 through 13 corresponds to grade A. Both fields are directly named.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade"],"implied_columns":[],"reasoning":"The constraint maps a score in the range 14–27 to a grade of B.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["cuisine_description", "grade", "score", "inspection_date", "inspection_year", "grade_date"],
+  "implied_columns": ["camis", "inspection_type"],
+  "reasoning": "Cuisine description may help identify covered food-service establishments. Grade and score represent the required correspondence; the date fields relate to the July 2010 effective date and to when an inspection and its grade occurred. CAMIS identifies the establishment, and inspection_type may distinguish applicable inspections.",
+  "missing_concepts": ["Exact establishment type and whether it is a fixed-site food stand", "Whether the letter grade was actually posted", "A stored July 2010 policy effective date"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['cuisine_description', 'grade', 'score', 'inspection_date', 'inspection_year', 'grade_date', 'camis', 'inspection_type']
+-> Step 3: Considering 156 predicate candidates
+-> Step 3 failed: Access to inspection history cannot be expressed as a denial constraint using the listed predicates; the sentence does not require any particular field to be present.
+-> Predicate selection failed: Access to inspection history cannot be expressed as a denial constraint using the listed predicates; the sentence does not require any particular field to be present.
+
+============================================================
+Processing: A score of 28 or more results in a grade of C....
+-> Step 3: Selected 3 predicates: ['t1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 3: Selected 3 predicates: ['t1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade"],"implied_columns":[],"reasoning":"The condition applies to the inspection score, and the required result is grade C.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "action",
+    "inspection_type",
+    "inspection_date",
+    "violation_code",
+    "violation_description",
+    "critical_flag",
+    "score",
+    "grade"
+  ],
+  "implied_columns": [
+    "camis",
+    "inspection_order",
+    "days_to_next_inspection",
+    "inspection_year"
+  ],
+  "reasoning": "The action can record that an establishment re-opened, and inspection_type can identify a reopening inspection. Inspection_date, inspection_order, inspection_year, and days_to_next_inspection can help establish whether an inspection followed reopening; camis links records for the same establishment. Violations, their criticality, score, and grade are available indicators of compliance.",
+  "missing_concepts": [
+    "An explicit Health Code compliance status",
+    "A dedicated reopening date, distinct from an inspection date"
+  ],
+  "reason": null
+}...
+-> Step 2: Identified columns ['action', 'inspection_type', 'inspection_date', 'violation_code', 'violation_description', 'critical_flag', 'score', 'grade', 'camis', 'inspection_order', 'days_to_next_inspection', 'inspection_year']
+-> Step 3.5 [GATE]: PASS — A violation occurs when score is between 14 and 27 inclusive but grade is not 'B'. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — A row violates the rule if its score is between 0 and 13 inclusive and its grade is not 'A'. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 3: Selected 2 predicates: ['t1.score >= $float', 't1.grade != $string']
+-> Step 3: Considering 260 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.score IS NULL', 't1.grade IS NULL']
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 14', 't1.score <= 27', "t1.grade != 'B'"]}]
+   A row has a score between 14 and 27 inclusive but its grade is not B.
+
+-> Verification iteration 1/2
+-> Step 5: Found 28 violations
+
+============================================================
+Processing: Letter grades are not issued to mobile food vending units, temporary food servic...
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 0', 't1.score <= 13', "t1.grade != 'A'"]}]
+   A row has a score between 0 and 13 inclusive but its grade is not A.
+
+-> Verification iteration 1/2
+-> Step 5: Found 402 violations
+
+============================================================
+Processing: Only certain inspections result in a grade....
+-> Step 3.5 [GATE]: PASS — A row violates the rule if its score is at least 28 and its grade is not 'C'. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: REJECT — The sentence identifies where inspection information is available but does not require score or grade to be present in every record or specify another checkable violation. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Every food service establishment is scheduled for at least one inspection per ye...
+-> Step 3: Selected 3 predicates: ['t1.grade IS NULL', 't1.score = t2.score', 't1.grade != t2.grade']
+-> Step 3 failed: No available predicate expresses the absence of a later inspection for the same establishment.
+-> Predicate selection failed: No available predicate expresses the absence of a later inspection for the same establishment.
+
+============================================================
+Processing: A restaurant that scores 0 to 13 violations points on its first inspection will ...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["grade"],
+  "implied_columns": ["grade_date", "cuisine_description", "dba"],
+  "reasoning": "The rule concerns whether a letter grade is issued, represented by grade; grade_date is related to a recorded grade. Cuisine_description and establishment name (dba) might help identify some exempt establishments, but neither reliably encodes all exemption categories.",
+  "missing_concepts": ["mobile vending or temporary establishment status", "school, hospital, correctional facility, or charitable-organization operation", "not-for-profit membership organization status", "whether food is served only to members"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['grade', 'grade_date', 'cuisine_description', 'dba']
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.score >= 28', "t1.grade != 'C'"]}]
+   A score of 28 or more has a grade other than C.
+
+-> Verification iteration 1/2
+-> Step 5: Found 123 violations
+
+============================================================
+Processing: An establishment that does not score an A on its initial inspection will not hav...
+-> Step 3: Considering 60 predicate candidates
+-> Step 3.5 [GATE]: REJECT — Posting a grade cannot be verified from these columns, and the sentence gives no specific score-to-grade mapping that would make a recorded grade falsifiably incorrect. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: If an A is issued on re-inspection, the A-grade card must be posted immediately....
+-> Step 2 response: {"is_valid":true,"direct_columns":["inspection_type","grade"],"implied_columns":["action","inspection_order","score","inspection_date","grade_date"],"reasoning":"The constraint concerns which inspections receive a grade. Inspection type, action, and order can distinguish inspections; grade records the result. Score and the inspection and grade dates may help determine or verify when a grade is assigned.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['inspection_type', 'grade', 'action', 'inspection_order', 'score', 'inspection_date', 'grade_date']
+-> Step 3: Considering 150 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["camis","inspection_date","inspection_year"],"implied_columns":["days_to_next_inspection","inspection_order","inspection_type"],"reasoning":"camis identifies each food service establishment; inspection_date and inspection_year locate inspections within each year. days_to_next_inspection indicates the interval to a next inspection, while inspection_order and inspection_type can help interpret which inspections are counted. The available dates describe inspections, not necessarily when they were scheduled.","missing_concepts":["Scheduled inspection date or scheduling status"],"reason":null}...
+-> Step 2: Identified columns ['camis', 'inspection_date', 'inspection_year', 'days_to_next_inspection', 'inspection_order', 'inspection_type']
+-> Step 3: Considering 132 predicate candidates
+-> Step 3 failed: The exempt establishment types cannot be determined reliably from grade, grade_date, cuisine_description, or dba. A predicate on grade alone would incorrectly prohibit grades for all establishments.
+-> Predicate selection failed: The exempt establishment types cannot be determined reliably from grade, grade_date, cuisine_description, or dba. A predicate on grade alone would incorrectly prohibit grades for all establishments.
+
+============================================================
+Processing: An establishment receiving a B or C grade on re-inspection receives two cards: o...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["score", "inspection_type", "inspection_order", "grade"],
+  "implied_columns": ["camis", "inspection_date", "grade_date"],
+  "reasoning": "Score represents the 0–13 violation-point range; inspection_type and inspection_order help identify a first inspection; and grade records the required A grade. The restaurant identifier scopes the inspection sequence. Inspection and grade dates may help assess timing, but they do not establish when a card was posted.",
+  "missing_concepts": ["A-grade card issuance", "card posting status or posting date"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['score', 'inspection_type', 'inspection_order', 'grade', 'camis', 'inspection_date', 'grade_date']
+-> Step 3: Considering 154 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["grade", "inspection_type"],
+  "implied_columns": ["grade_date", "inspection_date"],
+  "reasoning": "The condition requires an A grade issued on a re-inspection. Grade and inspection type capture those facts; grade date and inspection date provide the available timing references for 'immediately.'",
+  "missing_concepts": ["Whether the A-grade card was posted", "Date or time the card was posted"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['grade', 'inspection_type', 'grade_date', 'inspection_date']
+-> Step 3: Considering 76 predicate candidates
+-> Step 3: Selected 1 predicates: ['t1.days_to_next_inspection > $float']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["grade", "score", "inspection_type", "violation_code", "violation_description", "critical_flag"],
+  "implied_columns": ["camis", "inspection_date", "grade_date", "inspection_order", "days_to_next_inspection", "action"],
+  "reasoning": "Grade and score identify an initial inspection that did not receive an A. Inspection type distinguishes initial inspections from re-inspections. Violation fields, critical flag, and action can reflect sanitary conditions. The establishment identifier and inspection sequence link inspections for the same establishment; dates, the interval to the next inspection, and grade date help assess whether a grade was assigned after an opportunity for re-inspection.",
+  "missing_concepts": ["Whether a grade was physically posted", "Whether the establishment had an opportunity to improve its sanitary conditions"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['grade', 'score', 'inspection_type', 'violation_code', 'violation_description', 'critical_flag', 'camis', 'inspection_date', 'grade_date', 'inspection_order', 'days_to_next_inspection', 'action']
+-> Step 3: Selected 2 predicates: ['t1.grade IS NOT NULL', 't1.inspection_type NOT IN $values']
+-> Step 3: Considering 264 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["grade", "inspection_type"],
+  "implied_columns": ["camis", "inspection_date", "grade_date", "inspection_order"],
+  "reasoning": "Grade identifies B or C, and inspection_type identifies re-inspections. The establishment identifier and inspection sequence can help associate the requirement with a particular re-inspection; inspection_date and grade_date provide timing context for 'immediately.'",
+  "missing_concepts": ["number of cards issued", "whether a Grade Pending card was issued", "which card was posted", "card posting time"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['grade', 'inspection_type', 'camis', 'inspection_date', 'grade_date', 'inspection_order']
+-> Step 3: Considering 120 predicate candidates
+-> Step 3 failed: The required posting-time information is unavailable, so the violation cannot be expressed with the listed predicates.
+-> Predicate selection failed: The required posting-time information is unavailable, so the violation cannot be expressed with the listed predicates.
+
+============================================================
+Processing: The final grade is determined at OATH....
+-> Step 3.5 [GATE]: REJECT — The sentence does not identify which inspection types may receive a grade, so no specific violation can be checked. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: The frequency of inspections depends on a restaurant's score....
+-> Step 3: Selected 4 predicates: ['t1.score >= $float', 't1.score <= $float', 't1.inspection_order = $int', 't1.grade != $string']
+-> Step 3.5 [GATE]: PASS — An establishment with more than 365 days between consecutive inspections violates the stated annual inspection frequency. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 6 columns
+-> Step 3.5 [GATE]: PASS — A first inspection with a score from 0 to 13 and a grade other than 'A' is a concrete violation detectable from the columns. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 7 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":["grade"],"implied_columns":[],"reasoning":"The final grade maps to the grade column. No available column records whether the grade was determined at OATH.","missing_concepts":["OATH determination or hearing"],"reason":null}...
+-> Step 2: Identified columns ['grade']
+-> Step 3: Considering 18 predicate candidates
+-> Step 3 failed: No combination of the available predicates can express the absence of a posting obligation as a violation.
+-> Predicate selection failed: No combination of the available predicates can express the absence of a posting obligation as a violation.
+
+============================================================
+Processing: Frequent inspections of poorer-performing establishments enable the Health Depar...
+-> Step 4: Constructed temporal with 1 rule(s)
+   ['t1.days_to_next_inspection > 365']
+   An establishment goes more than 365 days before its next inspection.
+
+-> Verification iteration 1/2
+-> Step 5: Found 52041 violations
+
+============================================================
+Processing: The letter grade or "Grade Pending" card must be posted in a place where it is e...
+-> Step 3 failed: The required card issuance and posting outcomes are not represented by the available columns.
+-> Predicate selection failed: The required card issuance and posting outcomes are not represented by the available columns.
+
+============================================================
+Processing: It must be on the front window, door or an outside-facing wall....
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 0', 't1.score <= 13', 't1.inspection_order = 1', "t1.grade != 'A'"]}]
+   A restaurant scores 0–13 points on its first inspection but receives a grade other than A.
+
+-> Verification iteration 1/2
+-> Step 5: Found 272 violations
+
+============================================================
+Processing: The card must be within 5 feet from the front door or other entrance, and within...
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","inspection_date","days_to_next_inspection"],"implied_columns":["camis","inspection_order","inspection_year"],"reasoning":"Score is the proposed determinant. Inspection frequency can be measured from inspection dates or the days between inspections. Restaurant ID groups inspections by establishment; inspection order and year can help assess their sequence and frequency over time.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'inspection_date', 'days_to_next_inspection', 'camis', 'inspection_order', 'inspection_year']
+-> Step 3: Considering 160 predicate candidates
+-> Step 3 failed: Expressing this rule requires a column representing the determination event or time; grade alone is insufficient.
+-> Predicate selection failed: Expressing this rule requires a column representing the determination event or time; grade alone is insufficient.
+
+============================================================
+Processing: For additional information visit http://www1.nyc.gov/site/doh/business/food-oper...
+-> Step 2 response: {"is_valid":true,"direct_columns":["grade"],"implied_columns":["violation_code","violation_description"],"reasoning":"The letter grade on the card maps to grade. A failure to post the card visibly might be recorded as an inspection violation, identifiable through violation_code or violation_description.","missing_concepts":["Grade Pending status","whether the card is posted","whether the posting location is easily visible to passersby"],"reason":null}...
+-> Step 2: Identified columns ['grade', 'violation_code', 'violation_description']
+-> Step 3: Considering 46 predicate candidates
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence only provides a website for additional information. It does not state a constraint or refer to any available column.","missing_concepts":["additional-information URL"],"reason":"No concept in the sentence maps to a predicate column."}...
+-> Step 2 failed: No concept in the sentence maps to a predicate column.
+-> Schema validation failed: No concept in the sentence maps to a predicate column.
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["inspection_date", "inspection_year", "inspection_order", "inspection_type", "days_to_next_inspection", "grade", "grade_date", "score", "action", "violation_code", "violation_description", "critical_flag"],
+  "implied_columns": ["camis"],
+  "reasoning": "Inspection dates, order, type, and time to the next inspection help assess how frequently establishments are inspected. Grades and scores indicate performance; grade dates help track improvement over time. Violations, critical flags, and inspection actions provide evidence of food safety practices. The establishment identifier is needed to compare inspections and grades for the same establishment.",
+  "missing_concepts": ["A direct measure of opportunities to improve or the causal effect of frequent inspections"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['inspection_date', 'inspection_year', 'inspection_order', 'inspection_type', 'days_to_next_inspection', 'grade', 'grade_date', 'score', 'action', 'violation_code', 'violation_description', 'critical_flag', 'camis']
+-> Step 3 failed: Card placement and visibility cannot be expressed using the available predicates.
+-> Predicate selection failed: Card placement and visibility cannot be expressed using the available predicates.
+-> Step 3: Considering 286 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [],
+  "implied_columns": ["grade"],
+  "reasoning": "In a restaurant inspection context, “it” may refer to a posted grade. The grade column identifies the grade, but no column records where it is displayed.",
+  "missing_concepts": ["identity of the item referred to as “it”", "display location on the front window, door, or outside-facing wall"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['grade']
+-> Step 3: Considering 18 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.score = t2.score', 't1.days_to_next_inspection != t2.days_to_next_inspection']
+-> Step 2 response: {"is_valid":true,"direct_columns":["grade"],"implied_columns":["violation_description","violation_code"],"reasoning":"In this restaurant-inspection context, the card may be an inspection grade card, relating it to grade. Improper card placement could be recorded in violation_description and identified by violation_code. The schema does not record the card’s actual position, so the stated distances cannot be checked directly.","missing_concepts":["card location relative to an entrance","card height above the ground or floor"],"reason":null}...
+-> Step 2: Identified columns ['grade', 'violation_description', 'violation_code']
+-> Step 3: Considering 46 predicate candidates
+-> Step 3 failed: No placement or location column is available.
+-> Predicate selection failed: No placement or location column is available.
+-> Step 3.5 [GATE]: REJECT — Saying inspection frequency depends on score does not specify a required interval or assert that restaurants with the same score must have the same days to the next inspection, so no concrete violation follows. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+-> Step 3 failed: No available predicate can express a breach of either distance limit.
+-> Predicate selection failed: No available predicate can express a breach of either distance limit.
+-> Step 3 failed: “Frequent” has no stated threshold, so no available predicate can express when an inspection interval is too long.
+-> Predicate selection failed: “Frequent” has no stated threshold, so no available predicate can express when an inspection interval is too long.
+  Mapped: 5/33
+  Evaluating classification (all 33 sentences)...
+  Evaluating pairwise mapping quality (GT sentences only)...
+  Evaluating aggregate violation (all 33 sentences)...
+  Saving outputs...
+  Saved detailed results to: results/v3_fix/e3_end2end/hmda_e3_restaurant_multistep_20261021_200814/metrics/restaurant_Multi-Step_|_GPT-6_Sol_detailed_results.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 89.59s
+
+  ── CLASSIFICATION (all 33 sentences) ──────────────────────────────
+     Accuracy:  0.939
+     Precision: 1.000
+     Recall:    0.714
+     F1:        0.833  [PRIMARY]
+     TP:   5  FP:   0
+     FN:   2  TN:  26
+
+  ── AGGREGATE VIOLATION DISCOVERY (all 33 sentences) ─────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     Gold violations:      52311
+     Predicted violations: 52309
+     Overlap violations:   52309
+
+  ── CONSTRAINT EXACT MATCH (GT sentences only) ─────────────────────────
+     Precision: 0.800
+     Recall:    0.571
+     F1:        0.667  [PRIMARY]
+     TP: 4  FP: 1  FN: 3
+     Predicted: 5, Gold: 7
+
+  ── PAIRWISE SYNTACTIC QUALITY (GT sentences only, n=7) ──────────
+     Exact Match:       0.571 (4/7)
+     Predicate Jaccard: 0.643 (±0.440)
+
+  ── PAIRWISE VIOLATION DISCOVERY (GT sentences only) ────────────────────
+     Exact Match:       0.571 (4/7)
+     Precision:         0.571 (±0.495)
+     Recall:            0.571 (±0.495)
+     F1:                0.571 (±0.495)
+     Violation Jaccard: 0.571 (±0.495)
+
+  INSIGHT: Syntactic vs Violation Gap (pairwise) = 0.000
+  Variant completed
+
+========================================================================================================================
+COMPARISON TABLE
+========================================================================================================================
+
+Sentence Modes (DIRECT / FILTERED):
+  Left  (all sentences):      Clf F1 | Agg Viol F1
+  Right (GT sentences only):  Const F1 | Syn Exact | Viol F1
+  Variant                                Mode         Impl       [ALL] Clf F1   [ALL] AggViol F1   [GT] Const F1   [GT] Syn Exact   [GT] Viol F1 Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Multi-Step | GPT-6 Sol                 SENTENCE_DIRECT multi_step_refinement 0.833          1.000              0.667           0.571            0.571        89.5902680339932
+
+  Best Classification F1 [ALL]:        Multi-Step | GPT-6 Sol (0.833)
+  Best Aggregate Violation F1 [ALL]:   Multi-Step | GPT-6 Sol (1.000)
+  Best Constraint Exact F1 [GT]:       Multi-Step | GPT-6 Sol (0.667)
+  Best Violation F1 Pairwise [GT]:     Multi-Step | GPT-6 Sol (0.571)
+  Fastest Runtime:                     Multi-Step | GPT-6 Sol (89.59s)
+========================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3_fix/e3_end2end/hmda_e3_restaurant_multistep_20261021_200814

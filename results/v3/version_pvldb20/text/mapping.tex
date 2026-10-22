@@ -1,0 +1,154 @@
+\section{Constraint Mapping}
+\label{sec:mapper}
+
+Let $\mathcal{S}$ denote the sentences passed to the mapper, either all preprocessed sentences or the subset retained by the classifier. For each $s_i \in \mathcal{S}$, the mapper returns a constraint $\varphi_i$ over the dataset schema, made of one or more DCs of the form $\neg(p_1 \land \cdots \land p_\ell)$ (Section~\ref{sec:mapper:sql}), or no output if $s_i$ does not express a constraint or cannot be linked to the schema. The task is to interpret the sentence, identify the relevant schema elements, select predicates that capture the rule, and produce an executable \emph{violation condition}. It is related to Text-to-SQL~\cite{yu2018spider}, but Text-to-SQL retrieves satisfying records, whereas our target is a conjunction of predicates that identifies a violation.
+
+\begin{example}[Mapping to DC predicates]
+\label{ex:mapping}
+The NYC restaurant inspection rule ``A score of 0--13 results in a grade of A'' has the violation condition
+$\texttt{t.score} \geq \texttt{0} \land \texttt{t.score} \leq \texttt{13} \land \texttt{t.grade} \neq \texttt{`A'}$: any tuple satisfying all three predicates violates the rule. \qed
+\end{example}
+
+The same rule may be phrased in many ways, often with implicit references to schema elements, literals, or tuple relationships. We therefore rely on LLMs, motivated by their performance in Text-to-SQL~\cite{llmTEXT2SQLSurvey2025}. Unrestricted generation, however, is unreliable: LLMs are known to hallucinate column names and use unsupported operators~\cite{dail2025,llmTEXT2SQLSurvey2025,DBLP:conf/dexa/DociniAO25}, and we observed that they tend to describe valid states rather than violations. Our design follows two principles. First, a \emph{predicate space} derived from the schema serves as a controlled vocabulary: the mapper selects predicates from it or instantiates typed placeholders of predefined templates. Second, the mapper is biased toward \emph{precision}: an incorrect mapping produces false violations, whereas an unmapped sentence can still be inspected manually. We implement two mappers over the same predicate space, a \emph{single-prompt} mapper (Section~\ref{sec:mapper:llm}) and a \emph{multi-step} mapper (Section~\ref{sec:mapper:multistep}); both produce DCs that are compiled into SQL violation queries (Section~\ref{sec:mapper:sql}).
+
+\subsection{Predicate Space}
+\label{sec:mapper:predicate-space}
+
+DC discovery operates over a \emph{predicate space}, the set of predicates allowed in candidate constraints~\cite{chu2013discovering,Pena2019DiscoveryDC}. Because discovery enumerates combinations of predicates, this space is kept small. Regulatory text, however, frequently refers to enumerations, ranges, string formats, and arithmetic conditions. Comparisons with constants and null checks are expressible as DCs, but discovery spaces rarely include set membership, patterns, or arithmetic, because each extension multiplies the candidates to enumerate. \system\ does not enumerate candidates; it uses the larger space only as a controlled vocabulary, which avoids candidate explosion while preserving syntactic validity.
+
+\smallskip\noindent\textbf{Predicate templates.}
+We derive the following categories from the schema:
+(1)~\emph{cross-tuple} predicates (e.g., \texttt{t1.A = t2.A}), with $\{=,\neq\}$ for type-compatible attributes and also $\{<,\leq,>,\geq\}$ for numeric ones;
+(2)~\emph{same-tuple} predicates (e.g., \texttt{t1.A $\leq$ t1.B});
+(3)~\emph{null} predicates (\texttt{IS [NOT] NULL});
+(4)~\emph{attribute--constant} predicates (e.g., \texttt{t1.A $\geq$ c});
+(5)~\emph{pattern} predicates (\texttt{t1.A LIKE p});
+(6)~\emph{set} predicates (\texttt{t1.A IN C}); and
+(7)~\emph{arithmetic} predicates over numeric attributes of the same tuple (e.g., \texttt{t1.A $\geq$ c * t1.B}).
+For categories 4--7, the mapper instantiates $c$, $p$, or $C$ with literals from the sentence. Following DC discovery~\cite{chu2013discovering}, order predicates are generated only for numeric attributes, and two-attribute predicates only for type-compatible pairs with overlapping values.
+
+\smallskip\noindent\textbf{Coverage and scope.}
+Across our six datasets, 487 of the 490 predicates of the gold DCs belong to this space; the three exceptions, on HMDA Checks, compare an integer-encoded date with arithmetic over the reporting year. The space excludes aggregation and arithmetic over dates or sequences of records, so rules over counts or inspection histories require derived attributes (Section~\ref{sec:datasets}). The target is a DC with at most two tuple variables and universal violation semantics: a single violating pair suffices. Rules that must hold only for most pairs, or that compare distances between values, such as differential dependencies, require counting or tolerance semantics and are outside our scope.
+
+\smallskip\noindent\textbf{Schema-driven, on-demand generation.}
+With arithmetic and code-set templates, the space of a 135-column table reaches hundreds of thousands of templates, most irrelevant to any given sentence. \system\ therefore stores only a \emph{schema description}: for each column, its type, admitted operators, domain values (when it has few distinct values), and a short description written offline by an LLM from a deterministic data profile, merged with the official data dictionary when available (HMDAZ). Once the relevant columns of a sentence are selected, predicates are generated only for them. For a fixed instance, the generated set equals the full space restricted to those columns, so the vocabulary is unchanged; only its materialization is deferred.
+
+\subsection{Single-Prompt Mapper}
+\label{sec:mapper:llm}
+
+The single-prompt mapper performs the full mapping in one LLM call for a batch of three sentences. The prompt contains the definition of a DC, a small set of examples covering thresholds, set membership, field comparisons, nulls, cross-tuple rules, and non-constraints, and the columns retrieved for the batch: columns are ranked by the embedding similarity between the sentence and the column name and description, and the prompt carries the description, domain values, and generated predicates of each retrieved column. For each sentence, the model returns a list of independent rules, whose violations are united (Section~\ref{sec:mapper:sql}), or \texttt{null} if the sentence is not mappable.
+
+\smallskip\noindent\textbf{Violation form.}
+Without explicit guidance, LLMs tend to output predicates describing \emph{satisfying} tuples rather than \emph{violating} ones, since regulatory sentences describe what must hold. In Example~\ref{ex:mapping}, the correct output is \texttt{grade $\neq$ `A'}, not \texttt{grade $=$ `A'}. The prompt states the criterion explicitly (``must be X'' $\Rightarrow$ \texttt{!= X}; ``must not be X'' $\Rightarrow$ \texttt{= X}), and the model must first state the condition under which a tuple violates the rule (\texttt{violated\_when}) before writing the DC.
+
+\smallskip\noindent\textbf{Cross-tuple constraints.}
+For rules that relate records, the mapper must introduce two tuple aliases and a join on the shared identifier; cues such as ``for the same'' or ``repeated'' in the prompt suffice for the model to generalize to other phrasings.
+
+\smallskip\noindent\textbf{Literal grounding.}
+A recurring failure is to produce thresholds, strings, or enumerations in the wrong format or casing. The domain values of each retrieved column anchor literals to the data representation (e.g., a label such as \texttt{'Secured by a first lien'} rather than a paraphrase).
+
+\smallskip\noindent\textbf{Validation.}
+Every predicate must reference existing columns, use admitted operators and typed constants, and have no placeholders. Malformed outputs are retried, invalid rules are returned once to the model with the error, and a sentence whose attempts all fail produces no constraint. Membership in the predicate space is not enforced; we report out-of-space predicates instead.
+
+\subsection{Multi-Step Mapper}
+\label{sec:mapper:multistep}
+
+A single prompt must solve schema linking, predicate selection, literal grounding, and the violation form jointly, so early errors propagate: a wrong column breaks predicate selection, a hallucinated literal yields a valid but meaningless DC, and a non-constraint triggers an unnecessary mapping. In Text-to-SQL, separating schema linking from later decisions often improves accuracy~\cite{DBLP:conf/dexa/DociniAO25,redsql2025,dail2025,resdsql2023}. The multi-step mapper uses four LLM calls, each receiving the output of the previous one (Figure~\ref{fig:multistepprompt}), followed by deterministic checks. Each stage isolates one decision that the single-prompt mapper makes jointly, trading additional calls for smaller decisions that can each be validated. In our experiments, this decomposition keeps the mapper usable with backbones whose single-prompt outputs fail (Section~\ref{sec:constraintextraction}); a finer ablation that removes or reorders individual stages is left for future work.
+
+\begin{figure}[!ht]
+\centering
+\footnotesize
+\begin{tabularx}{\linewidth}{p{0.13\linewidth}p{0.28\linewidth}X}
+\toprule
+\textbf{Step} & \textbf{Context} & \textbf{Task} \\
+\midrule
+\textbf{Schema} &
+\hlc[contextbg]{Schema description} &
+\hlc[neutralbg]{Identify all columns relevant to $s$: direct mentions, synonyms, and derived concepts.}
+\hlc[nobg]{Abort if no concept maps to a column.} \\
+\midrule
+\textbf{Predicates} &
+\hlc[contextbg]{$\hookrightarrow$ Selected columns and their predicates} &
+\hlc[neutralbg]{Select predicates and templates and the constraint pattern (value mapping, temporal bound, dependency, required field, conditional rule).}
+\hlc[nobg]{Abort if none fits.} \\
+\midrule
+\textbf{Rule filter} &
+\hlc[contextbg]{$\hookrightarrow$ Columns and predicates} &
+\hlc[neutralbg]{Decide whether $s$ is a specific rule verifiable from column values alone.} \newline
+\hlc[nobg]{Reject: processes, permissions, vague quantifiers.} \\
+\midrule
+\textbf{Construction} &
+\hlc[contextbg]{$\hookrightarrow$ Selected predicates, column profiles} &
+\hlc[neutralbg]{Instantiate placeholders with literals from $s$ and return the DC in violation form.} \\
+\bottomrule
+\end{tabularx}
+\caption{Prompt structure of the multi-step mapper; context narrows progressively.
+\csquare{contextbg}\,input context;
+\csquare{nobg}\,abort\,/\,reject signal;
+\csquare{neutralbg}\,instruction.}
+\label{fig:multistepprompt}
+\end{figure}
+
+\smallskip\noindent\textbf{Stages.}
+\emph{Schema linking} identifies the columns relevant to the sentence, including implicit references, and rejects the sentence if none applies. \emph{Predicate selection} chooses, among the predicates generated for those columns, the ones that together form the DC pattern; a dedicated structural step improves accuracy in Text-to-SQL~\cite{resdsql2023}. The \emph{rule filter} decides whether the sentence maps to a DC under the grounding obtained so far. Unlike the classifier (Section~\ref{sec:classifier}), it sees the candidate columns and predicates, and many sentences that look like rules in isolation support no executable constraint once grounded. Placing it before construction avoids a call for rejected sentences. \emph{Construction} instantiates the selected templates with thresholds, constants, patterns, and enumerations aligned with the data representation. Framing this step as grounded instantiation rather than open-ended generation makes unsupported predicates and malformed expressions less likely~\cite{pourreza2023din,picard2021,lin-etal-2020-bridging}.
+
+\smallskip\noindent\textbf{Data-grounded checks.}
+Each candidate DC is first validated structurally: predicates must belong to the predicate space, reference valid columns, use type-compatible operators, and contain no placeholders. Next, for each equality, string inequality, \texttt{LIKE}, or membership predicate with literals, we issue an existence query; a predicate that no tuple satisfies is an \emph{orphan predicate}, and a DC containing one is discarded. Numeric bounds and null predicates are exempt, since their validity is structural. Finally, we execute the DC and discard it when more than 90\% of the tuples take part in a violation: a DC that flags almost every tuple most likely encodes the valid state rather than its violation.
+
+\subsection{From Denial Constraints to SQL}
+\label{sec:mapper:sql}
+
+Every DC is compiled into a SQL \emph{violation query}, used by the data-grounded checks, for violation detection, and for evaluation. Compilation is deterministic, but it settles questions that the DC formalism leaves open on real data.
+
+\smallskip\noindent\textbf{Rule structure and compilation.}
+Each rule is a tree of \texttt{AND}/\texttt{OR} nodes over the predicate forms of Section~\ref{sec:problem}; a rule with disjunctions is equivalent to one DC per disjunct of its disjunctive normal form. Independent rules of a sentence are compiled separately, and their violations are united. A rule with one tuple variable becomes a selection returning the identifiers of the violating tuples; a rule with two becomes a self-join with $t_1.\mathit{tid} \neq t_2.\mathit{tid}$. Membership and pattern predicates map to \texttt{IN} and \texttt{LIKE}, division is guarded against zero, and literals are canonicalized. The self-join condition must not be replaced by $t_1.\mathit{tid} < t_2.\mathit{tid}$, a common way to avoid reporting a pair twice: this is only correct for symmetric DCs, such as FDs. For the asymmetric ordering rule of Example~\ref{ex:intro}, it misses every pair whose witnesses appear in the opposite order (61 applications flagged with $\neq$, only 9 with $<$). Since violations are reported per tuple, enumerating both orders does not inflate the counts.
+
+\smallskip\noindent\textbf{Types, missing values, and execution.}
+Published data rarely matches its declared schema; numeric fields contain codes such as \texttt{NA} or \texttt{Exempt}. We read the data as text, type each column with the schema, and compare numeric attributes through \texttt{TRY\_CAST}, which turns malformed values into \texttt{NULL} instead of aborting the query. Under three-valued logic, a predicate over \texttt{NULL} is unknown and the tuple is not reported, so requiredness must be stated with \texttt{IS NULL}, and \texttt{loan\_type != 1} silently skips tuples without a loan type; the prompts illustrate this explicitly. Queries run on DuckDB under a memory budget, a time limit, and a result cap, since a pair DC that joins on a low-cardinality attribute can produce billions of bindings. A query that exceeds them is reported as an execution error, never as a constraint without violations.
+
+\smallskip\noindent\textbf{Bridging text and data.}
+Most of the difficulty lies before compilation, in the inferences that make the query check what the text means (Table~\ref{tab:sql-examples}). On Tax, ``lower salary cannot have higher tax rate'' becomes an asymmetric pair DC. On SISU, ``selected in only one of their options'' requires identifying the student by the national ID rather than the exam registration number, which the text leaves implicit. On HMDA Checks, amounts are recorded in thousands, so ``\$1,000 (\$1 million)'' becomes \texttt{loan\_amount >= 1000}, and ``five times the income'' becomes an arithmetic predicate. On HMDAZ, the regulation compares the APR with the average prime offer rate, a difference stored as \texttt{rate\_spread}, and combines coverage conditions, alternative thresholds, and labels that must match the data verbatim. Each decision changes the violating tuples, which is why we report violation detection next to structural extraction.
+
+\begin{table*}[t]
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{9.0cm}r}
+    \toprule
+    \textbf{Dataset} & \textbf{Sentence (abridged)} & \textbf{Violation condition in the compiled query (\texttt{WHERE} clause, casts omitted)} & \textbf{Viol.} \\
+    \midrule
+    Tax & Within the same state, a person with lower salary cannot have higher tax rate. & \texttt{t1.tid <> t2.tid AND t1.state = t2.state AND t1.salary < t2.salary AND t1.rate > t2.rate} & 363 \\
+    SISU & The student will be selected in only one of their options.$^{\dagger}$ & \texttt{t1.tid <> t2.tid AND t1.cpf = t2.cpf AND t1.edicao = t2.edicao AND t1.ano = t2.ano AND t1.etapa = t2.etapa AND t1.opcao != t2.opcao AND t1.aprovado = 'S' AND t2.aprovado = 'S'} & 149 \\
+    HMDA Checks & If loan amount and income are $>0$ and the loan amount is $\geq$ \$1,000 (\$1 million), then loan amount should be $<$ 5 times the income. & \texttt{t1.loan\_amount > 0 AND t1.applicant\_income > 0 AND t1.loan\_amount >= 1000 AND t1.loan\_amount >= (5 * t1.applicant\_income)} & 600 \\
+    HMDAZ & A high-cost mortgage is a consumer credit transaction secured by the consumer's principal dwelling in which the APR exceeds the APOR by more than (A) 6.5 points for a first lien, (B) 8.5 points for a first lien on personal property under \$50,000, or (C) 8.5 points for a subordinate lien. & \texttt{t1.business\_or\_commercial\_purpose = 2 AND t1.occupancy\_type\_name = 'Principal residence' AND t1.reverse\_mortgage\_name = 'Not a reverse mortgage' AND t1.hoepa\_status\_name = 'Not a HOEPA loan' AND ((t1.lien\_status\_name = 'Secured by a first lien' AND (t1.manufactured\_home\_secured\_property\_type != 2 OR t1.loan\_amount >= 50000) AND t1.rate\_spread > 6.5) OR (t1.lien\_status\_name = 'Secured by a first lien' AND t1.manufactured\_home\_secured\_property\_type = 2 AND t1.loan\_amount < 50000 AND t1.rate\_spread > 8.5) OR (t1.lien\_status\_name = 'Secured by a subordinate lien' AND t1.rate\_spread > 8.5))} & 4 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Gold constraints compiled into violation queries, with the number of violating tuples (HMDA: first 1M rows). Numeric attributes are compared through \texttt{TRY\_CAST}. $^{\dagger}$Translated from Portuguese.}
+  \label{tab:sql-examples}
+\end{table*}
+
+\subsection{Methodological Contributions}
+\label{sec:mapper:novelty}
+
+Table~\ref{tab:novelty} delineates which components of \system\ build on Text-to-SQL practice and which are specific to mapping normative text to constraints. Prompts implement individual decisions, but replacing a prompt changes neither the vocabulary, the violation form, nor the checks that every constraint must pass.
+
+\begin{table}[!ht]
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{2.1cm}>{\raggedright\arraybackslash}p{1.3cm}>{\raggedright\arraybackslash}p{4.6cm}}
+    \toprule
+    \textbf{Component} & \textbf{Origin} & \textbf{What is specific to \system} \\
+    \midrule
+    Schema linking & Adapted~\cite{resdsql2023,pourreza2023din} & Over a schema description with column descriptions and domain values. \\
+    Staged decomposition & Adapted~\cite{pourreza2023din} & A rule filter decides whether the text is a checkable rule at all; every Text-to-SQL question has an answer. \\
+    Predicate space & New & Typed templates derived from the schema and generated on demand. \\
+    Violation form & New & The output is the condition that must never hold (a DC), a canonical target instead of a query. \\
+    Data-grounded checks & New & Orphan literals and the share of violating tuples are checked on the instance. \\
+    Compilation & New & Pair, type, and \texttt{NULL} semantics of violation queries. \\
+    Evaluation & New & Equivalence-aware extraction, execution equivalence, per-rule metrics (Section~\ref{sec:metrics}). \\
+    \bottomrule
+  \end{tabular}
+  \caption{Components adapted from Text-to-SQL and components specific to Text-to-Constraints.}
+  \label{tab:novelty}
+\end{table}

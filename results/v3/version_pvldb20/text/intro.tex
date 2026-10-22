@@ -1,0 +1,75 @@
+\section{Introduction}
+\label{sec:intro}
+
+Many data management tasks rely on \emph{data quality constraints}, which define what constitutes valid data.
+However, such constraints are often missing, incomplete, or outdated in real-world datasets. This gap has motivated a large body of work on \emph{data profiling}, where data constraints are automatically discovered from the data itself~\cite{profSurveyFelix2015}. 
+Profiling algorithms extract constraints, such as functional dependencies (FDs) and denial constraints (DCs), by identifying patterns that hold over a given data instance, and have been widely used to support data cleaning and error detection~\cite{dependencyTree2020}.
+
+However, this line of work derives constraints only from the data. Exact discovery returns rules that the instance satisfies, approximate discovery tolerates a fraction of violations~\cite{Pena2019DiscoveryDC,martin2026lima}, and rule-discovery systems help experts rank and refine the candidates~\cite{fan2023topk}. In all cases, the candidates are patterns that hold, exactly or approximately, in the data, rather than rules that the data is \emph{required to satisfy} by some policy, regulation, or legislation. A required rule that is widely violated in the released data is therefore hard to recover from the data alone.
+
+Many datasets are governed by rules specified in regulatory documents, policy manuals, and operational specifications, which define requirements such as mandatory fields, valid values, eligibility criteria, uniqueness conditions, quotas, and ordering rules~\cite{batini2009methodologies,serra2024IQcontextDtaQuality,CABALLERO2022102058}. Formalizing these rules is difficult because they depend on combinations of attributes, relationships across tuples, thresholds, and context-dependent conditions. Since they are typically expressed only in natural language, they are rarely translated into executable constraints and used with the data they govern. Consequently, datasets are frequently released without an explicit representation of their own correctness requirements, and violations remain undetected.
+
+\begin{example}[Brazilian public university admission]
+\label{ex:intro}
+Brazil's ``Sistema de Sele\c{c}\~{a}o Unificada'' (SISU) manages the public university placements for millions of students annually. The application data is publicly available,\footnote{\url{https://dadosabertos.mec.gov.br/sisu}} with sensitive fields anonymized. The dataset schema includes attributes such as \emph{student\_id}, \emph{course\_code}, \emph{shift}, \emph{institution\_id}, \emph{year}, and \emph{edition}. The rules that define correct enrollment outcomes, however, are described in separate documents that do not accompany the dataset. For instance, Normative Ruling No.\ 21/2012\footnote{\url{https://sisugestao.mec.gov.br/docs/portaria-2012-21.pdf}} is a PDF file found on the Brazilian government website that states (Article 19):\footnote{Schema elements and quoted statements translated from Portuguese for readability.}
+
+\begin{quote}
+\textit{``$\ldots$ the student will be ranked in descending order of scores for the seat option they applied to, respecting the available seats at the institution, by campus location, course, and shift, as well as the student's admission category.''}
+\end{quote}
+
+This passage defines an \emph{ordering constraint}: within each context defined by institution, campus, course, shift, and admission category (and per year/edition), a higher score should not result in a worse rank. The following SQL query checks for violations of this requirement in SISU's application data:
+
+\begin{lstlisting}[language=SQL, frame=none, basicstyle=\footnotesize\ttfamily, mathescape]
+SELECT t.student_id, t$^\prime$.student_id
+  FROM applications t, applications t$^\prime$
+ WHERE t.student_id <> t$^\prime$.student_id
+   -- same context
+   AND t.year = t$^\prime$.year
+   AND t.edition = t$^\prime$.edition
+   AND t.institution_id = t$^\prime$.institution_id
+   AND t.campus_id = t$^\prime$.campus_id
+   AND t.course_code = t$^\prime$.course_code
+   AND t.shift = t$^\prime$.shift
+   AND t.application_mode = t$^\prime$.application_mode
+   -- violation: higher score but worse ranking
+   AND t.score > t$^\prime$.score
+   AND t.ranking > t$^\prime$.ranking;
+\end{lstlisting}
+
+Any nonempty result set for this query indicates a violation of a legal requirement. On the released data, the query returns 76 violating pairs involving 61 applications.
+
+\qed
+\end{example}
+
+In this paper, we introduce the \emph{Text-to-Constraints} problem: given a dataset and a set of normative requirements derived from related regulatory text, map those requirements to executable data-quality constraints over the dataset schema.  Unlike constraint discovery, which infers constraints from patterns that may hold only incidentally, it requires reasoning over regulatory semantics, schema structure, and violation logic. Like Text-to-SQL~\cite{llmTEXT2SQLSurvey2025}, it maps natural language to schema-grounded representations, but Text-to-SQL answers specific questions, whereas Text-to-Constraints yields constraints that must hold for all valid instances.  %, yielding executable validation logic with well-defined violation semantics.
+
+\smallskip
+\noindent\textbf{Challenges.}
+
+Regulatory documents contain sentences with normative force~\cite{https://doi.org/10.1111/jels.12364}, that is, sentences that prescribe what the data is required to satisfy. The first challenge is mapping these sentences to executable constraints. Example~\ref{ex:intro} illustrates it: Article~19 states an ordering requirement in prose, whereas checking it requires making explicit the context, attributes, tuple comparisons, and violation condition. More generally, a normative passage may combine conditions, qualifiers, cross-record relationships, and thresholds, while leaving implicit how its terms correspond to elements of the dataset schema.
+
+A second challenge is determining the correct scope of each constraint. Omitting qualifiers yields overly broad constraints that flag valid data, whereas extra conditions yield constraints that are too narrow and miss violations. In Example~\ref{ex:intro}, omitting year/edition or admission category mis-scopes the check. 
+
+A third challenge is the choice of the target formalism. Any executable check can be written in SQL, but the same rule admits many syntactically different, equivalent queries, so SQL alone offers no canonical form against which mapped rules can be validated, compared, and reused across documents. More restricted languages are canonical and easy to evaluate, but they miss many cross-record rules, including ordering, quotas, and conditional uniqueness. Example~\ref{ex:intro} requires comparing applicants within the same context, so we need a canonical constraint language that supports such comparisons and can still be compiled into efficient SQL checks on large datasets (Section~\ref{sec:problem}).
+
+Large language models (LLMs) are a promising way to address these challenges, as demonstrated in related regulatory compliance tasks~\cite{compliance2025ACMTSEM}. However, Text-to-Constraints requires more than identifying relevant passages: the output must be linked to the dataset schema, conform to a constraint formalism, and express violation conditions that can be executed against the data. None of these requirements follows automatically from LLM outputs; they require explicit mechanisms for schema alignment, predicate grounding, and violation semantics.
+
+Other lines of work also bring richer rules or learned components to data quality, but they start from the data. Rule languages such as REEs embed ML predicates in logic rules for data cleaning~\cite{bao2024rock}, and LLMs now propose candidate rules from schemas and data samples~\cite{biester2024llmclean,glock2026ledqer}. Extending DC discovery with richer predicates would still take the data as the only evidence. \system\ instead takes the rules from the normative text and uses the data only to ground and validate them, through a controlled, schema-derived predicate vocabulary.
+
+\smallskip
+\noindent\textbf{From text to data quality constraints.}
+
+To address these challenges, we propose \system, the first framework for Text-to-Constraints. Given the sentences of a regulatory text and a target dataset, \system\ optionally filters the sentences with normative force and maps each of them to a formal constraint over the dataset schema. \system\ uses denial constraints, which balance expressiveness and control. Unlike Text-to-SQL, it derives reusable constraints with well-defined violation semantics; unlike data profiling, which restricts DCs to few predicates for tractability, it does not search the instance and can therefore use a richer vocabulary with multiple operators, column relationships, null, domain, and pattern predicates, while keeping the output space structured.
+
+\system\ supports classification and mapping implementations with different cost and quality trade-offs, from single-prompt variants to a structured multi-step mapper. Our experiments show that this framework recovers rules that state-of-the-art data profiling algorithms and Text-to-SQL systems do not capture. \system\ identifies real compliance failures in publicly released data using constraints mapped from the governing text. A key advantage of this setting is that each detected violation can be traced back to the source passage that justifies the constraint.
+
+A summary of our contributions is the following:
+\begin{itemize}[leftmargin=0.35cm]
+\item A formalization of the \emph{Text-to-Constraints} problem;
+\item \system, the first framework for this problem, with sentence-level classification and mapping implementations with different cost-effectiveness trade-offs, and a compilation of the mapped constraints into SQL violation queries;
+\item A set of datasets with annotated constraints, and evaluation measures adequate for the Text-to-Constraints problem, including two large real-world datasets from mortgage regulation;
+\item An extensive empirical study across multiple models, prompting strategies, and baselines from data profiling and Text-to-SQL, showing that \system\ recovers critical constraints missed by data-only profiling algorithms.
+\end{itemize}
+\noindent An extended version of this paper, with additional details and examples, is available with our artifacts~\cite{normafull}.
+
+
