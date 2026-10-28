@@ -1,9 +1,9 @@
 """Table 3 (E3, end to end) of round v3 in the paper format, without Document.
 
 Norma rows come from results/v3/e3_end2end/*/results_summary.csv. Baseline rows
-(DC Discovery, XiYan-SQL) for the four original datasets are copied from Table 3
-of the submitted paper (same data and gold DCs); the baselines were not run on
-the HMDA datasets in this round, so their cells are "--".
+(DC Discovery, XiYan-SQL) come from BASELINES (summary.csv of the round-v3
+baseline evaluation) when set, otherwise from Table 3 of the submitted paper
+(four original datasets only; "--" elsewhere).
 Usage: .venv/bin/python results/v3/analysis/table3.py
 Writes results/v3/analysis/v3_table3_end2end.{tex,csv} and e3_new_metrics.md.
 """
@@ -12,7 +12,7 @@ import pandas as pd
 
 import os
 RES = os.environ.get("V3_RESULTS", "results/v3")  # e.g. results/v3_reeval
-OUT = f"{RES}/analysis"
+OUT = os.environ.get("TABLE_OUT", f"{RES}/analysis")
 os.makedirs(OUT, exist_ok=True)
 DS = ["hospital", "restaurant", "sisu", "tax", "hmdaz", "hmda_checks"]
 LABEL = {"hospital": "Hospital", "restaurant": "Restaurant", "sisu": "SISU", "tax": "Tax",
@@ -29,6 +29,29 @@ PAPER = {  # P R F1 for classification, extraction, violation (None = n/a)
 }
 COLS = ["clf_precision", "clf_recall", "clf_f1", "constraint_exact_precision", "constraint_exact_recall",
         "constraint_exact_f1", "aggregate_violation_precision", "aggregate_violation_recall", "aggregate_violation_f1"]
+
+# BASELINES: summary.csv of experiments/baselines/evaluate_baselines_v3.py (round-v3
+# protocol on all six datasets). DC Discovery: best F1 over the epsilon x top-k grid,
+# chosen separately for extraction and violation; XiYan-SQL: mean over the seeds.
+# Without it, the baseline rows are the numbers of the submitted paper (PAPER).
+BASELINES = os.environ.get("BASELINES")
+base_df = pd.read_csv(BASELINES) if BASELINES else None
+
+
+def baseline(ds, base):
+    if base_df is None:
+        return PAPER.get(ds, {}).get(base, ["--"] * 9)
+    rows_ds = base_df[(base_df.dataset == ds) & (base_df.method == base)]
+    sub = rows_ds[rows_ds.constraint_exact_f1.notna()]
+    if sub.empty:
+        did_not_finish = rows_ds.get("note", pd.Series(dtype=str)).astype(str).str.contains("did not finish").any()
+        return ([None] * 3 if base == "DC Discovery" else ["DNF"] * 3) + ["DNF"] * 6 if did_not_finish else ["--"] * 9
+    if base == "DC Discovery":
+        ce = sub.loc[sub.constraint_exact_f1.idxmax()]
+        av = sub.loc[sub.aggregate_violation_f1.idxmax()]
+        return [None] * 3 + [float(ce[c]) for c in COLS[3:6]] + [float(av[c]) for c in COLS[6:9]]
+    return [float(sub[c].mean()) for c in COLS]
+
 
 # E3_ROOTS: comma-separated result roots whose E3 runs are averaged (repetitions)
 ROOTS = [r for r in os.environ.get("E3_ROOTS", RES).split(",") if r]
@@ -49,7 +72,7 @@ for ds in DS:
         r = sub[sub.method == method]
         rows.append((ds, "Norma", method, [float(r[c].iloc[0]) for c in COLS] if len(r) else ["missing"] * 9))
     for base in ["DC Discovery", "XiYan-SQL"]:
-        rows.append((ds, "Profiling" if base == "DC Discovery" else "Text2SQL", base, PAPER.get(ds, {}).get(base, ["--"] * 9)))
+        rows.append((ds, "Profiling" if base == "DC Discovery" else "Text2SQL", base, baseline(ds, base)))
 pd.DataFrame([(d, f, m, *v) for d, f, m, v in rows], columns=["dataset", "family", "method", *COLS]).to_csv(f"{OUT}/v3_table3_end2end.csv", index=False)
 
 
