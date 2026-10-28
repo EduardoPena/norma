@@ -1,0 +1,34 @@
+sentence,pred_sql,raw_seconds
+The Health Department may order a restaurant to temporarily close to correct a public health hazard that cannot be corrected before the end of an inspection or when the restaurant is operating without a valid permit.,,0.12
+A restaurant may also be closed if it scores 28 or more points on three consecutive inspections.,SELECT t1.tid FROM t1 WHERE t1.score >= 28 GROUP BY t1.tid HAVING COUNT(t1.inspection_date) >= 3;,1.52
+"Prior to closure, an inspector will contact a supervisor, who will determine whether to order the establishment closed.",,0.11
+"If it is closed, Health Department closure signs must be immediately posted in the window(s) and/or door(s), all operations must cease and the restaurant must remain closed for business until it is authorized by the Health Department to reopen.",,0.12
+The Department will monitor the establishment to ensure it remains closed and will issue additional violations for not complying with the closing order.,,0.11
+"To reopen, the establishment must submit a written statement to the Health Department indicating that it has corrected all the violations that led to its being closed.",,0.12
+The operator may be asked to attend an informal meeting with Health Department supervisors.,,0.11
+"If it appears that sanitary conditions have improved, an inspector will conduct a reopening inspection while the establishment remains closed to the public.",,0.11
+Health Department supervisors will determine whether it may reopen.,,0.11
+"After re-opening, the establishment will be inspected for compliance with the Health Code.",,0.11
+"If it is in sufficient compliance, it may remain open and will be inspected again in about three months.",,0.12
+Repeated violations may prompt the Health Department to initiate procedures for the revocation or suspension of the operator's permit at a hearing before OATH.,,1.19
+"This may result in the establishment being closed for a longer period of time, or permanently.",,0.11
+Consumers may check an establishment's inspection history.,,0.11
+"Restaurant scores, grades and the details of inspection results are available on the Health Department's searchable restaurant inspection website at nyc.gov/health/restaurants.",,0.12
+"As of July 2010, certain types of food service establishments—including restaurants, coffee shops, bars, nightclubs and most cafeterias and fixed-site food stands—must post letter grades that correspond to their sanitary inspection scores.",SELECT t1.tid FROM t1 WHERE t1.inspection_date >= '2010-07-01' AND t1.grade IS NULL;,1.49
+A score of 0-13 results in a grade of A.,SELECT t1.tid FROM t1 WHERE t1.score BETWEEN 0 AND 13 AND t1.grade != 'A';,1.19
+A score of 14-27 results in a grade of B.,SELECT t1.tid FROM t1 WHERE t1.score BETWEEN 14 AND 27 AND t1.grade != 'B';,1.23
+A score of 28 or more results in a grade of C.,SELECT t1.tid FROM t1 WHERE t1.score >= 28 AND t1.grade != 'C';,1.07
+"Letter grades are not issued to mobile food vending units, temporary food service establishments, food service establishments operated by primary or secondary schools, hospital-operated cafeterias, correctional facilities, charitable organizations (including soup kitchens or other prepared food distribution programs) or food service establishments operated by not-for-profit membership organizations that serve food only to their members.",SELECT t1.tid FROM t1 WHERE t1.grade IS NOT NULL AND t1.dba IN ( SELECT dba FROM t1 WHERE dba LIKE '%mobile food vending units%' OR dba LIKE '%temporary food service establishments%' OR dba LIKE '%primary or secondary schools%' OR dba LIKE '%hospital-operated cafeterias%' OR dba LIKE '%correctional facilities%' OR dba LIKE '%charitable organizations%' OR dba LIKE '%not-for-profit membership organizations%' );,4.26
+Only certain inspections result in a grade.,"SELECT t1.tid FROM t1 WHERE t1.grade IS NULL AND t1.inspection_type IN ('Reinspection/Followup', 'Complaint', 'Reinspection')",1.56
+Every food service establishment is scheduled for at least one inspection per year.,SELECT t1.tid FROM t1 WHERE t1.inspection_year = EXTRACT(YEAR FROM CURRENT_DATE) AND NOT EXISTS ( SELECT 1 FROM t1 AS t2 WHERE t2.inspection_year = EXTRACT(YEAR FROM CURRENT_DATE) AND t2.camis = t1.camis ),2.64
+A restaurant that scores 0 to 13 violations points on its first inspection will receive an A-grade card that must be posted immediately.,SELECT t1.tid FROM t1 WHERE t1.score BETWEEN 0 AND 13 AND t1.grade = 'A' AND t1.inspection_order = 1;,1.62
+An establishment that does not score an A on its initial inspection will not have to post a grade until it has had the opportunity to improve its sanitary conditions and is re-inspected.,SELECT t1.tid FROM t1 WHERE t1.grade = 'A' AND NOT EXISTS ( SELECT 1 FROM t1 AS t2 WHERE t2.inspection_order = t1.inspection_order + 1 AND t2.grade != 'A' );,2.26
+"If an A is issued on re-inspection, the A-grade card must be posted immediately.",SELECT t1.tid FROM t1 WHERE t1.grade = 'A' AND t1.inspection_type = 'Re-Inspection' AND t1.grade_date IS NULL;,1.61
+"An establishment receiving a B or C grade on re-inspection receives two cards: one showing the letter grade and one that says ""Grade Pending""; one of those cards must be posted immediately.","SELECT t1.tid FROM t1 WHERE t1.grade IN ('B', 'C') AND NOT EXISTS ( SELECT 1 FROM t1 AS t2 WHERE t2.tid = t1.tid AND t2.grade = 'Grade Pending' )",2.23
+The final grade is determined at OATH.,SELECT t1.tid FROM t1 WHERE t1.grade_date IS NULL;,0.74
+The frequency of inspections depends on a restaurant's score.,SELECT t1.tid FROM t1 WHERE t1.score IS NULL OR t1.inspection_date IS NULL;,1.03
+"Frequent inspections of poorer-performing establishments enable the Health Department to closely monitor their food safety practices, while giving them more opportunities to improve their grades.",SELECT t1.tid FROM t1 WHERE t1.score < 50 AND t1.inspection_order > 5,1.11
+"The letter grade or ""Grade Pending"" card must be posted in a place where it is easily seen by people passing by.",,0.11
+"It must be on the front window, door or an outside-facing wall.","SELECT t1.tid FROM t1 WHERE t1.violation_description NOT LIKE '%front window, door or an outside-facing wall%'",1.23
+"The card must be within 5 feet from the front door or other entrance, and within 6 feet from the ground or floor.",,0.11
+For additional information visit http://www1.nyc.gov/site/doh/business/food-operators.page,,0.11
