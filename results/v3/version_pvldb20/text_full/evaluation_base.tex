@@ -122,14 +122,16 @@ We use the DC discovery algorithms from~\cite{Pena2022FastDC}, running both exac
 Because discovery can return many DCs, we rank them using the standard
 criterion from prior work~\cite{chu2013discovering}, which combines coverage
 and succinctness, with succinctness measured as the inverse of the number of
-symbols in the DC. We run a grid over multiple top-$k$ values and
-$\varepsilon$ thresholds, and report the best results obtained across these settings, following standard practice in prior work.
+symbols in the DC. We run exact discovery and $\varepsilon \in \{0.001, 0.005, 0.01, 0.05, 0.1\}$, evaluate top-$k \in \{5, 10, 20, 50, 100\}$, and report, for each metric, the best result across these settings, following standard practice in prior work.
 
 These baselines do not scale to our largest schemas. In particular, they
-cannot process SISU or Restaurant with all columns present. For those two
-datasets, we therefore restrict the input to the subset of columns that appear
+cannot process SISU, Restaurant, or the HMDA datasets with all columns present.
+For those datasets, we therefore restrict the input to the subset of columns that appear
 in the gold constraints, giving the profiling baselines the best possible
-setting under their scalability limits.
+setting under their scalability limits, and run discovery on a seeded sample of
+100k of the 1M HMDA rows. On HMDA Checks (39 columns), no configuration finished:
+runs timed out (6\,h with 100k rows, 2\,h with 50k) or exhausted a 12\,GB heap
+even with samples of 20k and 10k rows.
 
 
 \smallskip\noindent\textbf{Text-to-SQL.}
@@ -138,8 +140,8 @@ framework. We adapt it to our setting by prompting it, for each sentence, to
 return a SQL query that identifies the tuples violating the described
 constraint, or \texttt{NULL} if the sentence does not express a checkable data
 constraint. Under this formulation, XiYan-SQL acts jointly as a constraint
-classifier and mapper, making it directly comparable to \system\ \subs{on  across}{across} all
-evaluation dimensions.
+classifier and mapper, making it directly comparable to \system\ across all
+evaluation dimensions. We use the 32B model with three seeds and report the mean.
 
 
 \subsection{Evaluation Metrics}
@@ -169,10 +171,10 @@ constraints. We compare predicted and ground-truth constraints by
 predicate-set match (i.e., exact matching over the set of predicates), and report precision, recall, and F$_1$. For \system\
 and the data profiling baselines, the predicate set is read directly from the
 predicted denial constraint. For Text-to-SQL, we extract predicates from the
-\texttt{WHERE} clause of the generated query. Because different SQL
-formulations may express the same underlying constraint, this metric can
-underestimate Text-to-SQL performance, which further motivates reporting the
-other evaluation dimensions. For data profiling, discovered constraints are
+\texttt{WHERE} clause of the generated query. A correlated \texttt{EXISTS} is read as a pair DC; a query with no DC
+reading, e.g., with aggregation or \texttt{CASE}, counts as a correct extraction
+if it returns exactly the violations of the gold DC of its sentence, so that
+equivalent SQL formulations are not penalized. For data profiling, discovered constraints are
 matched directly against the ground-truth set.
 
 \smallskip\noindent\textbf{Violation Detection.}
@@ -225,10 +227,10 @@ generation, and the single-prompt mapper uses semantic column retrieval and
 column context (Section~\ref{sec:mapper:llm}). Constraints are executed on the
 full datasets (first 1M rows for HMDA) with DuckDB. \system\ experiments were
 executed on a Linux workstation with an Intel Core i7-7700HQ CPU and 16\,GB of
-memory; the DC discovery baselines were executed on a MacBook
-Pro with an Apple M1 chip and 16\,GB of memory. The XiYan-SQL
-baseline, which requires GPU inference, was executed on a server with an
-NVIDIA A100 SXM GPU (80\,GB VRAM), 125\,GB RAM, and 16\,vCPUs.
+memory, as were the DC discovery baselines (Java 21). The XiYan-SQL
+baseline, which requires GPU inference, was executed on an
+NVIDIA A100 SXM GPU (80\,GB VRAM). The baselines are scored by the same
+evaluator, data, and query limits as \system.
 
 %\smallskip\noindent\textbf{Efficiency} reports total wall-clock runtime and, for
 %LLM-based approaches, estimated API cost per dataset, enabling analysis of the

@@ -25,3 +25,5 @@
 - **Arquivos:**
   - `text2Constraints_icde27.tex/.pdf`: corpo em 12 páginas, depois agradecimentos e referências;
   - `../version_icde27_overleaf.zip`: o mesmo projeto, com o arquivo principal como `main.tex`.
+  - `text2Constraints_icde27_full.tex/.pdf`: versão estendida (*Extended Version*) no template IEEE, sem os cortes da submissão. Lê `text_full/`, cópia de `../version_pvldb20/text_full/` (texto integral da `version_fix`, com os resultados finais dos baselines) com três ajustes de formato para a coluna IEEE: legendas acima das tabelas, uma linha a mais na DC da §II e colunas das tabelas de sentenças e de contribuições metodológicas mais estreitas. Sem limite de páginas (19 páginas; corpo até a 17).
+  - `../version_icde27_full_overleaf_main.zip`: projeto da versão estendida para o Overleaf, com o arquivo principal como `main.tex`.

@@ -1,0 +1,194 @@
+\section{Constraint Classification}
+\label{sec:classifier}
+Given the segment set $\mathcal{S}$ extracted from a regulatory document, the constraint classifier aims at identifying the subset $\mathcal{S}_c \subseteq \mathcal{S}$ of segments that state data quality constraints. A segment is a positive example if it expresses a condition that the data is expected to satisfy and that can be 
+validated against a dataset. Many segments only define terms, describe procedures, or provide context. Constraint-related segments appear less often, and many segments that sound like rules are still too vague to test with data. 
+
+
+For ease of exposition, we treat each segment as a single sentence from now on, unless stated otherwise.
+
+\begin{example}[Restaurant inspections]
+\label{ex:classification}
+The NYC Department of Health publishes restaurant inspection results, 
+including scores and letter grades,\footnote{Dataset available at 
+\url{https://data.cityofnewyork.us/Health/DOHMH-New-York-City-Restaurant-Inspection-Results/43nn-pn8j}. See Section~\ref{sec:experiments} for details.} alongside a document 
+describing the grading and inspection regulations.\footnote{Available at 
+\url{https://www.nyc.gov/site/doh/services/restaurant-grades.page}.} 
+Table~\ref{tab:sentence-types} shows sample sentences from these 
+regulations. The first two sentences state data quality rules that can be validated when the dataset contains the needed information. The first connects score ranges to letter grades and can be checked by comparing the score and grade fields. The second constraint defines inspection frequency per establishment and can be checked when establishment identifiers and inspection dates are available. The last two are not data quality rules: one is too underspecified to test because it does not define which inspections yield grades, and the other describes user permissions rather than a condition on the data.
+\begin{table}[ht]
+\centering
+  \caption{Constraint vs. non-constraint sample sentences from NYC restaurant inspection regulations.}
+\label{tab:sentence-types}
+\small
+\begin{tabular}{p{0.68\columnwidth}c}
+\toprule
+\textbf{Sentence} & \textbf{Constraint?} \\
+\midrule
+A score of 0--13 results in a grade of A. & Yes \\
+Every food service establishment is scheduled for at least one inspection per year. & Yes \\
+Only certain inspections result in a grade. & No \\
+Consumers may check an establishment's inspection history. & No \\
+\bottomrule
+\end{tabular}
+\end{table}
+\qed
+\end{example}
+%\vspace{-1cm}
+
+%At this stage, we prioritize recall over precision: missed rules cannot be recovered downstream, while false positives can still be filtered by the constraint mapper. \system\ treats the classifier as a replaceable module that outputs binary labels or confidence scores. This modularity allows implementations to be swapped for cost, accuracy, or domain considerations. \system\ currently supports two types of classifier implementations.
+
+
+%% use this if we include the SLM classifier
+%At this stage, we prioritize recall over precision: missed rules cannot be recovered downstream, while false positives can still be filtered by the constraint mapper. \system\ treats the classifier as a replaceable module that outputs binary labels or confidence scores. This modularity allows implementations to be swapped for cost, accuracy, or domain considerations. \system\ currently supports two types of classifier implementations: \emph{LLM-based prompting} and \emph{fine-tuned encoders}. The LLM is more flexible and can incorporate schema and data samples at inference time, generalizing better out-of-domain but incurring API costs. The fine-tuned model is faster and cheaper but depends on training data diversity. Section~\ref{sec:experiments} quantifies these trade-offs.
+    
+%At this stage, we prioritize recall over precision: missed rules cannot be recovered downstream, while false positives can still be filtered by the constraint mapper. 
+\system\ implements the classifier via \emph{LLM-based prompting}, which can incorporate schema and data samples at inference time and generalizes across domains without requiring labeled training data.
+
+%\smallskip\noindent\textbf{LLM-Based Classification}
+%\subsection{LLM-Based Classification}
+\subsection*{Constraint Classification by Example}
+%\label{sec:classifier:llm}
+%We prompt large language models to label each sentence as stating a data quality rule or not. Figure~\ref{fig:classifyprompt} shows the prompt structure (full prompts are in the supplementary material). We use prompt variants that optionally include generic template examples and schema context (table description, columns, and sample tuples). We require structured output and parse responses with regular expressions; if parsing fails after retries, we default to non-constraint. Section~\ref{sec:experiments} evaluates closed- and open-weight models under these variants.
+
+We ask a large language model to label each sentence as either stating a data quality rule or not. Figure~\ref{fig:classifyprompt} shows how the prompt is generally structured. 
+%In our setting, some prompt variations include generic template examples and schema context, such as table descriptions, columns, and sample tuples.
+Our design is inspired by few-shot in-context learning~\cite{brown2020language}, where a model is guided by a small number of task examples provided in the input context. In our case, these examples are generic and independent of the target domain, serving to guide the model’s structured reasoning over candidate constraints.
+%In our setting, labeled sentence templates, schema information, and sample tuples guide the model's labeling decisions across a large and heterogeneous sentence space. 
+The model returns one label per numbered sentence through a JSON schema. Malformed outputs are retried, then the sentences of the batch are classified one at a time, and a sentence that still has no valid label is marked as non-constraint. Section~\ref{sec:experiments} compares closed- and open-weight models using these prompt versions.
+
+
+\begin{figure}[!ht]
+\centering
+\footnotesize
+\begin{tabularx}{\linewidth}{p{0.15\linewidth}X}
+\toprule
+\textbf{Task Definition} &
+\hlc[neutralbg]{For each sentence, decide whether it states a DATA QUALITY CONSTRAINT that can be validated from the dataset when the required fields are available.}\\
+\midrule
+
+\textbf{Rule Types} &
+%\hlc[neutralbg]{YES: includes:} \newline
+\hlc[yesbg]{Required/non-null field; Allowed or forbidden values; Numeric bounds; Conditional requirements; Cross-row consistency; Determinacy; Temporal constraints; \ldots} \\
+\midrule
+
+\textbf{Exclusions} &
+%\hlc[neutralbg]{NO: includes:} \newline
+\hlc[nobg]{Headings, titles, citations; Definitions or descriptions; Procedures or human decisions; Statements not testable from the dataset; \ldots} \\
+\midrule
+
+\textbf{Notes} &
+%\hlc[neutralbg]{Clarifications for edge cases:} \newline
+\hlc[neutralbg]{Modal verbs (``may'', ``should'') do not disqualify a sentence; what matters is whether it describes a data condition or verifiable property; \ldots} \\
+\midrule
+
+\textbf{Examples} \newline \textit{(optional)} &
+\hlc[neutralbg]{YES:} \newline
+\hlc[yesbg]{``Field X is required.''} \newline
+\hlc[yesbg]{``Two rows with the same Key must not disagree on Field H.''} \newline
+\hlc[yesbg]{\ldots} \newline
+\hlc[neutralbg]{NO:} \newline
+\hlc[nobg]{``Field X represents the total amount.''} \newline
+\hlc[nobg]{\ldots} \\
+\midrule
+
+\textbf{Context} \newline \textit{(optional)} &
+%\hlc[neutralbg]{Table:} \hlc[contextbg]{[\textsf{Table Description}]} \newline
+\hlc[neutralbg]{Table Schema:} \hlc[contextbg]{[\textsf{Column Names / Types}]} \newline
+\hlc[neutralbg]{Table Sample Rows:} \hlc[contextbg]{[\textsf{Example Tuples}]} \\
+\midrule
+
+\textbf{Input} &
+\hlc[neutralbg]{Sentences:} \newline
+\hlc[neutralbg]{[\textsf{Numbered List of Sentences}]} \newline
+\hlc[neutralbg]{Return one YES/NO label per sentence number} \\
+\bottomrule
+\end{tabularx}
+
+\vspace{-0.3cm}
+\caption{Constraint classification prompt structure (simplified).
+Colors indicate: \csquare{yesbg}\,positive label clues, \csquare{nobg}\,negative label clues, \csquare{contextbg}\,data context, and \csquare{neutralbg}\,instructions.}
+\vspace{-0.3cm}
+\label{fig:classifyprompt}
+\end{figure}
+
+
+%\smallskip\noindent\textbf{Prompt structure.} Following standard practice in prompt-based text classification~\cite{sun2023textclassification}, we include a task definition, category descriptors, and optional labeled examples. 
+%We find this strategies important, as constraint classification presents two challenges. First, the positive class is rare and heterogeneous, with many syntactic forms. We enumerate rule types to reduce false negatives; otherwise, models may miss constraints such as functional dependencies, where a key (or key-like attribute set) determines another attribute (e.g., two rows with the same key must agree on a field), and other cross-row consistency conditions.
+%Second, the negative class is easily confused with constraints. Definitions, procedures, and contextual statements often use similar wording, refer to data-related terms, or include keywords that suggest a requirement. We list exclusions and add notes for common edge cases.
+
+\smallskip\noindent\textbf{Prompt structure.}
+Following standard practice in prompt-based text classification~\cite{sun2023textclassification}, we include a task definition, category descriptors, and examples.
+These elements are essential because constraint classification presents two main challenges.
+The first challenge is that the positive class is rare and spans \subs{ }{}many syntactic forms.
+To reduce false negatives, we enumerate rule types that the model should treat as constraints. Otherwise, it may miss cases such as functional dependencies that might use specific language. 
+%We also include examples of cross-row consistency conditions. 
+The second challenge is that non-constraint sentences can be easily mistaken for constraints. Definitions, procedures, and contextual statements often use similar wording, mention data-related concepts, or contain keywords that suggest a requirement. To reduce this confusion, we explicitly add notes on exclusions and edge cases.
+
+\smallskip\noindent\textbf{Examples.} Our approach follows a \subs{ }{}few-shot prompting strategy~\cite{brown2020language}, using generic templates that remain fixed across datasets, rather than domain-specific examples. As a result, the prompt remains portable without requiring labeled data.
+
+%To further illustrate this, in Section~\ref{sec:experiments}, we evaluate the impact of examples on recall.
+
+
+
+\smallskip\noindent\textbf{Table Context.}
+We evaluated multiple prompt variants. 
+Some ask the classifier to decide from the sentence alone whether it expresses a checkable constraint.
+Others also provide table context, including table and column information and sample tuples. Without access to the schema, the classifier may
+produce false positives for sentences that cannot be checked against the
+available fields. Schema context helps reject such cases and, therefore, mainly improves precision. 
+However, it also increases prompt length and can make predictions sensitive to the particular sample tuples provided.
+
+\smallskip\noindent\textbf{Batch processing.}
+To reduce API overhead, \system\ classifies sentences in batches, concatenating 
+multiple sentences into a single prompt using numeric indices and parsing one 
+label per index from the response. We use moderate batch sizes (up to 10 sentences 
+per prompt)\rem{, as larger batches increase prompt length and the risk of truncated 
+outputs and parsing errors}. Malformed responses trigger a retry\rem{; if the model 
+still fails, we fall back to processing the remaining sentences individually}.
+
+
+
+
+
+
+
+
+
+
+
+%\subsection{Fine-Tuned Classifier}
+%\label{sec:classifier:finetuned}
+%
+%Prompting an LLM for each sentence can be expensive for long documents. As a lower-cost alternative, we finetune a pretrained encoder to screen sentences before the mapping stage. Constraint classification can be viewed as a binary text classification problem: given a sentence, predict whether it states a data quality rule.
+%
+%\smallskip\noindent\textbf{Pretrained encoders for text classification.}
+%Text classification with pretrained language models is well studied~\cite{plmClassification2025}. We follow the standard finetuning approach based on BERT~\cite{devlin-etal-2019-bert}: a pretrained encoder produces a sentence representation, and a lightweight classification head predicts the binary label. Finetuning pretrained encoders is a common transfer learning approach for natural language classification tasks and typically performs well even with limited labeled data~\cite{gururangan-etal-2020-dont}. Several encoder variants are available, including general-domain BERT-style models and domain-specific models such as Legal-BERT~\cite{chalkidis-etal-2020-legal} for legal text. We evaluate multiple variants in Section~\ref{sec:experiments}.
+%
+%In this implementation, we use sentence-only input to keep the classifier fast and compatible with smaller encoder models that have a limited maximum input length (in tokens). Joint text-and-schema encoding is possible for table-related tasks~\cite{TURL2022}, but we leave schema-aware encoders for this type of classifier as future work. Schema context is still supported in the LLM-based classifier.
+%
+%
+%\smallskip\noindent\textbf{Adapting to the constraint domain.}
+%Pretrained encoders learn from broad textual corpora, but text on data rules represents a narrower linguistic domain with specific vocabulary and structure. Prior work shows that adapting language models to the target domain can improve downstream performance~\cite{gururangan-etal-2020-dont}. However, collecting training data for the data quality domain is difficult: the boundary between constraint and non-constraint sentences is subtle and requires high expertise, making large-scale annotation expensive. To address this, we propose generating synthetic training data using an LLM guided by explicit instructions that describe the constraint domain.
+%
+%\smallskip\noindent\textbf{Training data generation.}
+%Recent work shows that LLM-generated data can approach real-world data for training text classifiers when the task is objective and well-defined~\cite{li-etal-2023-synthetic}. However, models trained on synthetic data can overfit to surface patterns if the generated examples lack diversity~\cite{data_augmentation2020}. We propose two complementary strategies to address this.
+%
+%\emph{Paraphrase augmentation} takes labeled sentences from other datasets and prompts the LLM to generate variants that preserve meaning while changing wording and structure. For each seed sentence, we generate multiple paraphrases, increasing lexical diversity within each constraint type and helping the classifier generalize beyond specific phrasings.
+%
+%\emph{Schema-grounded synthesis} prompts the LLM with the target schema (column names and sample tuples), labeled examples from other datasets, and a list of common rule patterns (required fields, allowed values, numeric bounds, cross-row consistency, determinacy).
+%The LLM generates new sentences that reference actual column names from the target schema. This increases coverage across constraint types relevant to the target dataset. We apply the same setup to synthesize non-constraint sentences, targeting definitions, procedures, and contextual statements that cover difficult negatives.
+%
+%
+%Note that we exclude labeled sentences from the target document from training, and schema information is used only to guide the LLM during generation. This makes the approach portable as a fine-tuned classifier can be trained for any new dataset without manual annotation.
+%
+%
+%%Together, paraphrases increase variation within observed rule types, while schema-grounded synthesis increases coverage across rule patterns tied to the schema.
+%
+%
+%\smallskip\noindent\textbf{Training.}
+%Constraint sentences are rare in regulatory documents, creating class imbalance that biases the model toward predicting non-constraint. We oversample constraint sentences and apply focal loss~\cite{focalLoss2020}, which down-weights easy negatives and focuses training on difficult examples such as non-constraints that resemble rules.
+%Since lower encoder layers capture general linguistic patterns and upper layers are task-specific~\cite{rogers-etal-2020-primer}, we use layerwise learning rate decay to preserve pretrained knowledge in lower layers while allowing upper layers to adapt. Training details are in the supplementary material.
+%
+%
+%\smallskip\noindent\textbf{Threshold selection.}
+%The classifier outputs a probability $P(\text{constraint} \mid s)$ for each sentence. A threshold of 0.5 maximizes accuracy, but since missed constraints cannot be recovered downstream, we tune the threshold on a validation set to achieve recall of at least 0.85 while maximizing precision.

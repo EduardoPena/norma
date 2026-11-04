@@ -32,10 +32,10 @@ Os números substituem os da submissão anterior, que eram copiados da Tabela 3 
 - **Escalabilidade:**
   - Hospital, Tax, Restaurant e HMDAZ (100 mil linhas): a grade inteira conclui.
   - SISU (100 mil linhas, 24 colunas): o exato estoura a memória com 8 GB; ε de 0,001 a 0,01 dão timeout de 2 h; ε=0,05 e 0,1 concluem (no artigo, só 0,1).
-  - **HMDA Checks (39 colunas): não concluiu.** Com 100 mil linhas, timeout de 6 h no exato e no ε=0,001, e o ε=0,005 foi interrompido. Com 50 mil, timeout de 2 h em todos os ε. Com 20 mil, estouro de memória (6 GB) em todos os ε. Na tabela, aparece como DNF.
+  - **HMDA Checks (39 colunas): não concluiu.** Com 100 mil linhas, timeout de 6 h no exato e no ε=0,001, e o ε=0,005 foi interrompido. Com 50 mil, timeout de 2 h em todos os ε. Com 20 mil, estouro de memória (6 GB) em todos os ε. Última tentativa (30–31/10), com a máquina livre e heap de 12 GB: 20 mil e 10 mil linhas estouram a memória em todos os ε, em 20–60 min, na fase de enumeração. Na tabela, aparece como DNF.
 - **Avaliação:** `evaluate_baselines_v3.py profiling`. Ranking pelo escore misto, top-k ∈ {5, 10, 20, 50, 100}. Na tabela entra o **melhor da grade, por métrica**: o melhor F1 de extração e o melhor F1 de violação, cada um com sua configuração em `baselines_final.csv`.
 - **Diferenças em relação à submissão anterior:**
-  - Restaurant: violação 0,58 contra 0,82, porque o GT atual usa `inspection_date`, que passou a entrar nas colunas da descoberta;
+  - Restaurant: violação 0,41 / 1,00 / 0,58 contra 0,77 / 0,87 / 0,82. **Não é efeito das colunas:** as DCs da descoberta antiga (23/03, sem `inspection_date`), reavaliadas com o avaliador e o GT atuais (03/11), dão o mesmo 0,58 em todas as configurações aproximadas (o exato marca 0 tuplas). Em toda a grade, a DC mais bem ranqueada é do tipo `not(t1.grade_date==t2.grade_date)`, que marca 127.683–127.692 das 127.692 linhas; 0,58 é o escore de marcar todas as tuplas (41% das linhas violam o gold). A diferença em relação ao valor antigo vem do GT revisado (`23317a7` → `736387a`) e/ou da semântica de pares corrigida; o valor antigo não pode ser reconstruído, porque o notebook não registra a violação do Restaurant;
   - os demais datasets reproduzem a submissão (extração 0 em todos).
 
 ## XiYan-SQL (`XGenerationLab/XiYanSQL-QwenCoder-14B-2504`, bf16)
@@ -62,5 +62,13 @@ Os números substituem os da submissão anterior, que eram copiados da Tabela 3 
 
 ## Limites da avaliação
 
-- As consultas da avaliação dos baselines têm limite de 60 s (`NORMA_SQL_TIMEOUT_S=60`); o Norma usa 300 s. Uma DC de pares que estoura conta como erro de execução. Linhas parciais avaliadas com 300 s estão em `summary_partial_timeout300s.csv` e não entram na tabela.
+- Na primeira avaliação (`summary.csv`, `summary_xiyan.csv`), as consultas dos baselines tinham limite de 60 s (`NORMA_SQL_TIMEOUT_S=60`); a versão final usa 300 s, como o Norma (seção abaixo). Uma DC de pares que estoura conta como erro de execução. Linhas parciais avaliadas com 300 s estão em `summary_partial_timeout300s.csv` e não entram na tabela.
 - No HMDA Checks, a violação agregada é pouco informativa: 98,6% das linhas violam alguma regra do gold.
+
+## Versão final usada no artigo (31/10)
+
+- **Limite de consulta:** 300 s, o mesmo do Norma (`summary_300s.csv`, `summary_xiyan_300s.csv`, `summary_xiyanB_300s.csv`; logs em `logs_300s/`). Os melhores resultados são idênticos aos obtidos com 60 s.
+- **XiYan-SQL:** reportada a **variante B**: prompt do `xyyan_text2sql_inference.py`, modelo `XiYanSQL-QwenCoder-32B-2504`, dialeto SQLite traduzido para DuckDB, 3 sementes.
+  - Ela reproduz a Tabela 3 da submissão anterior. No Hospital, por exemplo: classificação 0,68, extração 0,80 e violação 0,91, contra 0,67, 0,75 e 0,91.
+  - A variante A (14B) fica documentada acima e em `summary_xiyan_300s.csv`.
+- **Tabela e dados:** `table_300s/v3_table3_end2end.{tex,csv}`, gerada a partir de `baselines_final_300s.csv` e copiada para `results/v3/version_icde27` e `results/v3/version_pvldb20`.

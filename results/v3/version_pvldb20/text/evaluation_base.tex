@@ -78,13 +78,13 @@ Since no prior system addresses the Text-to-Constraints task directly, we compar
 \smallskip\noindent\textbf{Data profiling.}
 We use the DC discovery algorithms from~\cite{Pena2022FastDC}, running both exact and approximate denial-constraint discovery. Exact DCs hold with no violations and thus cannot match rules violated in the data, so we focus on approximate DCs, which tolerate a fraction $\varepsilon$ of violating pairs. Since FDs and order dependencies with at most two tuples are special cases of DCs, approximate DC discovery over the same attributes subsumes their discovery, and we do not run separate FD or OD algorithms. Conditional variants require predicates with constants, which DC discovery supports only for a restricted set of values; a comparison with dedicated CFD discovery is left for future work.
 
-We rank the DCs by coverage and succinctness~\cite{chu2013discovering} and report the best result over a grid of top-$k$ values and thresholds $\varepsilon$.
+We run exact discovery and $\varepsilon \in \{0.001, 0.005, 0.01, 0.05, 0.1\}$, rank the DCs by coverage and succinctness~\cite{chu2013discovering}, and report, for each metric, the best result over this grid and top-$k \in \{5, 10, 20, 50, 100\}$.
 
-Since discovery does not scale to the full SISU and Restaurant schemas, we restrict them to the columns of the gold constraints, the most favorable setting for the baseline.
+Since discovery does not scale to the full SISU, Restaurant, and HMDA schemas, we restrict them to the columns of the gold constraints, the most favorable setting for the baseline, and run it on a seeded sample of 100k of the 1M HMDA rows. On HMDA Checks (39 columns), no configuration finished: runs timed out or exhausted a 12\,GB heap even with samples of 10k rows.
 
 
 \smallskip\noindent\textbf{Text-to-SQL.}
-We prompt XiYan-SQL~\cite{XiYanSQL}, a state-of-the-art Text-to-SQL framework, to return for each sentence a query that selects the violating tuples, or \texttt{NULL} if the sentence is not a checkable constraint, so it acts as both classifier and mapper.
+We prompt XiYan-SQL~\cite{XiYanSQL}, a state-of-the-art Text-to-SQL framework, to return for each sentence a query that selects the violating tuples, or \texttt{NULL} if the sentence is not a checkable constraint, so it acts as both classifier and mapper. We use the 32B model with three seeds and report the mean.
 
 
 \subsection{Evaluation Metrics}
@@ -92,7 +92,7 @@ We prompt XiYan-SQL~\cite{XiYanSQL}, a state-of-the-art Text-to-SQL framework, t
 
 We evaluate three dimensions; as in Text-to-SQL, execution-based evaluation complements structural matching, because exact form alone does not capture correctness~\cite{zhong-etal-2020-semantic}.
 \emph{Constraint classification} measures precision, recall, and F$_1$ of the sentences labeled as constraints; it applies to \system\ and Text-to-SQL, not to profiling.
-\emph{Constraint extraction} (CE) compares predicted and gold DCs by exact predicate-set match (precision, recall, F$_1$). For Text-to-SQL, predicates are read from the \texttt{WHERE} clause, which may underestimate its quality, since equivalent SQL formulations differ syntactically.
+\emph{Constraint extraction} (CE) compares predicted and gold DCs by exact predicate-set match (precision, recall, F$_1$). For Text-to-SQL, predicates are read from the \texttt{WHERE} clause (a correlated \texttt{EXISTS} as a pair DC); a query with no DC reading, e.g., with aggregation or \texttt{CASE}, counts as correct if it returns exactly the violations of the gold DC.
 \emph{Violation detection} executes all predicted and all gold constraints and compares the sets of tuples that take part in at least one violation (aggregate violation F$_1$, AV); it applies to all methods.
 
 \smallskip\noindent\textbf{Complementary mapping metrics.}
@@ -105,4 +105,4 @@ Exact matching penalizes logically equivalent rewritings, and the tuple-level ag
 \subsection{Implementation and Settings}
 \label{sec:implementation}
 
-\system\ is implemented in Python with DuckDB as the execution backend. All LLM calls go through OpenRouter with strict JSON-schema outputs. We evaluate six backbones: GPT-6 Luna, DeepSeek-V4-Flash, Mistral Large 4, Qwen3.8-2.4T-A95B, GPT-6 Sol, and Claude Sonnet 5.5. Two candidates were replaced: Kimi K2.6, which emitted whitespace until the token limit under strict decoding, and MiniMax-M3, which returned empty single-prompt outputs (Section~\ref{sec:constraintextraction}). Classifier and mapper configurations run once, with up to 32k output tokens per call; end-to-end configurations run three times. A preliminary study with earlier backbones (e.g., Qwen3-32B and GPT-5) followed the same protocol on Hospital, Restaurant, SISU, and Tax; we refer to it when comparing with earlier results (Sections~\ref{sec:constraintextraction} and~\ref{sec:endtoend}). \system\ ran on a workstation with an Intel Core i7-7700HQ CPU and 16\,GB of memory, DC discovery on an Apple M1 with 16\,GB, and XiYan-SQL on an NVIDIA A100 (80\,GB) server.
+\system\ is implemented in Python with DuckDB as the execution backend. All LLM calls go through OpenRouter with strict JSON-schema outputs. We evaluate six backbones: GPT-6 Luna, DeepSeek-V4-Flash, Mistral Large 4, Qwen3.8-2.4T-A95B, GPT-6 Sol, and Claude Sonnet 5.5. Two candidates were replaced: Kimi K2.6, which emitted whitespace until the token limit under strict decoding, and MiniMax-M3, which returned empty single-prompt outputs (Section~\ref{sec:constraintextraction}). Classifier and mapper configurations run once, with up to 32k output tokens per call; end-to-end configurations run three times. A preliminary study with earlier backbones (e.g., Qwen3-32B and GPT-5) followed the same protocol on Hospital, Restaurant, SISU, and Tax; we refer to it in Section~\ref{sec:constraintextraction}. \system\ and DC discovery ran on a workstation with an Intel Core i7-7700HQ CPU and 16\,GB of memory, and XiYan-SQL on an NVIDIA A100 (80\,GB). The baselines are scored by the same evaluator, data, and query limits as \system.
