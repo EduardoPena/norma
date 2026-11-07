@@ -71,7 +71,7 @@ print(open(f"{OUT}/gold_concentration.md").read())
 # LaTeX table for the paper: mean over six datasets per mapper and model
 order = [(m, l) for m in ["Single-Prompt", "Multi-Step"] for l in MODELS]
 lines = [r"\begin{tabular}{llrrrrrr}", r"\toprule",
-         r"\textbf{Mapper} & \textbf{Model} & CE & CE$_{\equiv}$ & AV & Rule-F$_1$ & Exec. & Fail. \\", r"\midrule"]
+         r"\textbf{Mapper} & \textbf{Model} & CM & CM$_{\equiv}$ & AV & Rule-F$_1$ & Exec. & Fail. \\", r"\midrule"]
 for i, (m, l) in enumerate(order):
     if i == len(MODELS):
         lines.append(r"\midrule")

@@ -122,7 +122,7 @@ def e2_table(results, mapper_order, model_order, dataset_order, dataset_labels,
     ``results`` needs columns dataset, model_label, mapper and the metric columns.
     """
     metrics = {
-        "Const. Ext.": ["constraint_exact_precision", "constraint_exact_recall", "constraint_exact_f1"],
+        "Const. Map.": ["constraint_exact_precision", "constraint_exact_recall", "constraint_exact_f1"],
         "Vio. Det.": ["agg_viol_precision", "agg_viol_recall", "agg_viol_f1"],
     }
     wide = _wide(results, "model_label", "mapper", sum(metrics.values(), []))
@@ -144,7 +144,7 @@ def e2_table(results, mapper_order, model_order, dataset_order, dataset_labels,
 
 TABLE3_GROUPS = [
     ("Constr. Classification", ["clf_precision", "clf_recall", "clf_f1"]),
-    ("Constr. Extraction", ["constraint_exact_precision", "constraint_exact_recall", "constraint_exact_f1"]),
+    ("Constr. Mapping", ["constraint_exact_precision", "constraint_exact_recall", "constraint_exact_f1"]),
     ("Viol. Discovery", ["aggregate_violation_precision", "aggregate_violation_recall", "aggregate_violation_f1"]),
 ]
 

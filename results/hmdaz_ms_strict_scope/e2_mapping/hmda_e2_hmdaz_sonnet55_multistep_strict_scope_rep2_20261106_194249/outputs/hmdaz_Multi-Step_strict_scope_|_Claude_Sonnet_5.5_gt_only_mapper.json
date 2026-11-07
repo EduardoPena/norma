@@ -1,0 +1,63 @@
+{
+  "dataset": "hmdaz",
+  "variant": "Multi-Step strict_scope | Claude Sonnet 5.5",
+  "output_type": "gt_only_mapper",
+  "timestamp": "20261106_194249",
+  "count": 9,
+  "outputs": [
+    {
+      "sentence": "(1) The requirements of this section apply to a high-cost mortgage, which is any consumer credit transaction that is secured by the consumer's principal dwelling, other than as provided in paragraph (a)(2) of this section, and in which: (i) The annual percentage rate applicable to the transaction, as determined in accordance with paragraph (a)(3) of this section, will exceed the average prime offer rate, as defined in \u00a7 1026.35(a)(2), for a comparable transaction by more than: (A) 6.5 percentage points for a first-lien transaction, other than as described in paragraph (a)(1)(i)(B) of this section; (B) 8.5 percentage points for a first-lien transaction if the dwelling is personal property and the loan amount is less than $50,000; or (C) 8.5 percentage points for a subordinate-lien transaction.",
+      "gold_constraint": "[{'AND': ['t1.business_or_commercial_purpose = 2', \"t1.occupancy_type_name = 'Principal residence'\", \"t1.reverse_mortgage_name = 'Not a reverse mortgage'\", \"t1.hoepa_status_name = 'Not a HOEPA loan'\", {'OR': [{'AND': [\"t1.lien_status_name = 'Secured by a first lien'\", {'OR': ['t1.manufactured_home_secured_property_type != 2', 't1.loan_amount >= 50000']}, 't1.rate_spread > 6.5']}, {'AND': [\"t1.lien_status_name = 'Secured by a first lien'\", 't1.manufactured_home_secured_property_type = 2', 't1.loan_amount < 50000', 't1.rate_spread > 8.5']}, {'AND': [\"t1.lien_status_name = 'Secured by a subordinate lien'\", 't1.rate_spread > 8.5']}]}]}]",
+      "pred_constraint": "[{'AND': ['t1.lien_status = 1', 't1.rate_spread > 6.5', 't1.hoepa_status != 1', {'OR': ['t1.construction_method = 1', {'AND': ['t1.construction_method = 2', 't1.loan_amount >= 50000']}]}]}, {'AND': ['t1.lien_status = 1', 't1.construction_method = 2', 't1.loan_amount < 50000', 't1.rate_spread > 8.5', 't1.hoepa_status != 1']}, {'AND': ['t1.lien_status = 2', 't1.rate_spread > 8.5', 't1.hoepa_status != 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "(1) The requirements of this section apply to a high-cost mortgage, which is any consumer credit transaction that is secured by the consumer's principal dwelling, other than as provided in paragraph (a)(2) of this section, and in which: (ii) The transaction's total points and fees, as defined in paragraphs (b)(1) and (2) of this section, will exceed: (A) 5 percent of the total loan amount for a transaction with a loan amount of $20,000 or more; the $20,000 figure shall be adjusted annually on January 1 by the annual percentage change in the Consumer Price Index that was reported on the preceding June 1.",
+      "gold_constraint": "[{'AND': ['t1.business_or_commercial_purpose = 2', \"t1.occupancy_type_name = 'Principal residence'\", \"t1.reverse_mortgage_name = 'Not a reverse mortgage'\", \"t1.hoepa_status_name = 'Not a HOEPA loan'\", 't1.loan_amount >= 20000', 't1.total_points_and_fees > 0.05 * t1.loan_amount']}]",
+      "pred_constraint": "[{'AND': ['t1.occupancy_type = 1', 't1.loan_amount >= 20000', 't1.loan_amount < t1.total_points_and_fees * 20', 't1.hoepa_status != 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "(1) The requirements of this section apply to a high-cost mortgage, which is any consumer credit transaction that is secured by the consumer's principal dwelling, other than as provided in paragraph (a)(2) of this section, and in which: (ii) The transaction's total points and fees, as defined in paragraphs (b)(1) and (2) of this section, will exceed: (B) The lesser of 8 percent of the total loan amount or $1,000 for a transaction with a loan amount of less than $20,000; the $1,000 and $20,000 figures shall be adjusted annually on January 1 by the annual percentage change in the Consumer Price Index that was reported on the preceding June 1.",
+      "gold_constraint": "[{'AND': ['t1.business_or_commercial_purpose = 2', \"t1.occupancy_type_name = 'Principal residence'\", \"t1.reverse_mortgage_name = 'Not a reverse mortgage'\", \"t1.hoepa_status_name = 'Not a HOEPA loan'\", 't1.loan_amount < 20000', {'OR': ['t1.total_points_and_fees > 0.08 * t1.loan_amount', 't1.total_points_and_fees > 1000']}]}]",
+      "pred_constraint": "[{'AND': ['t1.occupancy_type = 1', 't1.loan_amount < 20000', {'OR': ['t1.total_points_and_fees > 1000', 't1.total_points_and_fees > t1.loan_amount * 0.08']}, 't1.hoepa_status != 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "(1) The requirements of this section apply to a high-cost mortgage, which is any consumer credit transaction that is secured by the consumer's principal dwelling, other than as provided in paragraph (a)(2) of this section, and in which: (iii) Under the terms of the loan contract or open-end credit agreement, the creditor can charge a prepayment penalty, as defined in paragraph (b)(6) of this section, more than 36 months after consummation or account opening, or prepayment penalties that can exceed, in total, more than 2 percent of the amount prepaid.",
+      "gold_constraint": "[{'AND': ['t1.business_or_commercial_purpose = 2', \"t1.occupancy_type_name = 'Principal residence'\", \"t1.reverse_mortgage_name = 'Not a reverse mortgage'\", \"t1.hoepa_status_name = 'Not a HOEPA loan'\", 't1.prepayment_penalty_term > 36']}]",
+      "pred_constraint": "[{'AND': ['t1.prepayment_penalty_term > 36', \"t1.hoepa_status_name != 'HOEPA loan'\"]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "(2) Exemptions. This section does not apply to the following: (i) A reverse mortgage transaction subject to \u00a7 1026.33; (ii) A transaction to finance the initial construction of a dwelling; (iii) A transaction originated by a Housing Finance Agency, where the Housing Finance Agency is the creditor for the transaction; or (iv) A transaction originated pursuant to the United States Department of Agriculture's Rural Development Section 502 Direct Loan Program.",
+      "gold_constraint": "[{'AND': [\"t1.reverse_mortgage_name = 'Reverse mortgage'\", \"t1.hoepa_status_name = 'HOEPA loan'\"]}]",
+      "pred_constraint": null,
+      "pred_is_non_null": false
+    },
+    {
+      "sentence": "(d) Limitations. A high-cost mortgage shall not include the following terms: (1) (i) Balloon payment. Except as provided by paragraphs (d)(1)(ii) and (iii) of this section, a payment schedule with a payment that is more than two times a regular periodic payment.",
+      "gold_constraint": "[{'AND': [\"t1.hoepa_status_name = 'HOEPA loan'\", 't1.balloon_payment = 1']}]",
+      "pred_constraint": "[{'AND': ['t1.hoepa_status = 1', 't1.balloon_payment = 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "(d) Limitations. A high-cost mortgage shall not include the following terms: (2) Negative amortization. A payment schedule with regular periodic payments that cause the principal balance to increase.",
+      "gold_constraint": "[{'AND': [\"t1.hoepa_status_name = 'HOEPA loan'\", 't1.negative_amortization = 1']}]",
+      "pred_constraint": "[{'AND': [\"t1.hoepa_status_name = 'HOEPA loan'\", 't1.negative_amortization = 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "(d) Limitations. A high-cost mortgage shall not include the following terms: (6) Prepayment penalties. A prepayment penalty, as defined in paragraph (b)(6) of this section.",
+      "gold_constraint": "[{'AND': [\"t1.hoepa_status_name = 'HOEPA loan'\", 't1.prepayment_penalty_term > 0']}]",
+      "pred_constraint": "[{'AND': ['t1.hoepa_status = 1', 't1.prepayment_penalty_term > 0']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "(2) Limits on prepayment penalties. A prepayment penalty: (i) Must not apply after the three-year period following consummation;",
+      "gold_constraint": "[{'AND': ['t1.business_or_commercial_purpose = 2', 't1.open_end_line_of_credit = 2', 't1.prepayment_penalty_term > 36']}]",
+      "pred_constraint": "['t1.prepayment_penalty_term > 36']",
+      "pred_is_non_null": true
+    }
+  ]
+}

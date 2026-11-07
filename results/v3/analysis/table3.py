@@ -85,7 +85,7 @@ def fmt(v, bold):
 
 
 lines = [r"\begin{tabular}{llccccccccc}", r"\toprule",
-         r"\textbf{Family} & \textbf{Method} & \multicolumn{3}{c}{Constr. Classification} & \multicolumn{3}{c}{Constr. Extraction} & \multicolumn{3}{c}{Viol. Detection} \\",
+         r"\textbf{Family} & \textbf{Method} & \multicolumn{3}{c}{Constr. Classification} & \multicolumn{3}{c}{Constr. Mapping} & \multicolumn{3}{c}{Viol. Detection} \\",
          r"\cmidrule(lr){3-5}  \cmidrule(lr){6-8}  \cmidrule(lr){9-11}",
          r" &  & P & R & F$_1$ & P & R & F$_1$ & P & R & F$_1$ \\", r"\midrule"]
 for i, ds in enumerate(DS):

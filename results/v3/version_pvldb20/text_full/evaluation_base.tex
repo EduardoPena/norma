@@ -10,9 +10,9 @@ We implemented a prototype of \system\ and evaluated it on several datasets prep
 
     \item \textbf{RQ2: Mapping quality.} Given constraint-relevant text, how accurately can \system\ map it to executable denial constraints and  how well do these constraints capture the corresponding data violations?
 
-    \item \textbf{RQ3: Impact of implementation choices.} How do different classifier and mapper implementations, LLM backends, and prompt variants affect extraction quality and robustness?
+    \item \textbf{RQ3: Impact of implementation choices.} How do different classifier and mapper implementations, LLM backends, and prompt variants affect mapping quality and robustness?
 
-    \item \textbf{RQ4: Comparison with baselines.} How does \system\ compare with data profiling and Text-to-SQL baselines on constraint extraction and violation detection?
+    \item \textbf{RQ4: Comparison with baselines.} How does \system\ compare with data profiling and Text-to-SQL baselines on constraint mapping and violation detection?
 \end{itemize}
 
 \subsection{Datasets}
@@ -151,7 +151,7 @@ Text-to-Constraints requires solving three related problems: identify
 text that expresses constraints, translate those into a formal
 representation, and identify the data violations implied by those constraints.
 We therefore evaluate systems along three complementary dimensions:
-\textit{Constraint Classification}, \textit{Constraint Extraction}, and
+\textit{Constraint Classification}, \textit{Constraint Mapping}, and
 \textit{Violation Detection}. This is similar in spirit to Text-to-SQL evaluation, where
 execution-based evaluation complements structural matching because exact form
 alone does not fully capture correctness~\cite{zhong-etal-2020-semantic}. Because \system\ and the
@@ -165,14 +165,14 @@ over all sentences. This dimension applies to sentence-level variants of
 \system\ and to the Text-to-SQL baseline. It does not apply to data profiling
 baselines, which operate on data rather than text.
 
-\smallskip\noindent\textbf{Constraint Extraction.}
+\smallskip\noindent\textbf{Constraint Mapping.}
 This dimension measures how accurately systems translate text into denial
 constraints. We compare predicted and ground-truth constraints by
 predicate-set match (i.e., exact matching over the set of predicates), and report precision, recall, and F$_1$. For \system\
 and the data profiling baselines, the predicate set is read directly from the
 predicted denial constraint. For Text-to-SQL, we extract predicates from the
 \texttt{WHERE} clause of the generated query. A correlated \texttt{EXISTS} is read as a pair DC; a query with no DC
-reading, e.g., with aggregation or \texttt{CASE}, counts as a correct extraction
+reading, e.g., with aggregation or \texttt{CASE}, counts as a correct mapping
 if it returns exactly the violations of the gold DC of its sentence, so that
 equivalent SQL formulations are not penalized. For data profiling, discovered constraints are
 matched directly against the ground-truth set.
@@ -191,8 +191,7 @@ applies to all \system\ variants and all baselines.
 \smallskip\noindent\textbf{Complementary mapping metrics.}
 Exact predicate-set matching penalizes logically equivalent rewritings, and the
 tuple-level aggregate can be dominated by a single rule. We therefore report
-four complementary measures for the mappers. (i)~\emph{Equivalence-aware
-extraction} (CE$_{\equiv}$) compares DCs after a logical normal form \subs{that expands
+four complementary measures for the mappers. (i)~\emph{Equivalence-aware mapping} (CM$_{\equiv}$) compares DCs after a logical normal form \subs{that expands
 \texttt{IN}/\texttt{NOT IN}, orients and sorts operands, flattens and
 distributes \texttt{AND}/\texttt{OR}, and removes absorbed terms}{(e.g., \texttt{IN} as a disjunction, sorted operands, distributed \texttt{AND}/\texttt{OR})}; in addition,
 \subs{an equality literal on a code column and the equality literal on its label

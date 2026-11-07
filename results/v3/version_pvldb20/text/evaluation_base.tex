@@ -92,12 +92,12 @@ We prompt XiYan-SQL~\cite{XiYanSQL}, a state-of-the-art Text-to-SQL framework, t
 
 We evaluate three dimensions; as in Text-to-SQL, execution-based evaluation complements structural matching, because exact form alone does not capture correctness~\cite{zhong-etal-2020-semantic}.
 \emph{Constraint classification} measures precision, recall, and F$_1$ of the sentences labeled as constraints; it applies to \system\ and Text-to-SQL, not to profiling.
-\emph{Constraint extraction} (CE) compares predicted and gold DCs by exact predicate-set match (precision, recall, F$_1$). For Text-to-SQL, predicates are read from the \texttt{WHERE} clause (a correlated \texttt{EXISTS} as a pair DC); a query with no DC reading, e.g., with aggregation or \texttt{CASE}, counts as correct if it returns exactly the violations of the gold DC.
+\emph{Constraint mapping} (CM) compares predicted and gold DCs by exact predicate-set match (precision, recall, F$_1$). For Text-to-SQL, predicates are read from the \texttt{WHERE} clause (a correlated \texttt{EXISTS} as a pair DC); a query with no DC reading, e.g., with aggregation or \texttt{CASE}, counts as correct if it returns exactly the violations of the gold DC.
 \emph{Violation detection} executes all predicted and all gold constraints and compares the sets of tuples that take part in at least one violation (aggregate violation F$_1$, AV); it applies to all methods.
 
 \smallskip\noindent\textbf{Complementary mapping metrics.}
 Exact matching penalizes logically equivalent rewritings, and the tuple-level aggregate can be dominated by a single rule. We therefore also report:
-(i)~\emph{equivalence-aware extraction} (CE$_{\equiv}$), which compares DCs after a logical normal form (e.g., \texttt{IN} as a disjunction, sorted operands) and unifies literals on a code column and its label column (e.g., \texttt{hoepa\_status = 1} and \texttt{hoepa\_status\_name = 'High-cost mortgage'}) only when the data confirms that they select the same tuples;
+(i)~\emph{equivalence-aware mapping} (CM$_{\equiv}$), which compares DCs after a logical normal form (e.g., \texttt{IN} as a disjunction, sorted operands) and unifies literals on a code column and its label column (e.g., \texttt{hoepa\_status = 1} and \texttt{hoepa\_status\_name = 'High-cost mortgage'}) only when the data confirms that they select the same tuples;
 (ii)~\emph{execution equivalence}, the fraction of gold rules with violations whose predicted DC flags exactly the same tuples;
 (iii)~\emph{per-rule violation F$_1$}, averaged over gold sentences so that every rule weighs the same; and
 (iv)~\emph{violation concentration}, the share of gold-violating tuples flagged by the largest gold rule. Predicted DCs whose SQL fails are counted as errors, not as producing no violation.
