@@ -38,7 +38,9 @@ about 5 GB of free disk once the data is unpacked.
 ```bash
 git clone <this repository> norma && cd norma
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt            # exact versions used: requirements-lock.txt
+pip install -r requirements-lock.txt       # exact versions used in the paper (tested)
+# requirements.txt lists the direct dependencies with lower bounds only; newer major
+# versions (e.g., sqlglot >= 27, openai 3) change behavior and fail some tests.
 
 # 1. Unpack the datasets (data/<dataset>/<table>.csv.gz -> .csv, MD5-checked)
 python tools/unpack_data.py
