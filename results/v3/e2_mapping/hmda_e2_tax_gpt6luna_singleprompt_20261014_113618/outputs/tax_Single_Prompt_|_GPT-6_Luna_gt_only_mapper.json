@@ -1,0 +1,51 @@
+{
+  "dataset": "tax",
+  "variant": "Single Prompt | GPT-6 Luna",
+  "output_type": "gt_only_mapper",
+  "timestamp": "20261014_113618",
+  "count": 6,
+  "outputs": [
+    {
+      "sentence": "Each person is uniquely identified by area code and phone number.",
+      "gold_constraint": "[{'AND': ['t1.areacode = t2.areacode', 't1.phone = t2.phone']}]",
+      "pred_constraint": "[{'AND': ['t1.areacode = t2.areacode', 't1.phone = t2.phone']}]",
+      "pred_is_non_null": true,
+      "violated_when": "two person records have the same area code and phone number"
+    },
+    {
+      "sentence": "Two persons with the same ZIP code must live in the same state.",
+      "gold_constraint": "[{'AND': ['t1.zip = t2.zip', 't1.state != t2.state']}]",
+      "pred_constraint": "[{'AND': ['t1.zip = t2.zip', 't1.state != t2.state']}]",
+      "pred_is_non_null": true,
+      "violated_when": "two persons have the same ZIP code but different states"
+    },
+    {
+      "sentence": "If a person lives in Denver, their state must be Colorado.",
+      "gold_constraint": "[{'AND': [\"t1.city = 'DENVER'\", \"t1.state != 'CO'\"]}]",
+      "pred_constraint": "[{'AND': [\"t1.city = 'DENVER'\", \"t1.state != 'CO'\"]}]",
+      "pred_is_non_null": true,
+      "violated_when": "a person lives in Denver but their state is not Colorado"
+    },
+    {
+      "sentence": "Within the same state, a person with lower salary cannot have higher tax rate.",
+      "gold_constraint": "[{'AND': ['t1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']}]",
+      "pred_constraint": "[{'AND': ['t1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']}]",
+      "pred_is_non_null": true,
+      "violated_when": "Two people in the same state have different salaries, and the person with the lower salary has the higher tax rate."
+    },
+    {
+      "sentence": "Within the same ZIP code, one person cannot earn less but have a higher tax rate.",
+      "gold_constraint": "[{'AND': ['t1.zip = t2.zip', 't1.salary < t2.salary', 't1.rate > t2.rate']}]",
+      "pred_constraint": "[{'AND': ['t1.zip = t2.zip', 't1.salary < t2.salary', 't1.rate > t2.rate']}]",
+      "pred_is_non_null": true,
+      "violated_when": "Two people in the same ZIP code have different salaries, and the person who earns less has the higher tax rate."
+    },
+    {
+      "sentence": "A person single tax exemption cannot be greater than his salary.",
+      "gold_constraint": "['t1.singleexemp > t1.salary']",
+      "pred_constraint": "['t1.singleexemp > t1.salary']",
+      "pred_is_non_null": true,
+      "violated_when": "A person's single tax exemption is greater than their salary."
+    }
+  ]
+}

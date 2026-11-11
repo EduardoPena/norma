@@ -4,7 +4,7 @@ import json
 import pandas as pd
 
 
-SampleStrategy = Literal["head", "random", "full"]
+SampleStrategy = Literal["head", "random", "full", "informative"]
 
 
 class TableContextBuilder:
@@ -17,7 +17,8 @@ class TableContextBuilder:
                  random_seed: int = 42):
         """
         Args:
-            sample_strategy: How to sample table rows ("head", "random", "full")
+            sample_strategy: How to sample table rows ("head", "random", "full",
+                "informative" = rows that together fill the most columns)
             num_rows: Number of rows to sample
             column_names_only: If True, only column names (no data rows)
             random_seed: Seed for reproducible random sampling
@@ -69,10 +70,34 @@ class TableContextBuilder:
         
         elif self.sample_strategy == "full":
             return table
+
+        elif self.sample_strategy == "informative":
+            return self._informative_rows(table)
         
         else:
             raise ValueError(f"Unknown sample_strategy: {self.sample_strategy}")
     
+    def _informative_rows(self, table: pd.DataFrame, pool_size: int = 5000) -> pd.DataFrame:
+        """Greedy pick of rows that cover the most still-empty columns.
+
+        With wide, sparse tables the first rows can leave many columns empty,
+        hiding the columns the rules talk about. Rows come from the first
+        ``pool_size`` rows; ties keep the earlier row, so the choice is
+        deterministic.
+        """
+        pool = table.head(pool_size)
+        filled = pool.notna().to_numpy()
+        chosen: list = []
+        covered = None
+        for _ in range(min(self.num_rows, len(pool))):
+            gain = filled.sum(axis=1) if covered is None else (filled & ~covered).sum(axis=1)
+            for index in chosen:
+                gain[index] = -1
+            best = int(gain.argmax())
+            chosen.append(best)
+            covered = filled[best] if covered is None else covered | filled[best]
+        return pool.iloc[sorted(chosen)]
+
     @staticmethod
     def _serialize_value(value: Any) -> Any:
         """Serialize pandas value to JSON-compatible format."""

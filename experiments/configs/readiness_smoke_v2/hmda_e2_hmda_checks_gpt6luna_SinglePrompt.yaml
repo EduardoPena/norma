@@ -1,0 +1,24 @@
+experiment_name: hmda_e2_hmda_checks_gpt6luna_SinglePrompt
+experiment_type: mapper_gt_only
+results_dir: results/readiness_smoke_v2/e2_mapping
+datasets:
+- hmda_checks
+dataset_options:
+  hmda_checks:
+    gt_file: hmda_regc_checks-text2rule-gt.json
+    sample_rows: 100000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+    predicate_space: v2
+variants:
+- name: Single Prompt | GPT-6 Luna
+  use_context: false
+  mapper:
+    implementation: llm
+    provider: openrouter
+    model: openai/gpt-6-luna
+    prompt_key: with_examples
+    batch_size: 10
+    filter_predicates: true
+    max_candidate_predicates: 1000
+    max_relevant_columns: 12

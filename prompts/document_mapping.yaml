@@ -4,7 +4,7 @@
 basic: |
   Task: Extract ALL denial constraints from the document below.
 
-  Definition: A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+   Definition: A rule is a predicate string or recursive JSON node {{"AND": [...]}} / {{"OR": [...]}}. A true rule is a violation.
 
   Table context:
   {table_context}
@@ -18,7 +18,7 @@ basic: |
   6. Each predicate MUST use format: t1.column operator value OR t1.col1 operator t2.col2
   7. Operators: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL, LIKE, NOT LIKE
   8. Ignore: headings, titles, definitions, rationales, procedures
-  9. Return a JSON array where each element is an array of predicate strings
+   9. Return a JSON list of independent rules; use explicit AND/OR nodes and arithmetic expressions when needed
   10. Output ONLY the JSON array - no explanations, no markdown labels, no extra text
 
   Predicate Format:
@@ -36,7 +36,7 @@ basic: |
 basic_with_examples: |
   Task: Extract ALL denial constraints from the document below.
 
-  Definition: A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+   Definition: A rule is a predicate string or recursive JSON node {{"AND": [...]}} / {{"OR": [...]}}. A true rule is a violation.
 
   Table context:
   {table_context}
@@ -50,7 +50,7 @@ basic_with_examples: |
   6. Each predicate: t1.column operator value OR t1.col1 operator t2.col2
   7. Operators: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL, LIKE, NOT LIKE
   8. Ignore: headings, titles, definitions, rationales, procedures
-  9. Return ONLY valid JSON array - no explanations, no markdown
+   9. Return ONLY a valid JSON list of independent rules; use explicit AND/OR nodes - no explanations, no markdown
 
   Predicate Format:
   - Single-tuple: t1.field_name OPERATOR constant OR t1.field_name OPERATOR t1.field_name2
@@ -67,7 +67,7 @@ basic_with_examples: |
   "Status must be approved, pending, or rejected" → ["t1.status NOT IN ('approved', 'pending', 'rejected')"]
 
   Cross-tuple consistency:
-  "Records with same ID must have same status" → ["t1.id = t2.id", "t1.status != t2.status"]
+   "Records with same ID must have same status" → [{{"AND": ["t1.id = t2.id", "t1.status != t2.status"]}}]
 
   Field comparison:
   "Start date must be before end date" → ["t1.start_date >= t1.end_date"]
@@ -79,7 +79,10 @@ basic_with_examples: |
   "Comments cannot contain spam" → ["t1.comment LIKE '%spam%'"]
 
   Conditional requirement:
-  "If active, email required" → ["t1.status = 'active'", "t1.email IS NULL"]
+   "If active, email required" → [{{"AND": ["t1.status = 'active'", "t1.email IS NULL"]}}]
+
+   Nested alternatives and arithmetic:
+   "Wrong status when either threshold applies" → [{{"AND": ["t1.status != 'expected'", {{"OR": ["t1.amount > 100", "t1.amount * (t1.rate / 100) > 10"]}}]}}]
 
   Available predicates:
   {predicates_list}
@@ -92,7 +95,7 @@ basic_with_examples: |
 detailed: |
   Task: Extract ALL denial constraints from the document below.
 
-  Definition: A denial constraint is a list of predicates that CANNOT all be true simultaneously.
+   Definition: A rule is a predicate string or recursive JSON node {{"AND": [...]}} / {{"OR": [...]}}. A true rule is a violation.
 
   Table context:
   {table_context}
@@ -108,14 +111,14 @@ detailed: |
   8. Format: t1.column operator value OR t1.col1 operator t2.col2
   9. Operators: =, !=, <, <=, >, >=, IN, NOT IN, IS NULL, IS NOT NULL, LIKE, NOT LIKE
   10. Ignore: headings, definitions, rationales, procedures
-  11. Output ONLY JSON array - no explanations
+   11. Output ONLY a JSON list of independent rules with explicit AND/OR nodes - no explanations
 
   Predicate Format:
   
   Single-tuple with concrete values:
   - t1.city = 'Denver' - string equality (use single quotes)
   - t1.amount > 1000 - numeric comparison (no quotes)
-  - t1.grade IN ('A', 'B', 'C') - value in set
+  - t1.category IN ('X', 'Y', 'Z') - value in set
   - t1.status NOT IN ('pending', 'cancelled') - value not in set
   
   Pattern matching:
@@ -133,7 +136,7 @@ detailed: |
   
   Cross-tuple (different rows):
   - t1.id = t2.id, t1.status != t2.status - consistency
-  - t1.department = t2.department, t1.salary != t2.salary - relative constraint
+  - t1.dept_code = t2.dept_code, t1.manager != t2.manager - relative constraint
   - t1.priority > t2.priority, t1.score <= t2.score - ordering
 
   Constraint Types to Extract:
@@ -143,17 +146,17 @@ detailed: |
 
   2. Value restrictions:
      "X must be positive" → ["t1.X <= 0"]
-     "Y in {A,B,C}" → ["t1.Y NOT IN ('A', 'B', 'C')"]
+   "Y in {{A,B,C}}" → ["t1.Y NOT IN ('A', 'B', 'C')"]
 
   3. Cross-field dependencies:
-     "If A then B required" → ["t1.A = 'value'", "t1.B IS NULL"]
+      "If A then B required" → [{{"AND": ["t1.A = 'value'", "t1.B IS NULL"]}}]
      "Start < End" → ["t1.start >= t1.end"]
 
   4. Cross-tuple consistency:
-     "Same ID → same value" → ["t1.id = t2.id", "t1.value != t2.value"]
+      "Same ID → same value" → [{{"AND": ["t1.id = t2.id", "t1.value != t2.value"]}}]
 
   5. Uniqueness:
-     "X unique" → ["t1.X = t2.X", "t1.rowid != t2.rowid"]
+      "X unique" → [{{"AND": ["t1.X = t2.X", "t1.rowid != t2.rowid"]}}]
 
   Available predicates:
   {predicates_list}

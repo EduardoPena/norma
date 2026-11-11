@@ -1,0 +1,25 @@
+experiment_name: hmda_e3_hmdaz_C_MS
+experiment_type: mapper
+results_dir: results/hmda/full
+datasets:
+- hmdaz
+dataset_options:
+  hmdaz:
+    gt_file: hmdaz_text2rule_gt.json
+    sample_rows: 1000000
+    drop_multi_rule_sentences: false
+variants:
+- name: C_MS
+  mode: SENTENCE_FILTERED
+  use_context: false
+  mapper:
+    implementation: multi_step_refinement
+    provider: openrouter
+    model: openai/gpt-5
+    max_tokens: 8192
+    max_refinement_iterations: 2
+    prompt_file: multi_step_refinement
+  classifier:
+    provider: openrouter
+    model: qwen/qwen3-32b
+    prompt_key: with_examples

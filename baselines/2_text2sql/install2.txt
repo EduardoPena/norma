@@ -1,0 +1,27 @@
+apt-get update
+apt-get install -y git python3-pip python3-venv
+
+python3 -m venv /workspace/venv
+source /workspace/venv/bin/activate
+
+python -m pip install --upgrade pip setuptools wheel
+
+# PyTorch with CUDA wheels
+pip install --index-url https://download.pytorch.org/whl/cu121 torch torchvision torchaudio
+
+# What your script needs
+pip install -U "transformers>=4.37" accelerate pandas safetensors huggingface_hub
+
+
+
+source /workspace/venv/bin/activate
+
+python - <<'PY'
+import torch, pandas, transformers, accelerate
+print("torch:", torch.__version__)
+print("cuda available:", torch.cuda.is_available())
+print("gpu:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "none")
+print("transformers:", transformers.__version__)
+print("accelerate:", accelerate.__version__)
+print("pandas:", pandas.__version__)
+PY

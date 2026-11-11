@@ -1,0 +1,28 @@
+experiment_name: hmda_e3_hmdaz_C_MS
+experiment_type: mapper
+results_dir: results/v3/e3_end2end
+datasets:
+- hmdaz
+dataset_options:
+  hmdaz:
+    gt_file: hmdaz_text2rule_gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+    predicate_space: v2
+variants:
+- name: C+MS | Qwen3.8-2.4T-A95B + GPT-6 Sol
+  mode: SENTENCE_FILTERED
+  use_context: false
+  classifier:
+    implementation: llm
+    provider: openrouter
+    model: qwen/qwen3.8-2.4t-a95b
+    prompt_key: with_examples
+    batch_size: 10
+  mapper:
+    implementation: multi_step_refinement
+    provider: openrouter
+    max_refinement_iterations: 2
+    prompt_file: multi_step_refinement
+    model: openai/gpt-6-sol

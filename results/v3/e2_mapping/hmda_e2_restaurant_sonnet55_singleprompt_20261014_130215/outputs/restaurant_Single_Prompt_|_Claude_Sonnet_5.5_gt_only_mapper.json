@@ -1,0 +1,58 @@
+{
+  "dataset": "restaurant",
+  "variant": "Single Prompt | Claude Sonnet 5.5",
+  "output_type": "gt_only_mapper",
+  "timestamp": "20261014_130215",
+  "count": 7,
+  "outputs": [
+    {
+      "sentence": "A score of 0-13 results in a grade of A.",
+      "gold_constraint": "[{'AND': ['t1.score >= 0', 't1.score <= 13', \"t1.grade != 'A'\"]}]",
+      "pred_constraint": "[{'AND': ['t1.score >= 0', 't1.score <= 13', \"t1.grade != 'A'\"]}]",
+      "pred_is_non_null": true,
+      "violated_when": "the score is between 0 and 13 inclusive but the grade is not A"
+    },
+    {
+      "sentence": "A score of 14-27 results in a grade of B.",
+      "gold_constraint": "[{'AND': ['t1.score >= 14', 't1.score <= 27', \"t1.grade != 'B'\"]}]",
+      "pred_constraint": "[{'AND': ['t1.score >= 14', 't1.score <= 27', \"t1.grade != 'B'\"]}]",
+      "pred_is_non_null": true,
+      "violated_when": "the score is between 14 and 27 inclusive but the grade is not B"
+    },
+    {
+      "sentence": "A score of 28 or more results in a grade of C.",
+      "gold_constraint": "[{'AND': ['t1.score >= 28', \"t1.grade != 'C'\"]}]",
+      "pred_constraint": "[{'AND': ['t1.score >= 28', \"t1.grade != 'C'\"]}]",
+      "pred_is_non_null": true,
+      "violated_when": "the score is 28 or more but the grade is not C"
+    },
+    {
+      "sentence": "Every food service establishment is scheduled for at least one inspection per year.",
+      "gold_constraint": "['t1.days_to_next_inspection > 365']",
+      "pred_constraint": null,
+      "pred_is_non_null": false,
+      "violated_when": null
+    },
+    {
+      "sentence": "A restaurant that scores 0 to 13 violations points on its first inspection will receive an A-grade card that must be posted immediately.",
+      "gold_constraint": "[{'AND': ['t1.inspection_order = 1', 't1.score >= 0', 't1.score <= 13', \"t1.grade = 'A'\", 't1.grade_date != t1.inspection_date']}]",
+      "pred_constraint": "[{'AND': ['t1.score >= 0', 't1.score <= 13', \"t1.inspection_type LIKE '%Initial Inspection'\", \"t1.grade != 'A'\"]}]",
+      "pred_is_non_null": true,
+      "violated_when": "the score is between 0 and 13 on an initial inspection but the grade is not A"
+    },
+    {
+      "sentence": "If an A is issued on re-inspection, the A-grade card must be posted immediately.",
+      "gold_constraint": "[{'AND': [\"t1.inspection_type LIKE '%Re-inspection%'\", \"t1.grade = 'A'\", 't1.grade_date != t1.inspection_date']}]",
+      "pred_constraint": null,
+      "pred_is_non_null": false,
+      "violated_when": null
+    },
+    {
+      "sentence": "An establishment receiving a B or C grade on re-inspection receives two cards: one showing the letter grade and one that says \"Grade Pending\"; one of those cards must be posted immediately.",
+      "gold_constraint": "[{'AND': [\"t1.inspection_type LIKE '%Re-inspection%'\", \"t1.grade IN ('B','C')\", 't1.grade_date != t1.inspection_date']}]",
+      "pred_constraint": null,
+      "pred_is_non_null": false,
+      "violated_when": null
+    }
+  ]
+}

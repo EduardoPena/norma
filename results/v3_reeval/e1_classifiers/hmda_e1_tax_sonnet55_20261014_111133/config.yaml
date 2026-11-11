@@ -1,0 +1,43 @@
+dataset_options:
+  tax:
+    drop_multi_rule_sentences: false
+    gt_file: tax_text2rule_gt.json
+    predicate_space: v2
+    sample_rows: 1000000
+    stream_csv: true
+datasets:
+- tax
+experiment_name: hmda_e1_tax_sonnet55
+experiment_type: classifier
+results_dir: results/v3/e1_classifiers
+variants:
+- batch_size: 10
+  implementation: llm
+  model: anthropic/claude-sonnet-5.5
+  name: Claude Sonnet 5.5 | No Context
+  prompt_key: zero_shot
+  provider: openrouter
+  use_context: false
+- batch_size: 10
+  implementation: llm
+  model: anthropic/claude-sonnet-5.5
+  name: Claude Sonnet 5.5 | Table Context
+  num_rows_context: 3
+  prompt_key: zero_shot_with_table
+  provider: openrouter
+  use_context: true
+- batch_size: 10
+  implementation: llm
+  model: anthropic/claude-sonnet-5.5
+  name: Claude Sonnet 5.5 | Examples
+  prompt_key: with_examples
+  provider: openrouter
+  use_context: false
+- batch_size: 10
+  implementation: llm
+  model: anthropic/claude-sonnet-5.5
+  name: Claude Sonnet 5.5 | Examples + Table Context
+  num_rows_context: 3
+  prompt_key: with_examples_and_table
+  provider: openrouter
+  use_context: true

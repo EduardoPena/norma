@@ -1,0 +1,24 @@
+experiment_name: hmda_e2_hmda_checks_llama70b_SinglePrompt
+experiment_type: mapper_gt_only
+results_dir: results/hmda/full
+datasets:
+- hmda_checks
+dataset_options:
+  hmda_checks:
+    gt_file: hmda_regc_checks-text2rule-gt.json
+    sample_rows: 1000000
+    drop_multi_rule_sentences: false
+variants:
+- name: SinglePrompt
+  use_context: true
+  num_rows_context: 3
+  mapper:
+    implementation: llm
+    provider: openrouter
+    model: meta-llama/llama-3.3-70b-instruct
+    max_tokens: 8192
+    prompt_key: with_examples_and_table
+    batch_size: 10
+    filter_predicates: false
+    max_relevant_columns: 12
+    max_candidate_predicates: 1000

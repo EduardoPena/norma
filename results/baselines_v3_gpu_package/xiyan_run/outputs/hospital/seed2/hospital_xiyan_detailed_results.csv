@@ -1,0 +1,110 @@
+sentence,pred_sql,raw_seconds
+The hospital quality measures dataset serves as a central repository for tracking healthcare facility performance across the United States.,,0.11
+"This system aggregates information about hospitals, their organizational characteristics, and standardized quality metrics that reflect patient care outcomes.",,0.12
+"Healthcare administrators, policy analysts, auditors, and operational staff rely on this data to monitor compliance with federal reporting standards, compare institutional performance, and identify opportunities for quality improvement.",,0.12
+"The dataset brings together two distinct categories of information: facility-level attributes (such as location, contact details, and ownership structure) and measure-level performance data (including scores, sample sizes, and state benchmarks).",,0.12
+"Each record represents a specific quality measure reported by a particular hospital, meaning that a single facility appears multiple times across different measurement categories.",SELECT t1.tid FROM t1 WHERE t1.HospitalName IN ( SELECT t2.HospitalName FROM t1 AS t2 GROUP BY t2.HospitalName HAVING COUNT(t2.tid) > 1 );,2.08
+This structure supports granular analysis while maintaining comprehensive coverage of the healthcare landscape.,,0.11
+A provider number uniquely identifies a hospital name.,SELECT t1.tid FROM t1 WHERE EXISTS ( SELECT 1 FROM t1 AS t2 WHERE t2.ProviderNumber = t1.ProviderNumber AND t2.HospitalName <> t1.HospitalName );,1.91
+"This numbering scheme originates from the Centers for Medicare and Medicaid Services enrollment system, where facilities receive their identifiers upon initial certification.",,0.11
+"The provider number appears on billing documents, regulatory filings, and public reporting interfaces.",,0.11
+Staff members frequently use these numbers as shorthand references when discussing specific institutions.,SELECT t1.tid FROM t1 WHERE t1.Providernumber IS NOT NULL,0.85
+Cross-referencing by provider number helps auditors quickly locate all quality measures associated with a given facility.,SELECT t1.tid FROM t1 WHERE t1.ProviderNumber IS NULL OR t1.ProviderNumber = 0;,1.1
+The relationship between identifiers works in both directions within this system.,,0.11
+A hospital name uniquely determines its provider number.,SELECT t1.tid FROM t1 WHERE EXISTS ( SELECT 1 FROM t1 AS t2 WHERE t2.HospitalName = t1.HospitalName AND t2.tid != t1.tid ),1.9
+This consistency supports accurate record linkage when integrating data from external sources.,,0.11
+Historical records maintain the same pairing even as other attributes might be updated over time.,,0.11
+Database administrators have configured validation checks that flag any apparent mismatches between names and provider numbers.,SELECT t1.tid FROM t1 WHERE t1.HospitalName IS NULL OR t1.ProviderNumber IS NULL OR t1.HospitalName = '' OR t1.ProviderNumber = 0;,1.77
+The bidirectional uniqueness simplifies both automated processing and manual verification workflows.,,0.11
+Hospital location data follows strict consistency principles that support accurate geographic analysis and patient referral processes.,,0.11
+A hospital name uniquely determines its street address.,SELECT t1.tid FROM t1 WHERE t1.HospitalName = t1.Address,0.84
+This consistency matters for emergency routing systems that depend on reliable address information.,SELECT t1.tid FROM t1 WHERE t1.Address IS NULL OR t1.City IS NULL OR t1.State IS NULL OR t1.ZipCode IS NULL;,1.53
+Mapping applications and logistics tools consume this data to calculate distances and travel times.,,0.11
+"When facilities relocate, the dataset undergoes coordinated updates rather than allowing conflicting addresses to coexist.",SELECT t1.tid FROM t1 WHERE t1.Address IN ( SELECT t2.Address FROM t1 AS t2 WHERE t2.tid <> t1.tid ),1.57
+Auditors reviewing facility records can trust that address information remains stable within any given reporting period.,SELECT t1.tid FROM t1 WHERE <condition>,0.58
+Geographic attributes extend beyond street-level detail to encompass broader regional identifiers.,SELECT t1.tid FROM t1 WHERE t1.Address IS NULL OR t1.City IS NULL OR t1.State IS NULL OR t1.ZipCode IS NULL OR t1.CountyName IS NULL;,1.87
+A hospital name uniquely determines its city.,,1.53
+This consistency enables accurate regional aggregation for public health reporting.,,0.11
+"State health departments often organize their oversight activities by city, making reliable city assignments operationally significant.",SELECT t1.tid FROM t1 WHERE t1.City IS NULL OR t1.City = '';,0.93
+Mapping and visualization tools depend on consistent city names to produce accurate geographic displays.,SELECT t1.tid FROM t1 WHERE City IS NULL OR City = '',0.75
+Analytics teams can confidently group facilities by city without worrying about inconsistent spellings or assignments.,SELECT t1.tid FROM t1 WHERE t1.City IS NULL OR t1.City = '' UNION SELECT t1.tid FROM t1 WHERE t1.State IS NULL OR t1.State = '',1.83
+Postal code information follows a consistency established by some fields.,SELECT t1.tid FROM t1 WHERE t1.ZipCode IS NULL OR t1.State IS NULL OR t1.City IS NULL;,1.28
+A hospital name uniquely determines its ZIP code.,SELECT t1.tid FROM t1 WHERE t1.HospitalName = ( SELECT t2.HospitalName FROM t1 AS t2 WHERE t2.ZipCode = t1.ZipCode AND t2.tid != t1.tid ),2.17
+"Postal codes connect to various downstream systems including mail delivery, demographic analysis, and insurance network definitions.",SELECT t1.tid FROM t1 WHERE t1.ZipCode IS NULL OR t1.ZipCode = 0;,1.1
+Marketing teams and community outreach programs often segment their activities by ZIP code boundaries.,SELECT t1.tid FROM t1 WHERE t1.ZipCode IS NULL OR t1.ZipCode = 0;,1.1
+"The consistency of ZIP code assignments supports reliable joins with census data, economic indicators, and other geographically indexed information sources.",SELECT t1.tid FROM t1 WHERE t1.ZipCode IS NULL OR t1.ZipCode = 0;,1.1
+Regional administrative boundaries also maintain predictable relationships in this dataset.,,0.11
+A city name uniquely determines its county.,SELECT t1.tid FROM t1 WHERE t1.City = t1.CountyName,0.85
+County-level analysis plays an important role in public health surveillance and resource allocation decisions.,,0.11
+State agencies often distribute funding and oversight responsibilities along county lines.,SELECT t1.tid FROM t1 WHERE t1.State != t1.Stateavg;,0.84
+The dataset reflects real-world administrative relationships rather than allowing inconsistent county assignments.,SELECT t1.tid FROM t1 WHERE t1.CountyName NOT IN ( SELECT DISTINCT t2.CountyName FROM t1 AS t2 WHERE t2.State = t1.State ),1.75
+Users performing county-level aggregations can proceed without manually resolving geographic ambiguities.,,0.11
+Contact information maintains similar consistency standards throughout the dataset.,SELECT t1.tid FROM t1 WHERE t1.PhoneNumber IS NULL OR t1.Address IS NULL OR t1.City IS NULL OR t1.State IS NULL OR t1.ZipCode IS NULL;,1.83
+A hospital name uniquely determines its phone number.,SELECT t1.tid FROM t1 WHERE t1.HospitalName = t1.PhoneNumber,0.89
+This reliability matters for referral coordinators and patient navigators who need accurate contact details.,SELECT t1.tid FROM t1 WHERE t1.PhoneNumber IS NULL OR t1.PhoneNumber = 0;,1.1
+Call centers and automated dialing systems consume this data to connect patients with appropriate facilities.,,0.11
+The phone number typically reaches the main hospital switchboard rather than department-specific lines.,SELECT t1.tid FROM t1 WHERE t1.PhoneNumber IS NULL OR t1.PhoneNumber = 0;,1.11
+Quality assurance processes periodically verify that listed numbers remain active and correctly routed.,,0.11
+Ownership and governance information describes how each facility operates within the broader healthcare system.,,0.12
+A hospital name uniquely determines its ownership type.,,1.32
+"Ownership categories affect regulatory requirements, tax treatment, and eligibility for certain grant programs.",SELECT t1.tid FROM t1 WHERE t1.HospitalOwner IS NULL OR t1.HospitalOwner = '';,1.1
+Policy researchers often stratify their analyses by ownership type to understand how organizational structure influences quality outcomes.,SELECT t1.tid FROM t1 WHERE t1.HospitalOwner IS NULL OR t1.HospitalOwner = '';,1.11
+The ownership field captures the facility's current classification rather than historical changes in governance.,,0.11
+Nonprofit hospitals face different community benefit reporting obligations than their for-profit counterparts.,SELECT t1.tid FROM t1 WHERE t1.HospitalOwner = 'Nonprofit' AND t1.Condition = 'Community Benefit' UNION SELECT t1.tid FROM t1 WHERE t1.HospitalOwner = 'For-profit' AND t1.Condition = 'Community Benefit',2.52
+"When multiple identifying factors combine, they reinforce geographic consistency within the dataset.",SELECT t1.tid FROM t1 WHERE t1.City IS NULL OR t1.State IS NULL OR t1.ZipCode IS NULL OR t1.CountyName IS NULL OR t1.HospitalType IS NULL OR t1.HospitalOwner IS NULL OR t1.EmergencyService IS NULL OR t1.Condition IS NULL OR t1.MeasureCode IS NULL OR t1.MeasureName IS NULL OR t1.Score IS NULL OR t1.Sample IS NULL OR t1.Stateavg IS NULL;,4.36
+"A hospital identified by name, phone, and owner must have a consistent state.",SELECT t1.tid FROM t1 WHERE t1.State != ( SELECT t2.State FROM t1 AS t2 WHERE t2.HospitalName = t1.HospitalName AND t2.PhoneNumber = t1.PhoneNumber AND t2.HospitalOwner = t1.HospitalOwner LIMIT 1 ),2.73
+This compound relationship catches certain data entry errors that single-attribute checks might miss.,,0.11
+Auditors use this relationship to validate bulk data imports and migration processes.,,0.11
+The dataset tracks hospital performance through a standardized measurement system developed for national quality reporting.,,0.11
+Each measure code represents a specific clinical process or outcome that facilities report.,SELECT t1.tid FROM t1 WHERE t1.MeasureCode IS NULL OR t1.MeasureCode = '';,1.01
+A measure code uniquely determines its measure name.,SELECT t1.tid FROM t1 WHERE t1.MeasureCode = t1.MeasureName;,0.88
+This code-to-name mapping originates from the national quality measure specifications published by regulatory bodies.,,0.11
+Healthcare analysts commonly reference measures by their codes in technical discussions while using full names in public-facing reports.,SELECT t1.tid FROM t1 WHERE t1.MeasureCode IS NULL OR t1.MeasureName IS NULL;,1.05
+The standardized vocabulary enables consistent communication across organizations and reporting systems.,,0.11
+The reverse relationship also holds within the measurement framework.,,0.11
+A measure name uniquely determines its measure code.,"SELECT t1.tid FROM t1 WHERE t1.MeasureName = 'Beds per 1,000 population' AND t1.MeasureCode != '018';",1.65
+This bidirectional uniqueness simplifies both code-based and name-based queries without risk of ambiguous results.,,0.11
+Training materials for new staff often reference measures by name before introducing the corresponding codes.,SELECT t1.tid FROM t1 WHERE t1.MeasureName IS NULL OR t1.MeasureCode IS NULL;,1.05
+Software interfaces may display names prominently while using codes for internal processing.,,0.11
+The one-to-one relationship between names and codes reflects the careful design of the underlying measurement specifications.,,0.11
+Quality measures group into clinical categories that organize reporting and analysis activities.,,0.11
+A measure code uniquely determines the medical condition it measures.,SELECT t1.tid FROM t1 WHERE t1.MeasureCode IN ( SELECT t2.MeasureCode FROM t1 AS t2 GROUP BY t2.MeasureCode HAVING COUNT(*) > 1 );,1.78
+These condition groupings help clinicians and administrators focus on related measures during improvement initiatives.,,0.11
+Public reporting websites often organize their displays around condition categories rather than individual measures.,SELECT t1.tid FROM t1 WHERE t1.Condition IS NULL OR t1.MeasureName IS NULL;,1.01
+The condition field provides a meaningful intermediate level of aggregation between individual measures and facility-wide performance.,,0.11
+Analytics dashboards frequently offer condition-based filtering to help users navigate the full measure set.,,0.11
+Benchmark information provides context for interpreting individual hospital scores.,,0.11
+A measure code uniquely determines the state average for that measure.,SELECT t1.tid FROM t1 WHERE t1.Stateavg IS NOT NULL GROUP BY t1.MeasureCode HAVING COUNT(DISTINCT t1.Stateavg) > 1;,1.66
+These benchmarks help stakeholders understand whether a particular score represents above-average or below-average performance.,,0.11
+State averages reflect the aggregated performance of all reporting facilities within a given state.,SELECT t1.tid FROM t1 WHERE t1.Stateavg IS NULL OR t1.Stateavg = '';,1.01
+Trend analyses often compare individual hospital trajectories against evolving state benchmarks.,,0.11
+The state average field uses a composite format that combines the state abbreviation with the measure code for clarity.,SELECT t1.tid FROM t1 WHERE t1.Stateavg NOT LIKE '%-%';,0.84
+Measure classifications connect to facility characteristics in ways that support valid comparisons.,,0.11
+The same medical condition and measure name must be associated with the same hospital type.,SELECT t1.tid FROM t1 WHERE t1.Condition = 'Specific Condition' AND t1.MeasureName = 'Specific Measure' AND t1.HospitalType = 'Specific Hospital Type',1.75
+This relationship supports apples-to-apples comparisons among similar facility types.,,0.11
+Acute care hospitals face different clinical contexts than critical access hospitals or specialty facilities.,"SELECT t1.tid FROM t1 WHERE t1.HospitalType = 'Acute Care' AND NOT EXISTS ( SELECT 1 FROM t1 AS t2 WHERE t2.HospitalType IN ('Critical Access', 'Specialty') AND t1.tid = t2.tid )",2.6
+Quality improvement collaboratives often organize participants by hospital type to ensure relevant peer groupings.,SELECT t1.tid FROM t1 WHERE t1.HospitalType IS NULL OR t1.HospitalType = '',1.1
+The consistency of this three-way relationship reflects the structure of the underlying quality reporting program.,,0.11
+Emergency service availability carries important implications for regional healthcare planning and patient routing decisions.,SELECT t1.tid FROM t1 WHERE t1.EmergencyService IS NULL OR t1.EmergencyService = '';,1.18
+Hospitals in the same ZIP code must have the same emergency service availability.,"SELECT t1.tid, t1 AS t2.tid FROM t1, t1 AS t2 WHERE t1.ZipCode = t2.ZipCode AND t1.EmergencyService <> t2.EmergencyService;",1.96
+This pattern typically emerges from regional health planning processes that avoid duplicative emergency capacity.,,0.11
+Emergency medical services dispatchers use this information when determining appropriate destinations for ambulance transports.,,0.11
+The consistency of emergency service availability within ZIP codes simplifies decision-making during time-critical situations.,"SELECT t1.tid FROM t1 WHERE t1.EmergencyService IS NULL OR t1.ZipCode IS NULL UNION SELECT t1.tid, t1 AS t2.tid FROM t1, t1 AS t2 WHERE t1.ZipCode = t2.ZipCode AND t1.EmergencyService <> t2.EmergencyService",2.97
+Regional trauma networks and stroke systems rely on accurate emergency service data for effective coordination.,SELECT t1.tid FROM t1 WHERE t1.EmergencyService IS NULL OR t1.EmergencyService = '';,1.18
+Staff members interact with this dataset across numerous routine activities.,,0.11
+Compliance officers query the data to prepare regulatory filings and respond to audit requests.,,0.11
+Quality improvement teams extract measure-specific reports to track progress on clinical initiatives.,,0.11
+Executive dashboards pull aggregated statistics to support strategic planning discussions.,,0.11
+External researchers access de-identified versions of the data for population health studies.,,0.11
+Patient advocacy groups reference publicly reported scores when advising consumers about hospital selection.,,0.11
+Data entry and maintenance activities follow established protocols that preserve the consistency relationships embedded in the dataset.,,0.11
+"When a hospital reports a new quality measure, staff verify that facility attributes match existing records before adding the new row.",SELECT t1.tid FROM t1 WHERE <condition>,0.59
+Address updates propagate across all records associated with the affected hospital name.,SELECT t1.tid FROM t1 WHERE t1.HospitalName = 'AffectedHospitalName' AND t1.Address != 'NewAddress',1.31
+Measure specification changes from regulatory bodies trigger coordinated updates to code-name mappings throughout the dataset.,,0.11
+Annual reconciliation processes compare the dataset against authoritative facility registries to identify and resolve discrepancies.,,0.12
+The dataset includes some records with missing or unusual values that reflect real-world reporting challenges.,,0.11
+Score and sample fields occasionally contain null values when hospitals lack sufficient cases to report meaningful statistics.,SELECT t1.tid FROM t1 WHERE t1.Score IS NULL OR t1.Sample IS NULL;,0.97
+Certain specialty facilities may not report measures outside their scope of services.,,0.11
+Quality assurance processes continually work to identify and correct anomalies while preserving the fundamental consistency relationships that govern the dataset structure.,,0.11
+Users accessing this data through reporting tools or direct queries can rely on the consistency relationships documented in this manual.,,0.11
+"These relationships support valid analysis, accurate reporting, and effective operational decision-making across the healthcare organizations that depend on this information resource.",,0.12

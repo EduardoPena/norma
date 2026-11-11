@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Minimal deps for eval_xiyan.py:
+# - numpy, pandas
+# - torch
+# - transformers
+#
+# Run:
+#   bash install_min_deps.sh
+# Then:
+#   source .venv/bin/activate
+#   python eval_xiyan.py --data_dir ... --output_dir ...
+
+
+dentro da pasta do projeto
+
+# 1) Create venv
+python3 -m venv .venv
+# shellcheck disable=SC1091
+source .venv/bin/activate
+
+# 2) Upgrade installer tooling
+python -m pip install -U pip wheel setuptools
+
+# 3) Install deps
+# If you are on a GPU server with CUDA drivers, prefer the CUDA wheels (cu121).
+# Otherwise, use the CPU wheels line below.
+
+# --- GPU (CUDA) build (recommended on RunPod GPU images) ---
+pip install --index-url https://download.pytorch.org/whl/cu121 torch
+
+# --- CPU-only alternative (uncomment if you have no GPU / no CUDA drivers) ---
+# pip install torch
+
+pip install transformers numpy pandas
+
+
+pip install accelerate
+
+
+pip install duckdb
+
+
+
+echo ""
+echo "✅ Done. Activate with: source .venv/bin/activate"
+
+
+
+
+########
+
+# 1) activate env
+source .venv/bin/activate
+
+# 2) run on the "person" dataset
+python eval_xiyan.py \
+  --data_dir data/person \
+  --output_dir output/person \
+  --model XGenerationLab/XiYanSQL-QwenCoder-14B-2504
+
+
+
+  python eval_xiyan.py   --data_dir data/restaurant   --output_dir output/restaurant   --model XGenerationLab/XiYanSQL-QwenCoder-14B-2504
+
+  python eval_xiyan.py   --data_dir data/hospital   --output_dir output/hospital   --model XGenerationLab/XiYanSQL-QwenCoder-14B-2504
+
+  python eval_xiyan.py   --data_dir data/tax   --output_dir output/tax   --model XGenerationLab/XiYanSQL-QwenCoder-14B-2504
+
+
+  
+  

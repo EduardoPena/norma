@@ -1,7 +1,9 @@
 """Document-level mapper: extracts all DCs from entire document"""
+
 from typing import List, Dict, Any
 from src.llm.client import get_llm_client
 from src.llm.helper import PromptLoader, parse_json_response
+from src.predicates import Rule, normalize_rules
 
 
 class LLMDocumentMapper:
@@ -11,22 +13,24 @@ class LLMDocumentMapper:
     Returns list of all DCs found (count may differ from # sentences).
     """
 
-    def __init__(self,
-                 model_name: str = "gpt-4o-mini",
-                 prompt_name: str = "basic"):
+    def __init__(
+        self,
+        model_name: str = "gpt-4o-mini",
+        provider: str | None = None,
+        prompt_name: str = "basic",
+    ):
         """
         Args:
             model_name: LLM model identifier
+            provider: Optional LLM provider override
             prompt_name: Prompt for document extraction (from document_mapping.yaml)
         """
-        self.llm = get_llm_client(model_name)
+        self.llm = get_llm_client(model_name, provider=provider)
         loader = PromptLoader()
         # Load from document_mapping category, not mapping
         self.prompt_template = loader.load("document_mapping", prompt_name)
 
-    def extract(self,
-                sentences: List[str],
-                context: Dict[str, Any]) -> List[List[str]]:
+    def extract(self, sentences: List[str], context: Dict[str, Any]) -> List[Rule]:
         """
         Extract all DCs from document.
 
@@ -50,8 +54,7 @@ class LLMDocumentMapper:
         """Build document extraction prompt."""
         # Join all sentences as continuous text (numbered)
         sentences_text = "\n".join(
-            f"{i+1}. {sentence}"
-            for i, sentence in enumerate(sentences)
+            f"{i+1}. {sentence}" for i, sentence in enumerate(sentences)
         )
 
         # Get context values
@@ -62,10 +65,10 @@ class LLMDocumentMapper:
         return self.prompt_template.format(
             sentences=sentences_text,
             table_context=table_context,
-            predicates_list=predicates_list
+            predicates_list=predicates_list,
         )
 
-    def _parse_response(self, response: str) -> List[List[str]]:
+    def _parse_response(self, response: str) -> List[Rule]:
         """
         Parse response containing all DCs.
         Expected: [["pred1", "pred2"], ["pred3"], ...]
@@ -75,13 +78,7 @@ class LLMDocumentMapper:
             if parsed is None:
                 return []
 
-            # Validate each DC
-            dcs = []
-            for item in parsed:
-                if isinstance(item, list) and all(isinstance(p, str) for p in item):
-                    dcs.append(item)
-
-            return dcs
+            return normalize_rules(parsed) or []
         except Exception as e:
             print(f"Parse error: {e}")
             return []

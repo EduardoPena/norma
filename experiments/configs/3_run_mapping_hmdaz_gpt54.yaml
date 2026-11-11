@@ -1,0 +1,32 @@
+experiment_name: "GT-Only Mapper - HMDAZ 100k + Tax - OpenRouter GPT-5.4"
+experiment_type: "mapper_gt_only"
+results_dir: "results/hmdaz_tax_gpt54/mapping"
+
+datasets:
+  - hmdaz
+  - tax
+
+dataset_options:
+  hmdaz:
+    data_file: "hmdaz.csv"
+    gt_file: "hmdaz_text2rule_gt.json"
+    sample_rows: 100000
+    stream_csv: true
+    profile_rows: 10000
+    validate_ground_truth: false
+  tax:
+    data_file: "tax_normalized.csv"
+    gt_file: "tax_text2rule_gt.json"
+    stream_csv: true
+    profile_rows: 10000
+    validate_ground_truth: false
+
+variants:
+  - name: "MultiStep | OpenRouter | GPT-5.4"
+    use_context: false
+    mapper:
+      implementation: "multi_step_refinement"
+      provider: "openrouter"
+      model: "openai/gpt-5.4"
+      max_refinement_iterations: 2
+      prompt_file: "multi_step_refinement"

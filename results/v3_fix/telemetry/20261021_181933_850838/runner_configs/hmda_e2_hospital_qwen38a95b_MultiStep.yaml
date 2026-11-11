@@ -1,0 +1,22 @@
+experiment_name: hmda_e2_hospital_qwen38a95b_MultiStep
+experiment_type: mapper_gt_only
+results_dir: results/v3_fix/e2_mapping
+datasets:
+- hospital
+dataset_options:
+  hospital:
+    gt_file: hospital-holo_text2rule_gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+    predicate_space: v2
+variants:
+- name: Multi-Step | Qwen3.8-2.4T-A95B
+  use_context: false
+  mapper:
+    implementation: multi_step_refinement
+    provider: openrouter
+    max_refinement_iterations: 2
+    prompt_file: multi_step_refinement
+    max_violation_share: 0.9
+    model: qwen/qwen3.8-2.4t-a95b

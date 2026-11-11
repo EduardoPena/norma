@@ -1,0 +1,43 @@
+experiment_name: hmda_e1_hmda_checks_kimik26
+experiment_type: classifier
+results_dir: results/v3/e1_classifiers
+datasets:
+- hmda_checks
+dataset_options:
+  hmda_checks:
+    gt_file: hmda_regc_checks-text2rule-gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+    predicate_space: v2
+variants:
+- name: Kimi K2.6 | No Context
+  implementation: llm
+  provider: openrouter
+  model: moonshotai/kimi-k2.6
+  prompt_key: zero_shot
+  batch_size: 10
+  use_context: false
+- name: Kimi K2.6 | Table Context
+  implementation: llm
+  provider: openrouter
+  model: moonshotai/kimi-k2.6
+  prompt_key: zero_shot_with_table
+  batch_size: 10
+  use_context: true
+  num_rows_context: 3
+- name: Kimi K2.6 | Examples
+  implementation: llm
+  provider: openrouter
+  model: moonshotai/kimi-k2.6
+  prompt_key: with_examples
+  batch_size: 10
+  use_context: false
+- name: Kimi K2.6 | Examples + Table Context
+  implementation: llm
+  provider: openrouter
+  model: moonshotai/kimi-k2.6
+  prompt_key: with_examples_and_table
+  batch_size: 10
+  use_context: true
+  num_rows_context: 3

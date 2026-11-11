@@ -1,0 +1,26 @@
+experiment_name: hmda_e2_restaurant_qwen38a95b_SinglePrompt
+experiment_type: mapper_gt_only
+results_dir: results/v3/e2_mapping
+datasets:
+- restaurant
+dataset_options:
+  restaurant:
+    gt_file: restaurant-inspections_text2rule_gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+    predicate_space: v2
+variants:
+- name: Single Prompt | Qwen3.8-2.4T-A95B
+  use_context: false
+  mapper:
+    implementation: llm
+    provider: openrouter
+    model: qwen/qwen3.8-2.4t-a95b
+    prompt_key: with_examples_v2
+    batch_size: 3
+    explain_violation: true
+    column_retrieval: semantic
+    embedding_model: openai/text-embedding-3-large
+    max_candidate_predicates: 1000
+    max_relevant_columns: 12

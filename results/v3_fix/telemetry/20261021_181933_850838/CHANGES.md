@@ -1,0 +1,1 @@
+- 2026-10-21: E2 Multi-Step re-run done (36/36) and E3 with GPT-6 Sol (12/12), US$ 54.80. The paper criterion now selects Claude Sonnet 5.5 as the E3 mapper; the Sol E3 results moved to results/v3_fix/superseded/e3_end2end_gpt6sol; E3 re-run with Sonnet resumed in this telemetry directory.

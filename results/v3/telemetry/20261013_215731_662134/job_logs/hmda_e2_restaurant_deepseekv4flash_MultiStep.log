@@ -1,0 +1,234 @@
+Execution artifacts: results/v3/telemetry/20261013_215731_662134
+
+================================================================================
+GT-ONLY MAPPER EVALUATION: hmda_e2_restaurant_deepseekv4flash_MultiStep
+================================================================================
+
+Results directory: results/v3/e2_mapping/hmda_e2_restaurant_deepseekv4flash_multistep_20261014_121849
+Timestamp:         20261014_121849
+
+Scope: GT constraint sentences only (rules != null)
+No classifier — pure mapping quality measurement.
+
+Metrics computed over GT sentences:
+  Syntactic:   exact match, predicate Jaccard
+  Pairwise:    violation exact match, P/R/F1/Jaccard
+  Aggregate:   pooled violation P/R/F1
+================================================================================
+
+Config YAML saved to: results/v3/e2_mapping/hmda_e2_restaurant_deepseekv4flash_multistep_20261014_121849/config.yaml
+Execution config saved to: results/v3/e2_mapping/hmda_e2_restaurant_deepseekv4flash_multistep_20261014_121849/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: restaurant
+--------------------------------------------------------------------------------
+Loading restaurant...
+Total sentences in document: 33
+GT constraint sentences:     7  ← only these are fed to the mapper
+Non-constraint sentences:    26  ← skipped
+
+
+[1/1] Variant: Multi-Step | DeepSeek-V4-Flash
+  Implementation: multi_step_refinement
+  Model:          deepseek/deepseek-v4-flash
+  Creating mapper (multi_step_refinement)...
+  Mapping 7 GT sentences...
+
+============================================================
+Processing: A score of 0-13 results in a grade of A....
+
+============================================================
+Processing: A score of 14-27 results in a grade of B....
+
+============================================================
+Processing: A score of 28 or more results in a grade of C....
+
+============================================================
+Processing: Every food service establishment is scheduled for at least one inspection per ye...
+
+============================================================
+============================================================
+
+Processing: A restaurant that scores 0 to 13 violations points on its first inspection will ...
+Processing: If an A is issued on re-inspection, the A-grade card must be posted immediately....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["score", "grade"],
+  "implied_columns": [],
+  "reasoning": "The sentence directly states that a score in the range 0-13 results in a grade of A. Therefore, the columns 'score' (numeric range) and 'grade' (resulting category) are explicitly relevant.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["score", "grade"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly mentions 'score' and 'grade', both of which are columns in the schema. It describes a range of score values (14-27) that leads to a specific grade value (B). No other columns are needed to express this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["score", "grade"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly mentions 'score' and 'grade', which directly correspond to the 'score' and 'grade' columns in the schema. The constraint states that a score of 28 or more results in a grade of C, so both columns are directly involved.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["grade", "inspection_type"],
+  "implied_columns": ["grade_date", "inspection_date"],
+  "reasoning": "The sentence mentions 'A' grade and 're-inspection', which map directly to columns 'grade' and 'inspection_type'. The requirement that the A-grade card must be posted immediately after re-inspection implies a temporal proximity between the grade_date and inspection_date, so those columns are needed to check that constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['grade', 'inspection_type', 'grade_date', 'inspection_date']
+-> Step 3: Considering 76 predicate candidates
+-> Step 3: Selected 3 predicates: ['t1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 3: Selected 3 predicates: ['t1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 3: Selected 2 predicates: ['t1.score >= $float', 't1.grade != $string']
+-> Step 2 response: {
+  "direct_columns": ["camis", "inspection_year"],
+  "implied_columns": [],
+  "is_valid": true,
+  "missing_concepts": [],
+  "reason": "The constraint requires that each establishment (identified by camis) has at least one inspection per year. The inspection_year column directly captures the year of each inspection, and camis identifies the establishment. No other columns are needed to express this constraint.",
+  "reasoning": "The sentence mentions 'every food service establishment' (mapped to camis) and 'at least one inspection per year' (mapped to inspection_year, as it represents the year of the inspection). The concept of 'per year' is directly captured by the inspection_year column, and the establishment identifier is camis. No other columns are implied or required."
+}...
+-> Step 2: Identified columns ['camis', 'inspection_year']
+-> Step 3: Considering 44 predicate candidates
+-> Step 3.5 [GATE]: PASS — If score is between 14 and 27, then grade must be 'B'; violation occurs when score is in that range and grade is not 'B'. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["score", "grade"],
+  "implied_columns": ["camis", "inspection_type", "inspection_order", "inspection_date"],
+  "reasoning": "The sentence mentions 'scores 0 to 13 violations points' which directly maps to the 'score' column, and 'A-grade' maps to the 'grade' column. The phrase 'on its first inspection' implies identifying the earliest inspection for a restaurant, requiring columns to scope the constraint: 'camis' to identify the restaurant, and 'inspection_type' (to identify initial inspections), 'inspection_order' (to identify first in sequence), or 'inspection_date' (to determine chronological order). The concept 'posted immediately' has no corresponding column in the schema.",
+  "missing_concepts": ["posted immediately"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['score', 'grade', 'camis', 'inspection_type', 'inspection_order', 'inspection_date']
+-> Step 3: Considering 128 predicate candidates
+-> Step 3.5 [GATE]: PASS — If score is between 0 and 13, then grade must be 'A'; violation occurs when score is in that range and grade is not 'A'. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — A violation occurs when a row has score >= 28 and grade is not 'C'. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 14', 't1.score <= 27', "t1.grade != 'B'"]}]
+   When score is between 14 and 27 inclusive, the grade must be 'B'; violation if grade is not 'B'.
+
+-> Verification iteration 1/2
+-> Step 5: Found 28 violations
+
+============================================================
+Processing: An establishment receiving a B or C grade on re-inspection receives two cards: o...
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 0', 't1.score <= 13', "t1.grade != 'A'"]}]
+   A record where the score is between 0 and 13 but the grade is not 'A' is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 402 violations
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 28', "t1.grade != 'C'"]}]
+   A record with score >= 28 must have grade 'C'; violation if grade is not 'C'.
+
+-> Verification iteration 1/2
+-> Step 5: Found 123 violations
+-> Step 3: Selected 4 predicates: ['t1.inspection_order = $int', 't1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 3.5 [GATE]: PASS — If a restaurant's first inspection (inspection_order=1) has a score between 0 and 13, then its grade must be 'A'. A violation occurs when a tuple has inspection_order=1, score in [0,13], and grade != 'A'. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 6 columns
+-> Step 2 response: {
+  "direct_columns": ["grade", "inspection_type"],
+  "implied_columns": ["camis", "inspection_date", "grade_date"],
+  "is_valid": true,
+  "missing_concepts": ["cards", "posted immediately"],
+  "reason": null,
+  "reasoning": "The sentence mentions 'B or C grade' (column 'grade') and 're-inspection' (column 'inspection_type' contains 'Re-inspection'). The establishment identifier (camis) is implied to scope the constraint. The temporal concept 'immediately' suggests that the posting must occur soon after the inspection, making inspection_date and grade_date relevant as reference points, even though no column directly represents the posting action or cards."
+}...
+-> Step 2: Identified columns ['grade', 'inspection_type', 'camis', 'inspection_date', 'grade_date']
+-> Step 3: Considering 98 predicate candidates
+-> Step 3: Selected 4 predicates: ['t1.grade = $string', 't1.inspection_type LIKE $pattern', 't1.grade_date IS NULL', 't1.grade_date != t1.inspection_date']
+-> Step 3 failed: The constraint requires checking existence of at least one inspection per year per establishment, which cannot be captured by simple comparisons on individual columns; the predicate set lacks aggregation and arithmetic capabilities.
+-> Predicate selection failed: The constraint requires checking existence of at least one inspection per year per establishment, which cannot be captured by simple comparisons on individual columns; the predicate set lacks aggregation and arithmetic capabilities.
+-> Step 3.5 [GATE]: PASS — If grade='A' and inspection_type contains 'Re-inspection', then grade_date must not be NULL and must equal inspection_date; violation occurs when grade_date is NULL or different from inspection_date. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 4 columns
+-> Step 3 failed: Missing column to represent the required action (posting a card).
+-> Predicate selection failed: Missing column to represent the required action (posting a card).
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.inspection_order = 1', 't1.score >= 0', 't1.score <= 13', "t1.grade != 'A'"]}]
+   For a restaurant's first inspection, if the score is between 0 and 13, then the grade must be 'A'. Any record where the score is in that range and the grade is not 'A' is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 272 violations
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ["t1.grade = 'A'", "t1.inspection_type LIKE '%Re-inspection%'", {'OR': ['t1.grade_date IS NULL', 't1.grade_date != t1.inspection_date']}]}]
+   When grade is 'A' and inspection_type contains 'Re-inspection', grade_date must not be null and must equal inspection_date. A violation occurs if grade_date is null or different from inspection_date.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+  Evaluating pairwise quality (7 GT sentences)...
+  Evaluating aggregate violation (GT sentences pooled)...
+  Saving outputs...
+  Saved detailed results: restaurant_Multi-Step_|_DeepSeek-V4-Flash_detailed.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 68.31s  (7 GT sentences)
+
+  ── AGGREGATE VIOLATION DISCOVERY (GT sentences pooled) ───────────────
+     Precision: 1.000
+     Recall:    0.011
+     F1:        0.021  [PRIMARY]
+     Gold violations:      52311
+     Predicted violations: 554
+     Overlap violations:   554
+
+  ── CONSTRAINT EXACT MATCH (GT sentences) ─────────────────────────────
+     Precision: 0.600
+     Recall:    0.429
+     F1:        0.500  [PRIMARY]
+     TP: 3  FP: 2  FN: 4
+     Predicted: 5, Gold: 7
+
+  ── PAIRWISE SYNTACTIC QUALITY (n=7) ──────────────────────────────
+     Exact Match:       0.429 (3/7)
+     Predicate Jaccard: 0.607 (±0.420)
+
+  ── PAIRWISE VIOLATION DISCOVERY ───────────────────────────────────────
+     Exact Match:       0.571 (4/7)
+     Precision:         0.571 (±0.495)
+     Recall:            0.571 (±0.495)
+     F1:                0.571 (±0.495)
+     Violation Jaccard: 0.571 (±0.495)
+
+  INSIGHT: Syntactic vs Violation Gap = 0.143
+     14.3% of constraints find correct violations despite syntactic differences
+  Variant completed
+
+==================================================================================================================================
+COMPARISON TABLE  —  GT sentences only, no classifier
+==================================================================================================================================
+  Variant                                       Impl       Model                  AggViol F1   ConstExact F1   SynExact   SynJacc    ViolF1     ViolJacc   Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Multi-Step | DeepSeek-V4-Flash                multi_step_refinement deepseek/deepseek-v4-flash 0.021        0.500           0.429      0.607      0.571      0.571      68.31     
+
+  Best Aggregate Violation F1:   Multi-Step | DeepSeek-V4-Flash (0.021)
+  Best Constraint Exact F1:      Multi-Step | DeepSeek-V4-Flash (0.500)
+  Best Syntactic Exact Match:    Multi-Step | DeepSeek-V4-Flash (0.429)
+  Best Pairwise Violation F1:    Multi-Step | DeepSeek-V4-Flash (0.571)
+  Fastest:                       Multi-Step | DeepSeek-V4-Flash (68.31s)
+==================================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3/e2_mapping/hmda_e2_restaurant_deepseekv4flash_multistep_20261014_121849

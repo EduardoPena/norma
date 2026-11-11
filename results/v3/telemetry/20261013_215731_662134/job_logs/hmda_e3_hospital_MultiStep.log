@@ -1,0 +1,1377 @@
+Execution artifacts: results/v3/telemetry/20261013_215731_662134
+
+================================================================================
+FULL MAPPER EVALUATION: hmda_e3_hospital_MultiStep
+================================================================================
+
+Results directory: results/v3/e3_end2end/hmda_e3_hospital_multistep_20261015_090742
+Timestamp: 20261015_090742
+
+Evaluation scope:
+  SENTENCE_DIRECT / FILTERED:
+    Classification metrics     → ALL sentences
+    Aggregate violation        → ALL sentences (all predicted vs all GT)
+    Pairwise mapping metrics   → GT constraint sentences only
+  DOCUMENT:
+    Aggregate violation        → all predicted rules vs all GT constraints
+    All other metrics          → N/A
+================================================================================
+
+Config YAML saved to: results/v3/e3_end2end/hmda_e3_hospital_multistep_20261015_090742/config.yaml
+Execution config saved to: results/v3/e3_end2end/hmda_e3_hospital_multistep_20261015_090742/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: hospital
+--------------------------------------------------------------------------------
+Loading hospital...
+Total sentences:          109
+GT constraint sentences:  15
+Non-constraint sentences: 94
+
+
+[1/1] Variant: Multi-Step | GPT-6 Sol
+  Mode:           SENTENCE_DIRECT
+  Implementation: multi_step_refinement
+  Processing all 109 sentences (mode=SENTENCE_DIRECT)...
+
+[SENTENCE_DIRECT] Processing 109 sentences
+
+============================================================
+Processing: The hospital quality measures dataset serves as a central repository for trackin...
+
+============================================================
+Processing: This system aggregates information about hospitals, their organizational charact...
+
+============================================================
+Processing: Healthcare administrators, policy analysts, auditors, and operational staff rely...
+
+============================================================
+============================================================
+Processing: Each record represents a specific quality measure reported by a particular hospi...
+
+
+============================================================
+Processing: This structure supports granular analysis while maintaining comprehensive covera...
+Processing: The dataset brings together two distinct categories of information: facility-lev...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "Address",
+    "City",
+    "State",
+    "ZipCode",
+    "CountyName",
+    "PhoneNumber",
+    "HospitalOwner",
+    "Score",
+    "Sample",
+    "Stateavg"
+  ],
+  "implied_columns": [
+    "ProviderNumber",
+    "HospitalName",
+    "HospitalType",
+    "EmergencyService",
+    "Condition",
+    "MeasureCode",
+    "MeasureName"
+  ],
+  "reasoning": "Location, contact details, ownership, scores, and sample sizes map to the direct columns. Stateavg identifies a state-and-measure grouping relevant to benchmarks. The remaining columns identify or describe the facility or measure and therefore fit the two categories of information.",
+  "missing_concepts": [
+    "A numeric state benchmark or state-average value; Stateavg contains only a state-and-measure code."
+  ],
+  "reason": null
+}...
+-> Step 2: Identified columns ['Address', 'City', 'State', 'ZipCode', 'CountyName', 'PhoneNumber', 'HospitalOwner', 'Score', 'Sample', 'Stateavg', 'ProviderNumber', 'HospitalName', 'HospitalType', 'EmergencyService', 'Condition', 'MeasureCode', 'MeasureName']
+-> Step 2 response: {"is_valid":true,"direct_columns":["ProviderNumber","HospitalName","Condition","MeasureCode","MeasureName","Score"],"implied_columns":["Sample"],"reasoning":"ProviderNumber and HospitalName identify the hospital that can appear in multiple records. MeasureCode and MeasureName identify the specific quality measure, while Condition represents its measurement category. Score is the reported result, and Sample provides supporting context for that result.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName', 'Condition', 'MeasureCode', 'MeasureName', 'Score', 'Sample']
+-> Step 3: Considering 110 predicate candidates
+-> Step 3: Considering 318 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["ProviderNumber","HospitalName","Address","City","State","ZipCode","CountyName","HospitalType","HospitalOwner","EmergencyService","Condition","MeasureCode","MeasureName","Score","Sample","Stateavg"],"reasoning":"No column is explicitly named. Granular healthcare analysis implies hospital identifiers, geographic and facility characteristics, care conditions and measures, and the scores, samples, and state-measure groupings used to analyze coverage. PhoneNumber is a contact identifier rather than an analytical dimension.","missing_concepts":["A defined measure of comprehensive healthcare coverage"],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName', 'Address', 'City', 'State', 'ZipCode', 'CountyName', 'HospitalType', 'HospitalOwner', 'EmergencyService', 'Condition', 'MeasureCode', 'MeasureName', 'Score', 'Sample', 'Stateavg']
+-> Step 3: Considering 296 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "HospitalName",
+    "HospitalType",
+    "HospitalOwner",
+    "EmergencyService",
+    "Condition",
+    "MeasureCode",
+    "MeasureName",
+    "Score",
+    "Sample"
+  ],
+  "implied_columns": [
+    "ProviderNumber",
+    "Address",
+    "City",
+    "State",
+    "ZipCode",
+    "CountyName",
+    "PhoneNumber",
+    "Stateavg"
+  ],
+  "reasoning": "HospitalName identifies the hospitals; HospitalType, HospitalOwner, and EmergencyService describe organizational characteristics. Condition, MeasureCode, MeasureName, Score, and Sample describe the quality metrics and their reported results. ProviderNumber, location and contact fields provide additional hospital information, while Stateavg identifies a state-and-measure grouping for the metrics.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalName', 'HospitalType', 'HospitalOwner', 'EmergencyService', 'Condition', 'MeasureCode', 'MeasureName', 'Score', 'Sample', 'ProviderNumber', 'Address', 'City', 'State', 'ZipCode', 'CountyName', 'PhoneNumber', 'Stateavg']
+-> Step 3: Considering 318 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalName","ProviderNumber","Condition","MeasureCode","MeasureName","Score","Sample"],"implied_columns":["State","Stateavg","HospitalType","HospitalOwner","EmergencyService"],"reasoning":"Institutional performance and quality improvement relate to hospital identifiers, reported care measures, scores, and sample sizes. State and Stateavg support state-and-measure comparisons; hospital type, ownership, and emergency-service status can scope comparisons among institutions. The schema has no field that directly establishes federal reporting compliance.","missing_concepts":["Federal reporting standards or explicit compliance status","Reporting dates or performance trends","Numeric state-average score"],"reason":null}...
+-> Step 2: Identified columns ['HospitalName', 'ProviderNumber', 'Condition', 'MeasureCode', 'MeasureName', 'Score', 'Sample', 'State', 'Stateavg', 'HospitalType', 'HospitalOwner', 'EmergencyService']
+-> Step 3: Considering 196 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["HospitalName", "MeasureCode", "MeasureName", "Score", "State"],
+  "implied_columns": ["ProviderNumber", "HospitalType", "Condition", "Sample", "Stateavg", "Address", "City", "CountyName", "ZipCode"],
+  "reasoning": "HospitalName and ProviderNumber identify facilities; HospitalType describes them. MeasureCode, MeasureName, Condition, Score, and Sample support tracking quality performance, while Stateavg identifies a state-and-measure grouping. The location fields support the geographic scope described as across the United States.",
+  "missing_concepts": ["A country field or indicator confirming nationwide coverage"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalName', 'MeasureCode', 'MeasureName', 'Score', 'State', 'ProviderNumber', 'HospitalType', 'Condition', 'Sample', 'Stateavg', 'Address', 'City', 'CountyName', 'ZipCode']
+-> Step 3: Considering 260 predicate candidates
+-> Step 3 failed: No violation can be defined from the sentence using the available predicates.
+-> Predicate selection failed: No violation can be defined from the sentence using the available predicates.
+
+============================================================
+Processing: A provider number uniquely identifies a hospital name....
+-> Step 3 failed: Describing included categories does not explicitly require any particular field to be non-null, so no denial constraint can be derived.
+-> Predicate selection failed: Describing included categories does not explicitly require any particular field to be non-null, so no denial constraint can be derived.
+
+============================================================
+Processing: This numbering scheme originates from the Centers for Medicare and Medicaid Serv...
+-> Step 3 failed: No explicit constraint can be expressed as a denial constraint.
+-> Predicate selection failed: No explicit constraint can be expressed as a denial constraint.
+
+============================================================
+Processing: The provider number appears on billing documents, regulatory filings, and public...
+-> Step 2 response: {"is_valid":true,"direct_columns":["ProviderNumber","HospitalName"],"implied_columns":[],"reasoning":"The sentence states a uniqueness relationship between ProviderNumber and HospitalName: each provider number identifies one hospital name.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName']
+-> Step 3: Considering 36 predicate candidates
+-> Step 3 failed: No enforceable constraint is specified.
+-> Predicate selection failed: No enforceable constraint is specified.
+
+============================================================
+Processing: Staff members frequently use these numbers as shorthand references when discussi...
+-> Step 3 failed: No testable requirement, relationship, or threshold is specified.
+-> Predicate selection failed: No testable requirement, relationship, or threshold is specified.
+
+============================================================
+Processing: Cross-referencing by provider number helps auditors quickly locate all quality m...
+-> Step 3: Selected 2 predicates: ['t1.ProviderNumber = t2.ProviderNumber', 't1.HospitalName != t2.HospitalName']
+-> Step 2 response: {"is_valid":true,"direct_columns":["ProviderNumber"],"implied_columns":[],"reasoning":"ProviderNumber is the provider identifier explicitly referenced. The sentence describes where it appears, but no available column represents those documents or interfaces.","missing_concepts":["billing documents","regulatory filings","public reporting interfaces"],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber']
+-> Step 3: Considering 22 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["ProviderNumber"],
+  "implied_columns": [],
+  "reasoning": "The identifiers assigned to facilities correspond to the hospital provider identifier stored in ProviderNumber.",
+  "missing_concepts": ["CMS enrollment system", "initial certification date or event"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['ProviderNumber']
+-> Step 3: Considering 22 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.ProviderNumber = t2.ProviderNumber', 't1.HospitalName != t2.HospitalName']
+-> Step 3.5 [GATE]: PASS — A violation occurs when two rows have the same ProviderNumber but different HospitalName values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3: Selected 1 predicates: ['t1.ProviderNumber IS NULL']
+-> Step 3.5 [GATE]: REJECT — The sentence describes why a hospital may have multiple records, but does not assert that records with the same ProviderNumber must have the same HospitalName or identify another concrete violation. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: The relationship between identifiers works in both directions within this system...
+-> Step 2 response: {"is_valid":true,"direct_columns":["ProviderNumber"],"implied_columns":["HospitalName"],"reasoning":"“These numbers” most plausibly refers to provider numbers used to identify hospitals. HospitalName identifies the institutions being referenced; frequency of staff use is not represented in the schema.","missing_concepts":["staff usage frequency"],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName']
+-> Step 3: Considering 36 predicate candidates
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.ProviderNumber = t2.ProviderNumber', 't1.HospitalName != t2.HospitalName']}]
+   Two records have the same provider number but different hospital names.
+
+-> Verification iteration 1/2
+-> Step 5: Found 25 violations
+
+============================================================
+Processing: A hospital name uniquely determines its provider number....
+-> Step 2 response: {"is_valid":true,"direct_columns":["ProviderNumber","HospitalName","MeasureCode","MeasureName"],"implied_columns":["Condition","Score","Sample"],"reasoning":"ProviderNumber identifies the facility used for cross-referencing; HospitalName identifies that facility. MeasureCode and MeasureName identify its quality measures. Condition groups measures by care area, while Score and Sample provide associated measure results and context.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName', 'MeasureCode', 'MeasureName', 'Condition', 'Score', 'Sample']
+-> Step 3: Considering 110 predicate candidates
+-> Step 3 failed: No available predicate can represent initial certification or the timing of identifier assignment; treating ProviderNumber as unconditionally required would discard the stated condition.
+-> Predicate selection failed: No available predicate can represent initial certification or the timing of identifier assignment; treating ProviderNumber as unconditionally required would discard the stated condition.
+
+============================================================
+Processing: This consistency supports accurate record linkage when integrating data from ext...
+-> Step 3.5 [GATE]: REJECT — The sentence describes where provider numbers appear, not a requirement that ProviderNumber be non-null; checking those documents and interfaces would require information outside the column. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Historical records maintain the same pairing even as other attributes might be u...
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalName","ProviderNumber"],"implied_columns":[],"reasoning":"The sentence states a functional dependency: each HospitalName must map to only one ProviderNumber.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['HospitalName', 'ProviderNumber']
+-> Step 3: Considering 36 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.ProviderNumber = t2.ProviderNumber', 't1.HospitalName != t2.HospitalName']
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.ProviderNumber != t2.ProviderNumber']
+-> Step 3: Selected 2 predicates: ['t1.ProviderNumber = t2.ProviderNumber', 't1.HospitalName != t2.HospitalName']
+-> Step 3.5 [GATE]: PASS — A violation occurs when two records have the same HospitalName but different ProviderNumber values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: REJECT — The sentence describes how staff use provider numbers in conversation, not a rule that the same ProviderNumber must always have the same HospitalName. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Database administrators have configured validation checks that flag any apparent...
+-> Step 3.5 [GATE]: REJECT — The sentence describes using provider numbers to find quality measures, but does not assert that rows with the same ProviderNumber must have the same HospitalName or any other checkable constraint. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: The bidirectional uniqueness simplifies both automated processing and manual ver...
+-> Step 2 response: {"is_valid":true,"direct_columns":["ProviderNumber","MeasureCode","Stateavg","PhoneNumber","ZipCode"],"implied_columns":["HospitalName","MeasureName","State"],"reasoning":"The sentence refers to a bidirectional relationship between identifiers but does not name the identifiers. ProviderNumber and MeasureCode are explicit identifiers; Stateavg is a composite state-and-measure identifier. PhoneNumber and ZipCode are also described as codes or identifiers. HospitalName and MeasureName are possible counterparts to provider and measure identifiers, while State is a component of Stateavg. The intended pair cannot be determined from the sentence alone.","missing_concepts":["The specific identifiers whose relationship must work in both directions"],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'MeasureCode', 'Stateavg', 'PhoneNumber', 'ZipCode', 'HospitalName', 'MeasureName', 'State']
+-> Step 3: Considering 140 predicate candidates
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.ProviderNumber != t2.ProviderNumber']}]
+   Two rows have the same hospital name but different provider numbers.
+
+-> Verification iteration 1/2
+-> Step 5: Found 25 violations
+
+============================================================
+Processing: Hospital location data follows strict consistency principles that support accura...
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalName","ProviderNumber"],"implied_columns":[],"reasoning":"The validation checks compare hospital names with their provider numbers to flag apparent mismatches. Both fields are explicitly referenced; no other schema column is needed to express this comparison.","missing_concepts":["Validation-check configuration or mismatch flag"],"reason":null}...
+-> Step 2: Identified columns ['HospitalName', 'ProviderNumber']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["ProviderNumber","HospitalName","MeasureCode","MeasureName"],"reasoning":"The sentence does not name the paired fields. A stable identifier–name pairing could refer to ProviderNumber and HospitalName; MeasureCode and MeasureName are another plausible code–description pairing. Unspecified attributes that may change are not themselves constrained.","missing_concepts":["Historical record date or version"],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName', 'MeasureCode', 'MeasureName']
+-> Step 3: Considering 64 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["ProviderNumber","HospitalName","Address","City","State","ZipCode","CountyName","PhoneNumber","MeasureCode","MeasureName"],"reasoning":"No column is named explicitly. Record linkage can use the hospital identifier, name, location, and phone number; MeasureCode and MeasureName can help match records at the hospital-measure level. The sentence does not specify which values must be consistent.","missing_concepts":["External-source identifier or source metadata","Specific consistency rule"],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName', 'Address', 'City', 'State', 'ZipCode', 'CountyName', 'PhoneNumber', 'MeasureCode', 'MeasureName']
+-> Step 3: Considering 204 predicate candidates
+-> Step 3: Selected 4 predicates: ['t1.ProviderNumber = t2.ProviderNumber', 't1.HospitalName != t2.HospitalName', 't1.HospitalName = t2.HospitalName', 't1.ProviderNumber != t2.ProviderNumber']
+-> Step 3 failed: Without the antecedent of “This consistency,” the required predicates cannot be determined.
+-> Predicate selection failed: Without the antecedent of “This consistency,” the required predicates cannot be determined.
+
+============================================================
+Processing: A hospital name uniquely determines its street address....
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["MeasureCode","MeasureName"],"reasoning":"The sentence does not name the fields, but bidirectional uniqueness plausibly refers to a one-to-one mapping between a quality measure’s code and its descriptive name. The code supports automated processing, while the name supports manual verification.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['MeasureCode', 'MeasureName']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3 failed: Several column pairs could represent identifiers; selecting one would impose a relationship not stated in the sentence.
+-> Predicate selection failed: Several column pairs could represent identifiers; selecting one would impose a relationship not stated in the sentence.
+
+============================================================
+Processing: This consistency matters for emergency routing systems that depend on reliable a...
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalName","Address"],"implied_columns":[],"reasoning":"The sentence states a functional dependency: each HospitalName must consistently map to one street Address. No other column is needed to scope the constraint.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['HospitalName', 'Address']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3.5 [GATE]: REJECT — The sentence describes validation checks but does not specify which relationship between HospitalName and ProviderNumber constitutes a mismatch, so no concrete violation can be determined from the columns alone. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Mapping applications and logistics tools consume this data to calculate distance...
+-> Step 2 response: {"is_valid":true,"direct_columns":["Address","City","State","ZipCode","CountyName"],"implied_columns":["ProviderNumber","HospitalName"],"reasoning":"Address, city, state, ZIP code, and county describe hospital locations and can be checked for consistency. ProviderNumber and HospitalName identify the hospital whose location data should remain consistent across records.","missing_concepts":["Specific consistency rules are not stated","No patient-referral field is available"],"reason":null}...
+-> Step 2: Identified columns ['Address', 'City', 'State', 'ZipCode', 'CountyName', 'ProviderNumber', 'HospitalName']
+-> Step 3: Considering 154 predicate candidates
+-> Step 3: Selected 4 predicates: ['t1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName', 't1.MeasureName = t2.MeasureName', 't1.MeasureCode != t2.MeasureCode']
+-> Step 3: Selected 2 predicates: ['t1.ProviderNumber = t2.ProviderNumber', 't1.HospitalName != t2.HospitalName']
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.Address != t2.Address']
+-> Step 3.5 [GATE]: PASS — A violation occurs when two records have the same HospitalName but different Address values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3 failed: No concrete consistency rule can be expressed as a denial constraint without inventing a relationship between the columns.
+-> Predicate selection failed: No concrete consistency rule can be expressed as a denial constraint without inventing a relationship between the columns.
+
+============================================================
+Processing: When facilities relocate, the dataset undergoes coordinated updates rather than ...
+-> Step 3.5 [GATE]: REJECT — The sentence describes a benefit of bidirectional uniqueness but does not assert a specific, checkable rule for MeasureCode and MeasureName. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Auditors reviewing facility records can trust that address information remains s...
+-> Step 3.5 [GATE]: PASS — Two records with the same ProviderNumber but different HospitalName values would violate the stated stable pairing, even if other attributes changed. (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 4 columns
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.Address != t2.Address']}]
+   Two rows have the same hospital name but different addresses.
+
+-> Verification iteration 1/2
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["Address","City","State","ZipCode","CountyName"],"reasoning":"Mapping and logistics tools can use the hospital's address and geographic location fields to locate destinations and calculate routes.","missing_concepts":["Distance","Travel time"],"reason":null}...
+-> Step 2: Identified columns ['Address', 'City', 'State', 'ZipCode', 'CountyName']
+-> Step 2 response: {"is_valid":true,"direct_columns":["Address","City","State","ZipCode","CountyName"],"implied_columns":[],"reasoning":"Reliable address information maps to the street address and geographic fields used to locate a hospital. The sentence does not specify what must be consistent or identify a grouping key. EmergencyService describes whether a hospital offers emergency care, not whether an emergency routing system uses its address.","missing_concepts":["Emergency routing system","Specific consistency rule"],"reason":null}...
+-> Step 5: Found 25 violations-> Step 2: Identified columns ['Address', 'City', 'State', 'ZipCode', 'CountyName']
+
+
+============================================================
+Processing: Geographic attributes extend beyond street-level detail to encompass broader reg...
+-> Step 3: Considering 118 predicate candidates
+-> Step 3: Considering 118 predicate candidates
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.ProviderNumber = t2.ProviderNumber', 't1.HospitalName != t2.HospitalName']}]
+   Two records with the same provider number must not have different hospital names.
+
+-> Verification iteration 1/2
+-> Step 5: Found 25 violations
+
+============================================================
+Processing: A hospital name uniquely determines its city....
+-> Step 2 response: {"is_valid":true,"direct_columns":["Address"],"implied_columns":["ProviderNumber","HospitalName","City","State","ZipCode","CountyName"],"reasoning":"Address is the field that must not conflict. ProviderNumber and HospitalName identify the facility across records; the other location fields may also need to remain consistent when its address is updated.","missing_concepts":["Relocation event or date","Update coordination or transaction status"],"reason":null}...
+-> Step 2: Identified columns ['Address', 'ProviderNumber', 'HospitalName', 'City', 'State', 'ZipCode', 'CountyName']
+-> Step 3: Considering 154 predicate candidates
+-> Step 3 failed: No predicate from the available list expresses a violation of this sentence.
+-> Predicate selection failed: No predicate from the available list expresses a violation of this sentence.
+
+============================================================
+Processing: This consistency enables accurate regional aggregation for public health reporti...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["Address", "City", "State", "ZipCode", "CountyName"],
+  "implied_columns": ["ProviderNumber", "HospitalName"],
+  "reasoning": "Address and its related location fields are the information expected to remain stable. ProviderNumber identifies the facility whose records are compared; HospitalName is another facility identifier.",
+  "missing_concepts": ["reporting period or date column"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['Address', 'City', 'State', 'ZipCode', 'CountyName', 'ProviderNumber', 'HospitalName']
+-> Step 3: Considering 154 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalName","City"],"implied_columns":[],"reasoning":"The constraint is a functional dependency: records with the same HospitalName must have the same City.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['HospitalName', 'City']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3 failed: No concrete constraint can be derived from this sentence alone.
+-> Predicate selection failed: No concrete constraint can be derived from this sentence alone.
+
+============================================================
+Processing: State health departments often organize their oversight activities by city, maki...
+-> Step 2 response: {"is_valid":true,"direct_columns":["Address","City","CountyName","State","ZipCode"],"implied_columns":[],"reasoning":"Address provides street-level detail; City, CountyName, State, and ZipCode identify broader geographic areas.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['Address', 'City', 'CountyName', 'State', 'ZipCode']
+-> Step 3: Considering 118 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.City != t2.City']
+-> Step 3: Selected 2 predicates: ['t1.ProviderNumber = t2.ProviderNumber', 't1.Address != t2.Address']
+-> Step 3.5 [GATE]: PASS — A violation occurs when two records have the same HospitalName but different City values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":["City","State"],"implied_columns":[],"reasoning":"City is the location assignment emphasized by the sentence. State is relevant because the oversight is organized by state health departments.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['City', 'State']
+-> Step 3: Considering 44 predicate candidates
+-> Step 3.5 [GATE]: PASS — Two rows with the same ProviderNumber but different Address values would violate the prohibition on coexisting conflicting addresses. (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 7 columns
+-> Step 3: Selected 6 predicates: ['t1.ProviderNumber = t2.ProviderNumber', 't1.Address != t2.Address', 't1.City != t2.City', 't1.State != t2.State', 't1.ZipCode != t2.ZipCode', 't1.CountyName != t2.CountyName']
+-> Step 3 failed: Column coverage cannot be expressed as a denial constraint using these predicates, and the sentence does not explicitly require any field to be populated.
+-> Predicate selection failed: Column coverage cannot be expressed as a denial constraint using these predicates, and the sentence does not explicitly require any field to be populated.
+
+============================================================
+Processing: Mapping and visualization tools depend on consistent city names to produce accur...
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.City != t2.City']}]
+   A hospital name appears with different cities in two rows.
+
+-> Verification iteration 1/2
+-> Step 5: Found 27 violations
+
+============================================================
+Processing: Analytics teams can confidently group facilities by city without worrying about ...
+-> Step 2 response: {"is_valid":true,"direct_columns":["City","CountyName","State","ZipCode","Stateavg"],"implied_columns":["Address","ProviderNumber","Condition","MeasureCode","MeasureName","Score","Sample"],"reasoning":"Regional aggregation maps to the hospital’s geographic fields and the state-and-measure grouping in Stateavg. Public health reporting may aggregate measure results (Score and Sample) by condition or measure, using ProviderNumber to distinguish hospitals. Address can also help establish a hospital’s region.","missing_concepts":["The specific consistency requirement referred to by “This consistency” is not stated."],"reason":null}...
+-> Step 2: Identified columns ['City', 'CountyName', 'State', 'ZipCode', 'Stateavg', 'Address', 'ProviderNumber', 'Condition', 'MeasureCode', 'MeasureName', 'Score', 'Sample']
+-> Step 3: Considering 228 predicate candidates
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.ProviderNumber = t2.ProviderNumber', 't1.Address != t2.Address']}]
+   Two records for the same provider have different addresses.
+
+-> Verification iteration 1/2
+-> Step 5: Found 25 violations
+
+============================================================
+Processing: Postal code information follows a consistency established by some fields....
+-> Step 3 failed: No denial constraint can be derived from operational significance alone.-> Step 3.5 [GATE]: REJECT — Address changes are prohibited only within the same reporting period, but no reporting-period column is available to check that condition. (confidence=high)
+-> Predicate selection failed: No denial constraint can be derived from operational significance alone.
+
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: A hospital name uniquely determines its ZIP code....
+============================================================
+Processing: Postal codes connect to various downstream systems including mail delivery, demo...
+
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalName","ZipCode"],"implied_columns":[],"reasoning":"The sentence states a functional dependency: each HospitalName must map to exactly one ZipCode. No additional columns are needed to scope it.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['HospitalName', 'ZipCode']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["City"],"implied_columns":[],"reasoning":"The constraint concerns consistency of city names, which are stored in City. Mapping and visualization describe why that field matters, not additional fields to validate.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['City']
+-> Step 3: Considering 14 predicate candidates
+-> Step 3 failed: Without an explicit consistency rule, no denial constraint can be expressed.
+-> Predicate selection failed: Without an explicit consistency rule, no denial constraint can be expressed.
+
+============================================================
+Processing: Marketing teams and community outreach programs often segment their activities b...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["ZipCode"],
+  "implied_columns": [],
+  "reasoning": "Postal codes correspond to ZipCode. The sentence does not specify a relationship requiring other hospital columns.",
+  "missing_concepts": ["mail delivery system", "demographic analysis system", "insurance network definitions"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['ZipCode']
+-> Step 3: Considering 22 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.ZipCode != t2.ZipCode']
+-> Step 2 response: {"is_valid":true,"direct_columns":["City","HospitalName"],"implied_columns":["ProviderNumber","Address","State","ZipCode","CountyName"],"reasoning":"City is the grouping field whose spelling and facility assignments must be consistent. HospitalName identifies the facilities being grouped, while ProviderNumber provides a stable facility identifier across records. Address, State, ZipCode, and CountyName provide geographic context that can help check whether a facility’s city assignment is consistent.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['City', 'HospitalName', 'ProviderNumber', 'Address', 'State', 'ZipCode', 'CountyName']
+-> Step 3: Considering 154 predicate candidates
+-> Step 3.5 [GATE]: PASS — A violation occurs if two records have the same HospitalName but different ZipCode values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":["ZipCode"],"implied_columns":["Address","City","State","CountyName","ProviderNumber","HospitalName"],"reasoning":"Postal code maps directly to ZipCode. Address, City, State, and CountyName can establish geographic consistency; ProviderNumber and HospitalName can identify a hospital whose postal code should remain consistent across records. The sentence does not specify which fields establish the consistency.","missing_concepts":["Specific fields that establish the postal-code consistency"],"reason":null}...
+-> Step 2: Identified columns ['ZipCode', 'Address', 'City', 'State', 'CountyName', 'ProviderNumber', 'HospitalName']
+-> Step 3: Considering 154 predicate candidates
+-> Step 3 failed: No violation condition can be expressed from this descriptive statement.
+-> Predicate selection failed: No violation condition can be expressed from this descriptive statement.
+
+============================================================
+Processing: The consistency of ZIP code assignments supports reliable joins with census data...
+-> Step 2 response: {"is_valid":true,"direct_columns":["ZipCode"],"implied_columns":[],"reasoning":"ZIP code boundaries map directly to ZipCode, which can be used to group activities geographically. No column records marketing or outreach activities.","missing_concepts":["marketing teams","community outreach programs","activities"],"reason":null}...
+-> Step 2: Identified columns ['ZipCode']
+-> Step 3: Considering 22 predicate candidates
+-> Step 3 failed: No available predicate can identify inconsistent city names without a specified canonical format, allowed values, or shared-city identifier.
+-> Predicate selection failed: No available predicate can identify inconsistent city names without a specified canonical format, allowed values, or shared-city identifier.
+
+============================================================
+Processing: Regional administrative boundaries also maintain predictable relationships in th...
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.ZipCode != t2.ZipCode']}]
+   A hospital name is associated with more than one ZIP code.
+
+-> Verification iteration 1/2
+-> Step 5: Found 27 violations
+
+============================================================
+Processing: A city name uniquely determines its county....
+-> Step 3: Selected 2 predicates: ['t1.ProviderNumber = t2.ProviderNumber', 't1.City != t2.City']
+-> Step 3: Selected 4 predicates: ['t1.Address = t2.Address', 't1.City = t2.City', 't1.State = t2.State', 't1.ZipCode != t2.ZipCode']
+-> Step 2 response: {"is_valid":true,"direct_columns":["City","CountyName"],"implied_columns":[],"reasoning":"The constraint states that each City value must correspond to exactly one CountyName value.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['City', 'CountyName']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3 failed: No predicate on ZipCode alone captures how marketing or outreach activities are segmented.
+-> Predicate selection failed: No predicate on ZipCode alone captures how marketing or outreach activities are segmented.
+
+============================================================
+Processing: County-level analysis plays an important role in public health surveillance and ...
+-> Step 3: Selected 2 predicates: ['t1.City = t2.City', 't1.CountyName != t2.CountyName']
+-> Step 3.5 [GATE]: REJECT — The sentence does not identify which fields must determine ZipCode, so it specifies no concrete violation scenario. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: State agencies often distribute funding and oversight responsibilities along cou...
+-> Step 3.5 [GATE]: REJECT — The sentence expresses confidence in city grouping but gives no specific checkable rule, such as requiring the same ProviderNumber to have the same City. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: The dataset reflects real-world administrative relationships rather than allowin...
+-> Step 2 response: {"is_valid":true,"direct_columns":["State","CountyName","City"],"implied_columns":["ZipCode"],"reasoning":"State, county, and city identify geographic jurisdictions whose relationships may be predictable. ZIP code is a related geographic code that may help define or check those relationships.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['State', 'CountyName', 'City', 'ZipCode']
+-> Step 3: Considering 80 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["ZipCode"],
+  "implied_columns": ["ProviderNumber", "Address", "City", "State", "CountyName"],
+  "reasoning": "ZipCode is the assignment whose consistency matters for geographic joins. ProviderNumber identifies the hospital across records; the address and other location fields can help establish whether its ZIP code is consistent with its location.",
+  "missing_concepts": ["Census data", "Economic indicators", "External geographically indexed data sources"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['ZipCode', 'ProviderNumber', 'Address', 'City', 'State', 'CountyName']
+-> Step 3: Considering 140 predicate candidates
+-> Step 3.5 [GATE]: PASS — A violation occurs if two records have the same City but different CountyName values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.City = t2.City', 't1.CountyName != t2.CountyName']}]
+   A city name appears with two different counties.
+
+-> Verification iteration 1/2
+-> Step 5: Found 69 violations
+
+============================================================
+Processing: Users performing county-level aggregations can proceed without manually resolvin...
+-> Step 2 response: {"is_valid":true,"direct_columns":["State","CountyName"],"implied_columns":[],"reasoning":"State and CountyName represent the geographic boundaries named in the sentence. No column records which agency distributes funding or holds oversight responsibility.","missing_concepts":["state agency identifier","funding distribution","oversight responsibility"],"reason":null}...
+-> Step 2: Identified columns ['State', 'CountyName']
+-> Step 3: Considering 32 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["CountyName"],
+  "implied_columns": ["State", "Condition", "MeasureCode", "MeasureName", "Score", "Sample", "ProviderNumber", "HospitalType", "HospitalOwner", "EmergencyService"],
+  "reasoning": "CountyName defines the level of analysis, and State distinguishes counties with the same name. Conditions, measures, scores, and sample sizes support county-level public health analysis. ProviderNumber can identify hospitals when aggregating records; hospital type, ownership, and emergency-service availability describe resources relevant to allocation decisions.",
+  "missing_concepts": ["Actual resource allocations or budgets", "County population or disease-incidence data"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['CountyName', 'State', 'Condition', 'MeasureCode', 'MeasureName', 'Score', 'Sample', 'ProviderNumber', 'HospitalType', 'HospitalOwner', 'EmergencyService']
+-> Step 3: Considering 182 predicate candidates
+-> Step 3 failed: “Predictable relationships” is too vague to identify the required predicates.
+-> Predicate selection failed: “Predictable relationships” is too vague to identify the required predicates.
+
+============================================================
+Processing: Contact information maintains similar consistency standards throughout the datas...
+-> Step 2 response: {"is_valid":true,"direct_columns":["CountyName"],"implied_columns":["City","State","ZipCode","Address","ProviderNumber","HospitalName"],"reasoning":"CountyName is the assignment being constrained. City, State, ZipCode, and Address locate the hospital and can be checked for geographic consistency with that county. ProviderNumber and HospitalName identify the hospital whose county assignment should remain consistent across records.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['CountyName', 'City', 'State', 'ZipCode', 'Address', 'ProviderNumber', 'HospitalName']
+-> Step 3: Considering 154 predicate candidates
+-> Step 3 failed: No explicit determinant or testable ZIP code rule is stated, so a denial constraint cannot be selected without inferring one.
+-> Predicate selection failed: No explicit determinant or testable ZIP code rule is stated, so a denial constraint cannot be selected without inferring one.
+
+============================================================
+Processing: A hospital name uniquely determines its phone number....
+-> Step 3 failed: No enforceable constraint can be expressed using the available columns and predicates.
+-> Predicate selection failed: No enforceable constraint can be expressed using the available columns and predicates.
+
+============================================================
+Processing: This reliability matters for referral coordinators and patient navigators who ne...
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalName","PhoneNumber"],"implied_columns":[],"reasoning":"The sentence states a functional dependency: each HospitalName must map to only one PhoneNumber.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['HospitalName', 'PhoneNumber']
+-> Step 3: Considering 36 predicate candidates
+-> Step 3 failed: No denial constraint can be derived from this statement.
+-> Predicate selection failed: No denial constraint can be derived from this statement.
+
+============================================================
+Processing: Call centers and automated dialing systems consume this data to connect patients...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["CountyName"],
+  "implied_columns": ["State", "City", "ZipCode", "Address"],
+  "reasoning": "CountyName is the aggregation level. State distinguishes counties that share a name across states; City, ZipCode, and Address provide additional geographic context for checking ambiguous county assignments.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['CountyName', 'State', 'City', 'ZipCode', 'Address']
+-> Step 3: Considering 118 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.PhoneNumber != t2.PhoneNumber']
+-> Step 3: Selected 3 predicates: ['t1.City = t2.City', 't1.State = t2.State', 't1.CountyName != t2.CountyName']
+-> Step 2 response: {"is_valid":true,"direct_columns":["PhoneNumber","Address","City","State","ZipCode","CountyName"],"implied_columns":["ProviderNumber","HospitalName"],"reasoning":"Contact information includes the phone number and mailing-location fields. Consistency across records can be checked for the same hospital using ProviderNumber or HospitalName.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['PhoneNumber', 'Address', 'City', 'State', 'ZipCode', 'CountyName', 'ProviderNumber', 'HospitalName']
+-> Step 3: Considering 176 predicate candidates
+-> Step 3.5 [GATE]: PASS — A violation occurs when two records have the same HospitalName but different PhoneNumber values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: REJECT — The sentence does not specify which column values determine a county assignment, so a violation cannot be identified from the selected predicates alone. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: The phone number typically reaches the main hospital switchboard rather than dep...
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.PhoneNumber != t2.PhoneNumber']}]
+   Two records for the same hospital name have different phone numbers.
+
+-> Verification iteration 1/2
+-> Step 5: Found 24 violations
+
+============================================================
+Processing: Quality assurance processes periodically verify that listed numbers remain activ...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["PhoneNumber", "Address", "City", "State", "ZipCode"],
+  "implied_columns": ["HospitalName"],
+  "reasoning": "Accurate contact details include the hospital’s phone number and mailing address. HospitalName identifies which hospital those details belong to.",
+  "missing_concepts": ["Contact-detail accuracy or verification status"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['PhoneNumber', 'Address', 'City', 'State', 'ZipCode', 'HospitalName']
+-> Step 3: Considering 140 predicate candidates
+-> Step 3 failed: No concrete consistency rule can be expressed from the stated sentence without inventing one.
+-> Predicate selection failed: No concrete consistency rule can be expressed from the stated sentence without inventing one.
+
+============================================================
+Processing: Ownership and governance information describes how each facility operates within...
+-> Step 2 response: {"is_valid":true,"direct_columns":["PhoneNumber","HospitalName"],"implied_columns":["ProviderNumber","Address","City","State","ZipCode","CountyName","HospitalType","EmergencyService","Condition"],"reasoning":"Automated dialing uses hospital phone numbers, and connecting patients with facilities requires identifying those hospitals. Location, hospital type, emergency services, and care area may help determine which facility is appropriate.","missing_concepts":["Patient details and care needs","Call center or dialing-system records","Criteria for matching patients to facilities"],"reason":null}...
+-> Step 2: Identified columns ['PhoneNumber', 'HospitalName', 'ProviderNumber', 'Address', 'City', 'State', 'ZipCode', 'CountyName', 'HospitalType', 'EmergencyService', 'Condition']
+-> Step 3: Considering 230 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.CountyName = t2.CountyName', 't1.State != t2.State']
+-> Step 2 response: {"is_valid":true,"direct_columns":["PhoneNumber"],"implied_columns":[],"reasoning":"The sentence describes what the hospital’s PhoneNumber typically reaches. No available column indicates whether a number connects to the main switchboard or a department-specific line.","missing_concepts":["phone number routing or line type (main switchboard versus department-specific)"],"reason":null}...
+-> Step 2: Identified columns ['PhoneNumber']
+-> Step 3: Considering 22 predicate candidates
+-> Step 3 failed: “Accurate contact details” does not specify which fields must be present or what values or relationships would constitute a violation.
+-> Predicate selection failed: “Accurate contact details” does not specify which fields must be present or what values or relationships would constitute a violation.
+
+============================================================
+Processing: A hospital name uniquely determines its ownership type....
+-> Step 2 response: {"is_valid":true,"direct_columns":["PhoneNumber"],"implied_columns":["HospitalName","ProviderNumber"],"reasoning":"“Listed numbers” refers to hospital phone numbers. HospitalName and ProviderNumber identify the hospital each number should reach when checking correct routing.","missing_concepts":["Phone-number active status","Phone-routing verification result","Date or frequency of quality-assurance checks"],"reason":null}...
+-> Step 2: Identified columns ['PhoneNumber', 'HospitalName', 'ProviderNumber']
+-> Step 3: Considering 58 predicate candidates
+-> Step 3.5 [GATE]: REJECT — The sentence describes a user workflow benefit, not a rule requiring records with the same CountyName to have the same State or any other checkable condition. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Ownership categories affect regulatory requirements, tax treatment, and eligibil...
+-> Step 3 failed: It does not explicitly require a phone number or any other field to be present, so no denial-constraint predicates can be selected.
+-> Predicate selection failed: It does not explicitly require a phone number or any other field to be present, so no denial-constraint predicates can be selected.
+
+============================================================
+Processing: Policy researchers often stratify their analyses by ownership type to understand...
+-> Step 3 failed: No available predicate can distinguish switchboard numbers from department-specific numbers.
+-> Predicate selection failed: No available predicate can distinguish switchboard numbers from department-specific numbers.
+
+============================================================
+Processing: The ownership field captures the facility's current classification rather than h...
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalName","HospitalOwner"],"implied_columns":[],"reasoning":"The constraint says each HospitalName must map to exactly one HospitalOwner value. No additional column is needed to scope this relationship.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['HospitalName', 'HospitalOwner']
+-> Step 3: Considering 32 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["HospitalOwner", "HospitalType"],
+  "implied_columns": [],
+  "reasoning": "HospitalOwner records ownership and government-related categories. HospitalType describes the facility’s organizational type within the healthcare system.",
+  "missing_concepts": ["Detailed governance structure or management arrangements"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalOwner', 'HospitalType']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalOwner"],"implied_columns":[],"reasoning":"HospitalOwner records the ownership categories mentioned in the sentence. The schema has no columns for the stated effects of ownership.","missing_concepts":["regulatory requirements","tax treatment","grant program eligibility"],"reason":null}...
+-> Step 2: Identified columns ['HospitalOwner']
+-> Step 3: Considering 18 predicate candidates
+-> Step 3 failed: No available predicate can detect a missed verification or an inactive or incorrectly routed number.
+-> Predicate selection failed: No available predicate can detect a missed verification or an inactive or incorrectly routed number.
+
+============================================================
+Processing: Nonprofit hospitals face different community benefit reporting obligations than ...
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.HospitalOwner != t2.HospitalOwner']
+-> Step 3.5 [GATE]: PASS — A violation occurs when two records have the same HospitalName but different HospitalOwner values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalOwner"],"implied_columns":[],"reasoning":"HospitalOwner records the facility’s ownership classification. The sentence distinguishes its current value from historical ownership changes; it does not require another available column.","missing_concepts":["Historical ownership or governance changes","Date or effective period of ownership classification"],"reason":null}...
+-> Step 2: Identified columns ['HospitalOwner']
+-> Step 3: Considering 18 predicate candidates
+-> Step 3 failed: No violation condition can be derived from the sentence.
+-> Predicate selection failed: No violation condition can be derived from the sentence.
+
+============================================================
+Processing: When multiple identifying factors combine, they reinforce geographic consistency...
+-> Step 3 failed: Regulatory requirements, tax treatment, and grant eligibility are not available columns, and no specific mapping or restriction is stated.
+-> Predicate selection failed: Regulatory requirements, tax treatment, and grant eligibility are not available columns, and no specific mapping or restriction is stated.
+
+============================================================
+Processing: A hospital identified by name, phone, and owner must have a consistent state....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["HospitalOwner"],
+  "implied_columns": [],
+  "reasoning": "HospitalOwner distinguishes voluntary non-profit ownership from proprietary (for-profit) ownership. No available column records community benefit reporting obligations.",
+  "missing_concepts": ["community benefit reporting obligations"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalOwner']
+-> Step 3: Considering 18 predicate candidates
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.HospitalOwner != t2.HospitalOwner']}]
+   Two records have the same hospital name but different ownership types.
+
+-> Verification iteration 1/2
+-> Step 5: Found 24 violations
+
+============================================================
+Processing: This compound relationship catches certain data entry errors that single-attribu...
+-> Step 3 failed: No available predicate can test when the ownership classification applied.
+-> Predicate selection failed: No available predicate can test when the ownership classification applied.
+
+============================================================
+Processing: Auditors use this relationship to validate bulk data imports and migration proce...
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalName","PhoneNumber","HospitalOwner","State"],"implied_columns":[],"reasoning":"HospitalName, PhoneNumber, and HospitalOwner identify the hospital; State must be consistent for records with the same combination of those values.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['HospitalName', 'PhoneNumber', 'HospitalOwner', 'State']
+-> Step 3: Considering 72 predicate candidates
+-> Step 3 failed: The reporting obligations needed to compare the two groups are not represented in the available columns.
+-> Predicate selection failed: The reporting obligations needed to compare the two groups are not represented in the available columns.
+
+============================================================
+Processing: The dataset tracks hospital performance through a standardized measurement syste...
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalOwner","Score"],"implied_columns":["MeasureCode","MeasureName","Condition"],"reasoning":"HospitalOwner identifies the ownership types used to stratify analyses. Score represents the reported quality result; MeasureCode, MeasureName, and Condition identify which quality measure or care area each score concerns, allowing comparable outcomes to be analyzed across ownership groups.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['HospitalOwner', 'Score', 'MeasureCode', 'MeasureName', 'Condition']
+-> Step 3: Considering 78 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["ProviderNumber","HospitalName","Address","City","State","ZipCode","CountyName","PhoneNumber"],"implied_columns":["Stateavg"],"reasoning":"ProviderNumber, HospitalName, Address, and PhoneNumber can identify a hospital; Address, City, State, ZipCode, and CountyName describe its geography. Comparing these fields across records can test whether identifying factors agree with geographic information. Stateavg also embeds a state abbreviation that can be checked against State.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName', 'Address', 'City', 'State', 'ZipCode', 'CountyName', 'PhoneNumber', 'Stateavg']
+-> Step 3: Considering 190 predicate candidates
+-> Step 3: Selected 4 predicates: ['t1.HospitalName = t2.HospitalName', 't1.PhoneNumber = t2.PhoneNumber', 't1.HospitalOwner = t2.HospitalOwner', 't1.State != t2.State']
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["State","MeasureCode","Stateavg"],"reasoning":"The sentence does not name the fields, but Stateavg is a compound value formed from State and MeasureCode. Checking their relationship could catch errors that checks of each field alone would miss.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['State', 'MeasureCode', 'Stateavg']
+-> Step 3: Considering 46 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [],
+  "implied_columns": ["State", "MeasureCode", "Stateavg"],
+  "reasoning": "No column is named explicitly. The apparent relationship available in the schema is that Stateavg combines State and MeasureCode; auditors could check that relationship after an import or migration.",
+  "missing_concepts": ["The sentence does not specify what “this relationship” refers to."],
+  "reason": null
+}...
+-> Step 2: Identified columns ['State', 'MeasureCode', 'Stateavg']
+-> Step 3: Considering 46 predicate candidates
+-> Step 3 failed: No denial constraint is stated or logically implied.
+-> Predicate selection failed: No denial constraint is stated or logically implied.
+
+============================================================
+Processing: Each measure code represents a specific clinical process or outcome that facilit...
+-> Step 3.5 [GATE]: PASS — A violation occurs when two rows have the same HospitalName, PhoneNumber, and HospitalOwner but different State values. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 4 columns
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.PhoneNumber = t2.PhoneNumber', 't1.HospitalOwner = t2.HospitalOwner', 't1.State != t2.State']}]
+   The same hospital name, phone number, and owner cannot be associated with different states.
+
+-> Verification iteration 1/2
+-> Step 5: Found 24 violations
+
+============================================================
+Processing: A measure code uniquely determines its measure name....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["HospitalName", "MeasureCode", "MeasureName", "Score"],
+  "implied_columns": ["ProviderNumber", "Condition", "Sample"],
+  "reasoning": "HospitalName and ProviderNumber identify the hospitals being assessed. MeasureCode and MeasureName identify the quality measures, Score records performance, and Condition and Sample provide context for interpreting each measure.",
+  "missing_concepts": ["Name or identifier of the standardized measurement system", "National quality reporting program identifier"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalName', 'MeasureCode', 'MeasureName', 'Score', 'ProviderNumber', 'Condition', 'Sample']
+-> Step 3: Considering 110 predicate candidates
+-> Step 3 failed: No explicit constraint can be expressed from this sentence alone.
+-> Predicate selection failed: No explicit constraint can be expressed from this sentence alone.
+
+============================================================
+Processing: This code-to-name mapping originates from the national quality measure specifica...
+-> Step 2 response: {"is_valid":true,"direct_columns":["MeasureCode","MeasureName"],"implied_columns":[],"reasoning":"The sentence states a functional dependency: each MeasureCode must correspond to only one MeasureName.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['MeasureCode', 'MeasureName']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3 failed: No explicit requirement, bound, mapping, or relationship between columns is specified.
+-> Predicate selection failed: No explicit requirement, bound, mapping, or relationship between columns is specified.
+
+============================================================
+Processing: Healthcare analysts commonly reference measures by their codes in technical disc...
+-> Step 3 failed: No specific violation condition can be selected without inventing the relationship.
+-> Predicate selection failed: No specific violation condition can be selected without inventing the relationship.
+
+============================================================
+Processing: The standardized vocabulary enables consistent communication across organization...
+-> Step 3: Selected 6 predicates: ['t1.HospitalName = t2.HospitalName', 't1.Address = t2.Address', 't1.City != t2.City', 't1.State != t2.State', 't1.ZipCode != t2.ZipCode', 't1.CountyName != t2.CountyName']
+-> Step 2 response: {"is_valid":true,"direct_columns":["MeasureCode","MeasureName"],"implied_columns":["Condition"],"reasoning":"MeasureCode identifies the measure, and MeasureName describes the clinical process or outcome it represents. Condition provides the associated clinical care area. Facility identifiers are not needed to establish what a measure code means.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['MeasureCode', 'MeasureName', 'Condition']
+-> Step 3: Considering 46 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["MeasureCode", "MeasureName"],
+  "implied_columns": [],
+  "reasoning": "The code-to-name mapping relates quality measure codes to their descriptive names.",
+  "missing_concepts": ["Source specification", "Publishing regulatory body"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['MeasureCode', 'MeasureName']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName']
+-> Step 2 response: {"is_valid":true,"direct_columns":["MeasureCode","MeasureName"],"implied_columns":[],"reasoning":"MeasureCode identifies measures by code, while MeasureName provides their full descriptive names.","missing_concepts":["Whether a use is in a technical discussion or a public-facing report"],"reason":null}...
+-> Step 2: Identified columns ['MeasureCode', 'MeasureName']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3.5 [GATE]: PASS — A violation occurs when two rows have the same MeasureCode but different MeasureName values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: REJECT — The sentence does not specify which identifying factors must match or which geographic values must agree, so it defines no concrete violation scenario. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: The reverse relationship also holds within the measurement framework....
+-> Step 3: Selected 2 predicates: ['t1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName']
+-> Step 3: Selected 2 predicates: ['t1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName']
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName']}]
+   Two rows have the same MeasureCode but different MeasureName values.
+
+-> Verification iteration 1/2
+-> Step 5: Found 77 violations
+
+============================================================
+Processing: A measure name uniquely determines its measure code....
+-> Step 2 response: {"is_valid":true,"direct_columns":["MeasureCode","MeasureName","HospitalName"],"implied_columns":["Condition","ProviderNumber"],"reasoning":"MeasureCode and MeasureName represent the vocabulary used to identify and describe reported measures. HospitalName represents the organizations communicating across that vocabulary; ProviderNumber identifies them, and Condition supplies a related care-area category.","missing_concepts":["Reporting system identifier"],"reason":null}...
+-> Step 2: Identified columns ['MeasureCode', 'MeasureName', 'HospitalName', 'Condition', 'ProviderNumber']
+-> Step 3: Considering 82 predicate candidates
+-> Step 3.5 [GATE]: REJECT — The sentence identifies the mapping’s source but does not assert that identical MeasureCode values must have identical MeasureName values or any other checkable condition. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: This bidirectional uniqueness simplifies both code-based and name-based queries ...
+-> Step 3 failed: The technical-discussion and public-report contexts are not represented by the available columns, and no enforceable condition on MeasureCode or MeasureName is stated.
+-> Predicate selection failed: The technical-discussion and public-report contexts are not represented by the available columns, and no enforceable condition on MeasureCode or MeasureName is stated.
+
+============================================================
+Processing: Training materials for new staff often reference measures by name before introdu...
+-> Step 2 response: {"is_valid":true,"direct_columns":["MeasureName","MeasureCode"],"implied_columns":[],"reasoning":"The sentence states a functional dependency: each MeasureName must correspond to exactly one MeasureCode. No other column is needed to scope it.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['MeasureName', 'MeasureCode']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.MeasureName = t2.MeasureName', 't1.MeasureCode != t2.MeasureCode']
+-> Step 3.5 [GATE]: PASS — A violation occurs if two records have the same MeasureCode but different MeasureName values, since each code identifies a specific measure. (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 3 columns
+-> Step 3 failed: No specific vocabulary term or consistency rule is stated that can be expressed using the available predicates.
+-> Predicate selection failed: No specific vocabulary term or consistency rule is stated that can be expressed using the available predicates.
+
+============================================================
+Processing: Software interfaces may display names prominently while using codes for internal...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [],
+  "implied_columns": ["MeasureCode", "MeasureName"],
+  "reasoning": "The measurement framework points to the measure identifier and its description. A reverse relationship could refer to the mapping between these two columns, but the sentence does not state its endpoints.",
+  "missing_concepts": ["The relationship being reversed is not specified."],
+  "reason": null
+}...
+-> Step 2: Identified columns ['MeasureCode', 'MeasureName']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3.5 [GATE]: PASS — A violation occurs when two rows have the same MeasureName but different MeasureCode values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName']}]
+   Two rows have the same MeasureCode but different MeasureName values.
+
+-> Verification iteration 1/2
+-> Step 5: Found 77 violations
+
+============================================================
+Processing: The one-to-one relationship between names and codes reflects the careful design ...
+-> Step 2 response: {"is_valid":true,"direct_columns":["MeasureName","MeasureCode"],"implied_columns":[],"reasoning":"The sentence explicitly contrasts a measure’s descriptive name with its corresponding code. The schema has no fields for training materials, staff, or the order in which those materials introduce information.","missing_concepts":["training materials","new staff","order of references and introductions"],"reason":null}...
+-> Step 2: Identified columns ['MeasureName', 'MeasureCode']
+-> Step 3: Considering 28 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["MeasureCode","MeasureName","ProviderNumber","HospitalName"],"implied_columns":[],"reasoning":"Bidirectional uniqueness concerns matching a code to a name and a name back to a code. The schema has two plausible code–name pairs: MeasureCode/MeasureName and ProviderNumber/HospitalName.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['MeasureCode', 'MeasureName', 'ProviderNumber', 'HospitalName']
+-> Step 3: Considering 64 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.MeasureName = t2.MeasureName', 't1.MeasureCode != t2.MeasureCode']
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.MeasureName = t2.MeasureName', 't1.MeasureCode != t2.MeasureCode']}]
+   A measure name is associated with more than one measure code.
+
+-> Verification iteration 1/2
+-> Step 5: Found 37 violations
+
+============================================================
+Processing: Quality measures group into clinical categories that organize reporting and anal...
+-> Step 3: Selected 4 predicates: ['t1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName', 't1.MeasureName = t2.MeasureName', 't1.MeasureCode != t2.MeasureCode']
+-> Step 2 response: {"is_valid":true,"direct_columns":["MeasureName","MeasureCode"],"implied_columns":[],"reasoning":"“Names” and “codes” refer to measure descriptions and their identifying codes. The one-to-one relationship is between MeasureName and MeasureCode; no other column is needed to scope it.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['MeasureName', 'MeasureCode']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3.5 [GATE]: REJECT — “The reverse relationship” is undefined, so the sentence does not establish that matching MeasureName values must have the same MeasureCode. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: A measure code uniquely determines the medical condition it measures....
+-> Step 3 failed: No available predicate can express the order in which training materials introduce names and codes.
+-> Predicate selection failed: No available predicate can express the order in which training materials introduce names and codes.
+
+============================================================
+Processing: These condition groupings help clinicians and administrators focus on related me...
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalName","MeasureName","CountyName","City","ProviderNumber","MeasureCode","State","ZipCode","Stateavg"],"implied_columns":[],"reasoning":"HospitalName, MeasureName, CountyName, and City contain names that an interface could display. ProviderNumber and MeasureCode identify hospitals and measures by code; State, ZipCode, and Stateavg are also code-like fields that could be used internally. The sentence does not specify which name–code pair it refers to.","missing_concepts":["Interface display behavior and internal processing behavior are not represented by columns."],"reason":null}...
+-> Step 2: Identified columns ['HospitalName', 'MeasureName', 'CountyName', 'City', 'ProviderNumber', 'MeasureCode', 'State', 'ZipCode', 'Stateavg']
+-> Step 3: Considering 158 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["MeasureCode", "MeasureName", "Condition"],
+  "implied_columns": [],
+  "reasoning": "MeasureCode and MeasureName identify the quality measures; Condition represents the clinical category used to group them.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['MeasureCode', 'MeasureName', 'Condition']
+-> Step 3: Considering 46 predicate candidates
+-> Step 3: Selected 4 predicates: ['t1.MeasureName = t2.MeasureName', 't1.MeasureCode != t2.MeasureCode', 't1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName']
+-> Step 2 response: {"is_valid":true,"direct_columns":["MeasureCode","Condition"],"implied_columns":[],"reasoning":"The constraint states that each MeasureCode uniquely determines its associated medical Condition.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['MeasureCode', 'Condition']
+-> Step 3: Considering 32 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["Condition","MeasureCode","MeasureName"],"implied_columns":[],"reasoning":"Condition represents the groupings, while MeasureCode and MeasureName identify the related measures within them.","missing_concepts":["clinician and administrator roles","improvement initiatives"],"reason":null}...
+-> Step 2: Identified columns ['Condition', 'MeasureCode', 'MeasureName']
+-> Step 3: Considering 46 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.MeasureCode = t2.MeasureCode', 't1.Condition != t2.Condition']
+-> Step 3 failed: No denial constraint follows from the statement that interfaces may display names while using codes internally.
+-> Predicate selection failed: No denial constraint follows from the statement that interfaces may display names while using codes internally.
+
+============================================================
+Processing: Public reporting websites often organize their displays around condition categor...
+-> Step 3.5 [GATE]: PASS — A violation occurs if two rows have the same MeasureName but different MeasureCodes, or the same MeasureCode but different MeasureNames. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — Bidirectional uniqueness is violated if two rows share a MeasureCode but have different MeasureNames, or share a MeasureName but have different MeasureCodes. (confidence=medium)
+-> Step 4: Constructing constraint with 4 predicates and 4 columns
+-> Step 3: Selected 2 predicates: ['t1.MeasureCode = t2.MeasureCode', 't1.Condition != t2.Condition']
+-> Step 3.5 [GATE]: PASS — A violation occurs when two rows have the same MeasureCode but different Condition values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3 failed: No violation condition can be derived from the sentence.
+-> Predicate selection failed: No violation condition can be derived from the sentence.
+
+============================================================
+Processing: The condition field provides a meaningful intermediate level of aggregation betw...
+-> Step 3.5 [GATE]: REJECT — The sentence describes how measures are organized but does not assert that the same MeasureCode must always have the same Condition. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Analytics dashboards frequently offer condition-based filtering to help users na...
+-> Step 4: Constructed functional_dependency with 2 rule(s)
+   [{'AND': ['t1.MeasureName = t2.MeasureName', 't1.MeasureCode != t2.MeasureCode']}, {'AND': ['t1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName']}]
+   A violation occurs when two rows share a measure name but have different codes, or share a measure code but have different names.
+
+-> Verification iteration 1/2
+-> Step 5: Found 114 violations
+
+============================================================
+Processing: Benchmark information provides context for interpreting individual hospital scor...
+-> Step 4: Constructed functional_dependency with 2 rule(s)
+   [{'AND': ['t1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName']}, {'AND': ['t1.MeasureName = t2.MeasureName', 't1.MeasureCode != t2.MeasureCode']}]
+   A measure code maps to different names, or a measure name maps to different codes.
+
+-> Verification iteration 1/2
+-> Step 5: Found 114 violations
+
+============================================================
+Processing: A measure code uniquely determines the state average for that measure....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["Condition", "MeasureCode", "MeasureName"],
+  "implied_columns": [],
+  "reasoning": "Condition represents the condition categories, while MeasureCode and MeasureName identify the individual measures contrasted with those categories.",
+  "missing_concepts": ["public reporting website", "website display organization"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['Condition', 'MeasureCode', 'MeasureName']
+-> Step 3: Considering 46 predicate candidates
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.MeasureCode = t2.MeasureCode', 't1.Condition != t2.Condition']}]
+   Two records have the same MeasureCode but different Condition values.
+
+-> Verification iteration 1/2
+-> Step 5: Found 40 violations
+
+============================================================
+Processing: These benchmarks help stakeholders understand whether a particular score represe...
+-> Step 2 response: {"is_valid":true,"direct_columns":["Condition","MeasureCode","MeasureName"],"implied_columns":[],"reasoning":"Condition is the basis for filtering; MeasureCode and MeasureName identify the measures in the full measure set.","missing_concepts":["dashboard filtering capability"],"reason":null}...
+-> Step 2: Identified columns ['Condition', 'MeasureCode', 'MeasureName']
+-> Step 3: Considering 46 predicate candidates
+-> Step 3 failed: No enforceable denial constraint over the available columns is stated.
+-> Predicate selection failed: No enforceable denial constraint over the available columns is stated.
+
+============================================================
+Processing: State averages reflect the aggregated performance of all reporting facilities wi...
+-> Step 2 response: {"is_valid":true,"direct_columns":["MeasureCode","Stateavg"],"implied_columns":["State"],"reasoning":"MeasureCode identifies the measure, and Stateavg is the closest match to its state average. State is relevant because Stateavg encodes a state-and-measure grouping; a measure code alone may correspond to different states. Stateavg is an identifier, not a numeric average.","missing_concepts":["Numeric state-average value"],"reason":null}...
+-> Step 2: Identified columns ['MeasureCode', 'Stateavg', 'State']
+-> Step 3: Considering 46 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["Stateavg", "Score", "ProviderNumber", "HospitalName"],
+  "implied_columns": ["State", "MeasureCode", "MeasureName", "Condition"],
+  "reasoning": "Score holds individual hospital scores, while ProviderNumber and HospitalName identify the hospitals. Stateavg identifies a state-and-measure benchmark grouping; State and MeasureCode define that grouping, and MeasureName and Condition identify what the scores measure.",
+  "missing_concepts": ["A numeric benchmark or state-average score; Stateavg contains a grouping code, not the benchmark value itself."],
+  "reason": null
+}...
+-> Step 2: Identified columns ['Stateavg', 'Score', 'ProviderNumber', 'HospitalName', 'State', 'MeasureCode', 'MeasureName', 'Condition']
+-> Step 3: Considering 128 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["Score","Stateavg"],"implied_columns":["State","MeasureCode","MeasureName","Condition"],"reasoning":"Score is the value being judged. Stateavg appears to identify the state-and-measure benchmark grouping; State and MeasureCode define that grouping, while MeasureName and Condition provide the measure context needed to interpret performance. Stateavg is a grouping code, not a numeric average.","missing_concepts":["Numeric benchmark or average score","Above-average/below-average performance classification"],"reason":null}...
+-> Step 2: Identified columns ['Score', 'Stateavg', 'State', 'MeasureCode', 'MeasureName', 'Condition']
+-> Step 3: Considering 92 predicate candidates
+-> Step 3 failed: No denial constraint over Condition, MeasureCode, or MeasureName is stated.
+-> Predicate selection failed: No denial constraint over Condition, MeasureCode, or MeasureName is stated.
+
+============================================================
+Processing: Trend analyses often compare individual hospital trajectories against evolving s...
+-> Step 2 response: {"is_valid":true,"direct_columns":["Condition","MeasureCode","MeasureName","Score"],"implied_columns":["ProviderNumber","HospitalName"],"reasoning":"Condition is the stated intermediate aggregation level. MeasureCode and MeasureName identify individual measures, while Score represents performance. ProviderNumber and HospitalName identify the facility needed for facility-wide aggregation.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['Condition', 'MeasureCode', 'MeasureName', 'Score', 'ProviderNumber', 'HospitalName']
+-> Step 3: Considering 96 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.MeasureCode = t2.MeasureCode', 't1.Stateavg != t2.Stateavg']
+-> Step 3 failed: No enforceable constraint is stated; the sentence does not explicitly require benchmark information to be present.
+-> Predicate selection failed: No enforceable constraint is stated; the sentence does not explicitly require benchmark information to be present.
+
+============================================================
+Processing: The state average field uses a composite format that combines the state abbrevia...
+-> Step 3 failed: No enforceable denial constraint can be derived from the sentence using the available predicates.
+-> Predicate selection failed: No enforceable denial constraint can be derived from the sentence using the available predicates.
+
+============================================================
+Processing: Measure classifications connect to facility characteristics in ways that support...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["Stateavg", "State", "Score", "ProviderNumber", "HospitalName"],
+  "implied_columns": ["MeasureCode", "Sample"],
+  "reasoning": "Stateavg identifies a state-and-measure grouping, while State determines which facilities belong to it. Score represents reported performance, and ProviderNumber or HospitalName identifies the reporting facilities. MeasureCode is needed to aggregate comparable scores; Sample may be needed if the average is weighted by patient counts.",
+  "missing_concepts": ["A numeric state-average value", "An explicit reporting-status indicator"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['Stateavg', 'State', 'Score', 'ProviderNumber', 'HospitalName', 'MeasureCode', 'Sample']
+-> Step 3: Considering 110 predicate candidates
+-> Step 3 failed: No denial constraint can be derived from this qualitative description.
+-> Predicate selection failed: No denial constraint can be derived from this qualitative description.
+
+============================================================
+Processing: The same medical condition and measure name must be associated with the same hos...
+-> Step 2 response: {"is_valid":true,"direct_columns":["Stateavg","State","MeasureCode"],"implied_columns":[],"reasoning":"Stateavg is the composite field described. Its format combines the State abbreviation and MeasureCode, both explicitly referenced as components.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['Stateavg', 'State', 'MeasureCode']
+-> Step 3: Considering 46 predicate candidates
+-> Step 3.5 [GATE]: PASS — A violation occurs if two rows have the same MeasureCode but different Stateavg values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 3 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":["ProviderNumber","HospitalName","State","Stateavg"],"implied_columns":["Score","MeasureCode","MeasureName","Condition"],"reasoning":"ProviderNumber and HospitalName identify individual hospitals; State and Stateavg identify state-level benchmark groupings. Score provides the hospital values to compare, while MeasureCode, MeasureName, and Condition identify the measures for like-for-like comparisons. Stateavg is a grouping code, not a numeric benchmark.","missing_concepts":["Time period or date for tracking trajectories and evolving benchmarks","Numeric state benchmark value"],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName', 'State', 'Stateavg', 'Score', 'MeasureCode', 'MeasureName', 'Condition']
+-> Step 3: Considering 128 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["Condition","MeasureName","HospitalType"],"implied_columns":[],"reasoning":"The constraint says that each combination of medical condition and measure name must have a consistent hospital type.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['Condition', 'MeasureName', 'HospitalType']
+-> Step 3: Considering 50 predicate candidates
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.MeasureCode = t2.MeasureCode', 't1.Stateavg != t2.Stateavg']}]
+   A measure code appears with more than one state average.
+
+-> Verification iteration 1/2
+-> Step 5: Found 815 violations
+
+============================================================
+Processing: This relationship supports apples-to-apples comparisons among similar facility t...
+-> Step 3 failed: No denial constraint can be derived from the stated comparison.
+-> Predicate selection failed: No denial constraint can be derived from the stated comparison.
+
+============================================================
+Processing: Acute care hospitals face different clinical contexts than critical access hospi...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["Condition", "MeasureCode", "MeasureName", "HospitalType", "HospitalOwner", "EmergencyService", "Address", "City", "State", "CountyName", "ZipCode"],
+  "implied_columns": ["ProviderNumber", "HospitalName", "Score", "Sample", "Stateavg"],
+  "reasoning": "Condition, MeasureCode, and MeasureName classify measures. Hospital type, ownership, emergency-service status, and location describe facilities. ProviderNumber and HospitalName identify the facility associated with a measure; Score and Sample support comparisons, while Stateavg identifies a state-and-measure comparison group.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['Condition', 'MeasureCode', 'MeasureName', 'HospitalType', 'HospitalOwner', 'EmergencyService', 'Address', 'City', 'State', 'CountyName', 'ZipCode', 'ProviderNumber', 'HospitalName', 'Score', 'Sample', 'Stateavg']
+-> Step 3: Considering 296 predicate candidates
+-> Step 3: Selected 3 predicates: ['t1.Condition = t2.Condition', 't1.MeasureName = t2.MeasureName', 't1.HospitalType != t2.HospitalType']
+-> Step 3: Selected 3 predicates: ['t1.State = t2.State', 't1.MeasureCode = t2.MeasureCode', 't1.Stateavg != t2.Stateavg']
+-> Step 3.5 [GATE]: PASS — A violation occurs when two rows have the same Condition and MeasureName but different HospitalType values. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 3 failed: No concrete relationship or violation condition can be expressed with the available predicates.
+-> Predicate selection failed: No concrete relationship or violation condition can be expressed with the available predicates.
+
+============================================================
+Processing: Quality improvement collaboratives often organize participants by hospital type ...
+-> Step 3 failed: No available predicate can express the row-dependent composite value.
+-> Predicate selection failed: No available predicate can express the row-dependent composite value.
+
+============================================================
+Processing: The consistency of this three-way relationship reflects the structure of the und...
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.Condition = t2.Condition', 't1.MeasureName = t2.MeasureName', 't1.HospitalType != t2.HospitalType']}]
+   A condition–measure name pair is associated with different hospital types.
+
+-> Verification iteration 1/2
+-> Step 5: Found 40 violations
+
+============================================================
+Processing: Emergency service availability carries important implications for regional healt...
+-> Step 3.5 [GATE]: REJECT — The sentence describes how state averages are derived but specifies neither a checkable aggregation formula nor a rule that State and MeasureCode must determine Stateavg; the available columns alone do not establish a concrete violation. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Hospitals in the same ZIP code must have the same emergency service availability...
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalType","Condition"],"implied_columns":[],"reasoning":"HospitalType represents the hospital categories being compared. Condition represents the clinical care areas that may differ across those categories. The available HospitalType values do not explicitly include critical access or specialty hospitals.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['HospitalType', 'Condition']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["ZipCode","EmergencyService"],"implied_columns":[],"reasoning":"ZipCode groups hospitals, and EmergencyService must have the same value for all hospitals in each group.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['ZipCode', 'EmergencyService']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalType"],"implied_columns":["ProviderNumber","MeasureCode","MeasureName","Condition","Score"],"reasoning":"“Similar facility types” maps directly to HospitalType. Comparing hospitals on an apples-to-apples basis implies identifying the hospitals and comparing scores for the same measure or care area.","missing_concepts":["The specific relationship referred to by “this relationship” is not defined in the sentence."],"reason":null}...
+-> Step 2: Identified columns ['HospitalType', 'ProviderNumber', 'MeasureCode', 'MeasureName', 'Condition', 'Score']
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalType"],"implied_columns":[],"reasoning":"HospitalType is the category used to organize hospitals into peer groups. No other column is needed to express that grouping.","missing_concepts":["Collaborative participation","Peer-group assignment"],"reason":null}...
+-> Step 2: Identified columns ['HospitalType']
+-> Step 3: Considering 18 predicate candidates
+-> Step 3: Considering 100 predicate candidates
+-> Step 3 failed: No available predicates can express the stated difference in clinical contexts as a denial constraint.
+-> Predicate selection failed: No available predicates can express the stated difference in clinical contexts as a denial constraint.
+
+============================================================
+Processing: This pattern typically emerges from regional health planning processes that avoi...
+-> Step 2 response: {"is_valid":true,"direct_columns":["EmergencyService"],"implied_columns":["HospitalName","ProviderNumber","Address","City","CountyName","State","ZipCode"],"reasoning":"EmergencyService directly represents availability. Hospital identifiers and location fields identify where services are available, which is relevant to regional planning and routing patients to a hospital.","missing_concepts":["Regional healthcare planning decisions","Patient routing decisions or travel times"],"reason":null}...
+-> Step 2: Identified columns ['EmergencyService', 'HospitalName', 'ProviderNumber', 'Address', 'City', 'CountyName', 'State', 'ZipCode']
+-> Step 3: Considering 172 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.ZipCode = t2.ZipCode', 't1.EmergencyService != t2.EmergencyService']
+-> Step 3.5 [GATE]: PASS — A violation occurs when two hospitals have the same ZipCode but different EmergencyService values. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["Condition","MeasureCode","MeasureName","State","Stateavg"],"reasoning":"The sentence does not identify the three fields in the relationship. In this quality-reporting schema, Condition, MeasureCode, and MeasureName form a plausible three-way relationship; Stateavg also encodes a relationship among State, MeasureCode, and itself.","missing_concepts":["The specific three-way relationship referred to by “this” is not stated."],"reason":null}...
+-> Step 2: Identified columns ['Condition', 'MeasureCode', 'MeasureName', 'State', 'Stateavg']
+-> Step 3: Considering 78 predicate candidates
+-> Step 3 failed: No violation can be expressed using only the available HospitalType predicates.
+-> Predicate selection failed: No violation can be expressed using only the available HospitalType predicates.
+
+============================================================
+Processing: Emergency medical services dispatchers use this information when determining app...
+-> Step 3 failed: No denial constraint can be derived from the sentence.
+-> Predicate selection failed: No denial constraint can be derived from the sentence.
+
+============================================================
+Processing: The consistency of emergency service availability within ZIP codes simplifies de...
+-> Step 3 failed: It does not specify which records or values must match or differ, so no denial constraint can be formed without inventing a requirement.
+-> Predicate selection failed: It does not specify which records or values must match or differ, so no denial constraint can be formed without inventing a requirement.
+
+============================================================
+Processing: Regional trauma networks and stroke systems rely on accurate emergency service d...
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.ZipCode = t2.ZipCode', 't1.EmergencyService != t2.EmergencyService']}]
+   Hospitals in the same ZIP code have different emergency service availability.
+
+-> Verification iteration 1/2
+-> Step 5: Found 25 violations
+
+============================================================
+Processing: Staff members interact with this dataset across numerous routine activities....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["EmergencyService", "Address", "City", "CountyName", "State", "ZipCode"],
+  "implied_columns": ["ProviderNumber", "HospitalType"],
+  "reasoning": "EmergencyService identifies hospitals offering emergency care. Location columns help assess whether that service is duplicated within a region; ProviderNumber distinguishes hospitals, and HospitalType may help compare facilities.",
+  "missing_concepts": ["emergency capacity quantity", "regional health planning processes or decisions"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['EmergencyService', 'Address', 'City', 'CountyName', 'State', 'ZipCode', 'ProviderNumber', 'HospitalType']
+-> Step 3: Considering 176 predicate candidates
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes staff members and their routine interactions with the dataset, but no available column represents staff, interactions, activities, or their frequency.","missing_concepts":["staff members","dataset interactions","routine activities","interaction frequency"],"reason":"No concept in the sentence maps to a column with a defined predicate."}...
+-> Step 2 failed: No concept in the sentence maps to a column with a defined predicate.
+-> Schema validation failed: No concept in the sentence maps to a column with a defined predicate.
+
+============================================================
+Processing: Compliance officers query the data to prepare regulatory filings and respond to ...
+-> Step 2 response: {"is_valid":true,"direct_columns":["EmergencyService","ZipCode"],"implied_columns":[],"reasoning":"The sentence describes emergency service availability being consistent among hospitals within the same ZIP code. EmergencyService records availability, and ZipCode defines the group within which it should be consistent.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['EmergencyService', 'ZipCode']
+-> Step 3: Considering 40 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.ZipCode = t2.ZipCode', 't1.EmergencyService != t2.EmergencyService']
+-> Step 3 failed: “This three-way relationship” has no specified referent, and no particular equality or mismatch can be selected without inventing a rule.
+-> Predicate selection failed: “This three-way relationship” has no specified referent, and no particular equality or mismatch can be selected without inventing a rule.
+
+============================================================
+Processing: Quality improvement teams extract measure-specific reports to track progress on ...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["EmergencyService"],
+  "implied_columns": ["State", "CountyName", "City", "ZipCode", "ProviderNumber", "HospitalName"],
+  "reasoning": "EmergencyService represents the emergency service data mentioned. Geographic columns can help identify hospitals within a region, while ProviderNumber and HospitalName identify the hospitals whose services would be coordinated.",
+  "missing_concepts": ["trauma network affiliation", "stroke system affiliation or designation", "emergency service data accuracy"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['EmergencyService', 'State', 'CountyName', 'City', 'ZipCode', 'ProviderNumber', 'HospitalName']
+-> Step 3: Considering 134 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalName","Address","EmergencyService"],"implied_columns":["ProviderNumber","City","State","ZipCode","CountyName","PhoneNumber","HospitalType","Condition","MeasureCode","MeasureName","Score","Sample"],"reasoning":"An ambulance destination is a hospital that dispatchers must identify and locate; emergency-service availability directly affects suitability. Hospital type, the patient's care area, and reported quality measures and scores may also inform whether a destination is appropriate. ProviderNumber identifies the hospital, PhoneNumber supports contacting it, and Sample provides context for a reported score. The sentence does not specify which information dispatchers use, so these latter matches are inferred.","missing_concepts":["ambulance transport details, such as the patient's location and required travel time","dispatcher identity or dispatch decision"],"reason":null}...
+-> Step 2: Identified columns ['HospitalName', 'Address', 'EmergencyService', 'ProviderNumber', 'City', 'State', 'ZipCode', 'CountyName', 'PhoneNumber', 'HospitalType', 'Condition', 'MeasureCode', 'MeasureName', 'Score', 'Sample']
+-> Step 3: Considering 286 predicate candidates
+-> Step 3 failed: Neither the regional boundary nor what counts as duplicative emergency capacity is specified, so no denial constraint can be formed from the available predicates.
+-> Predicate selection failed: Neither the regional boundary nor what counts as duplicative emergency capacity is specified, so no denial constraint can be formed from the available predicates.
+
+============================================================
+Processing: Executive dashboards pull aggregated statistics to support strategic planning di...
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes how the data is used, but specifies no hospital attribute or measure that maps to a column.","missing_concepts":["compliance officers","query activity","regulatory filings","audit requests"],"reason":"No concept in the sentence maps to a column with a defined predicate."}...
+-> Step 2 failed: No concept in the sentence maps to a column with a defined predicate.
+-> Schema validation failed: No concept in the sentence maps to a column with a defined predicate.
+
+============================================================
+Processing: External researchers access de-identified versions of the data for population he...
+-> Step 3.5 [GATE]: PASS — Two records with the same ZipCode but different EmergencyService values would violate the stated consistency within ZIP codes. (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3 failed: No denial constraint can be derived from the stated use of the information.
+-> Predicate selection failed: No denial constraint can be derived from the stated use of the information.
+
+============================================================
+Processing: Patient advocacy groups reference publicly reported scores when advising consume...
+-> Step 3 failed: It does not explicitly require EmergencyService to be present or specify what value would be inaccurate, so no denial constraint can be formed.
+-> Predicate selection failed: It does not explicitly require EmergencyService to be present or specify what value would be inaccurate, so no denial constraint can be formed.
+
+============================================================
+Processing: Data entry and maintenance activities follow established protocols that preserve...
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.ZipCode = t2.ZipCode', 't1.EmergencyService != t2.EmergencyService']}]
+   Two records with the same ZIP code must not have different emergency service availability values.
+
+-> Verification iteration 1/2
+-> Step 5: Found 25 violations
+
+============================================================
+Processing: When a hospital reports a new quality measure, staff verify that facility attrib...
+-> Step 2 response: {"is_valid":true,"direct_columns":["MeasureCode","MeasureName","Condition","Score"],"implied_columns":["ProviderNumber","HospitalName","Sample"],"reasoning":"MeasureCode and MeasureName identify the measures selected for reports. Condition identifies the clinical area, while Score captures reported performance. ProviderNumber and HospitalName identify the hospital whose progress is being tracked, and Sample provides context for its scores.","missing_concepts":["Quality improvement team or report-extraction field","Date or reporting period needed to track change over time"],"reason":null}...
+-> Step 2: Identified columns ['MeasureCode', 'MeasureName', 'Condition', 'Score', 'ProviderNumber', 'HospitalName', 'Sample']
+-> Step 3: Considering 110 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["Score","Sample"],"implied_columns":["Condition","MeasureCode","MeasureName","ProviderNumber","HospitalName","State","Stateavg"],"reasoning":"Score and Sample provide statistics that could be aggregated. The implied columns identify the measures, hospitals, and state groupings those statistics could be summarized by. Stateavg is a state-and-measure grouping code, not a numeric average.","missing_concepts":["Executive dashboard and strategic-planning metadata"],"reason":null}...
+-> Step 2: Identified columns ['Score', 'Sample', 'Condition', 'MeasureCode', 'MeasureName', 'ProviderNumber', 'HospitalName', 'State', 'Stateavg']
+-> Step 3: Considering 142 predicate candidates
+-> Step 3 failed: No report, extraction, or initiative field is available, and the sentence specifies no required value or relationship among the listed columns.
+-> Predicate selection failed: No report, extraction, or initiative field is available, and the sentence specifies no required value or relationship among the listed columns.
+
+============================================================
+Processing: Address updates propagate across all records associated with the affected hospit...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["Score"],
+  "implied_columns": ["HospitalName", "ProviderNumber", "MeasureCode", "MeasureName", "Condition"],
+  "reasoning": "Score represents the reported scores being referenced. HospitalName and ProviderNumber identify the hospitals consumers may select, while MeasureCode, MeasureName, and Condition identify what each score measures.",
+  "missing_concepts": ["patient advocacy groups", "consumers", "advice about hospital selection", "whether a score is publicly reported"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['Score', 'HospitalName', 'ProviderNumber', 'MeasureCode', 'MeasureName', 'Condition']
+-> Step 3: Considering 96 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["ProviderNumber","HospitalName","Address","City","State","ZipCode","CountyName","PhoneNumber","HospitalType","HospitalOwner","EmergencyService","Condition","MeasureCode","MeasureName","Score","Sample","Stateavg"],"reasoning":"The sentence names no field or specific relationship. Its dataset-wide reference to preserving consistency could encompass relationships among hospital identifiers and attributes, measure codes and descriptions, state-and-measure groupings, and reported scores and samples. Without a narrower rule, no column can be excluded as irrelevant.","missing_concepts":["Data-entry and maintenance activity records","Established protocols","Specific consistency relationships to enforce"],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName', 'Address', 'City', 'State', 'ZipCode', 'CountyName', 'PhoneNumber', 'HospitalType', 'HospitalOwner', 'EmergencyService', 'Condition', 'MeasureCode', 'MeasureName', 'Score', 'Sample', 'Stateavg']
+-> Step 3: Considering 318 predicate candidates
+-> Step 3 failed: No predicate can express dashboard aggregation or its planning purpose using the available columns.
+-> Predicate selection failed: No predicate can express dashboard aggregation or its planning purpose using the available columns.
+
+============================================================
+Processing: Measure specification changes from regulatory bodies trigger coordinated updates...
+-> Step 2 response: {"is_valid":true,"direct_columns":["ProviderNumber","HospitalName","Address","PhoneNumber","Condition","Score","Sample"],"implied_columns":["City","State","ZipCode","CountyName","HospitalType","HospitalOwner","EmergencyService","MeasureCode","MeasureName","Stateavg"],"reasoning":"De-identification relates to hospital identifiers and geographic or descriptive fields that could identify a hospital in combination. Condition, Score, and Sample describe health-study data; measure fields and Stateavg provide context for those results. The schema contains hospital-level data, not patient records.","missing_concepts":["External researcher identity or role","Access permissions and de-identified dataset versions","Patient identifiers or patient-level de-identification status"],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName', 'Address', 'PhoneNumber', 'Condition', 'Score', 'Sample', 'City', 'State', 'ZipCode', 'CountyName', 'HospitalType', 'HospitalOwner', 'EmergencyService', 'MeasureCode', 'MeasureName', 'Stateavg']
+-> Step 3: Considering 318 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["Address","HospitalName"],"implied_columns":[],"reasoning":"Address is the value being updated, and HospitalName identifies the records across which that address must remain consistent.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['Address', 'HospitalName']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3 failed: No available predicate can represent advocacy groups referencing scores when advising consumers; the sentence does not require Score to be present in every row.
+-> Predicate selection failed: No available predicate can represent advocacy groups referencing scores when advising consumers; the sentence does not require Score to be present in every row.
+
+============================================================
+Processing: Annual reconciliation processes compare the dataset against authoritative facili...
+-> Step 3 failed: No specific consistency relationship or protocol is stated in terms of the available columns.
+-> Predicate selection failed: No specific consistency relationship or protocol is stated in terms of the available columns.
+
+============================================================
+Processing: The dataset includes some records with missing or unusual values that reflect re...
+-> Step 3 failed: No columns represent external researchers, access, data versions, or de-identification status.
+-> Predicate selection failed: No columns represent external researchers, access, data versions, or de-identification status.
+
+============================================================
+Processing: Score and sample fields occasionally contain null values when hospitals lack suf...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": [
+    "HospitalName",
+    "Address",
+    "City",
+    "State",
+    "ZipCode",
+    "CountyName",
+    "PhoneNumber",
+    "HospitalType",
+    "HospitalOwner",
+    "EmergencyService",
+    "MeasureCode",
+    "MeasureName",
+    "Condition"
+  ],
+  "implied_columns": ["ProviderNumber"],
+  "reasoning": "The facility attributes are the hospital’s identifying, location, contact, and classification fields. MeasureCode, MeasureName, and Condition identify the new quality measure. ProviderNumber is needed to find existing records for the same hospital and compare its facility attributes.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalName', 'Address', 'City', 'State', 'ZipCode', 'CountyName', 'PhoneNumber', 'HospitalType', 'HospitalOwner', 'EmergencyService', 'MeasureCode', 'MeasureName', 'Condition', 'ProviderNumber']
+-> Step 3: Considering 276 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["MeasureCode","MeasureName"],"implied_columns":["Stateavg"],"reasoning":"MeasureCode and MeasureName form the code-name mapping being updated. Stateavg embeds the measure code, so a code change may also require updating that value throughout the dataset.","missing_concepts":["Regulatory body","Measure specification or specification-change history"],"reason":null}...
+-> Step 2: Identified columns ['MeasureCode', 'MeasureName', 'Stateavg']
+-> Step 3: Considering 42 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.Address != t2.Address']
+-> Step 3: Selected 2 predicates: ['t1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName']
+-> Step 2 response: {"is_valid":true,"direct_columns":["Score","Sample"],"implied_columns":[],"reasoning":"The sentence explicitly names the score and sample fields. Sample also represents the patient count relevant to whether there are sufficient cases to report a Score.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['Score', 'Sample']
+-> Step 3: Considering 28 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["Score","Sample","HospitalType"],"implied_columns":[],"reasoning":"Score and Sample can contain the value “empty,” and Sample can report “0 patients.” HospitalType has an unusual “acute care hospitals c.” value. These match the sentence’s reference to missing or unusual values.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['Score', 'Sample', 'HospitalType']
+-> Step 3: Considering 46 predicate candidates
+-> Step 3.5 [GATE]: REJECT — The sentence describes how address updates propagate; without update history or the intended new address, differing addresses for the same hospital name do not establish a violation. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Certain specialty facilities may not report measures outside their scope of serv...
+-> Step 3.5 [GATE]: REJECT — The sentence describes a coordination process for regulatory changes, but provides no checkable condition requiring rows with the same MeasureCode to have the same MeasureName. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+
+============================================================
+Processing: Quality assurance processes continually work to identify and correct anomalies w...
+-> Step 3: Selected 11 predicates: ['t1.ProviderNumber = t2.ProviderNumber', 't1.HospitalName != t2.HospitalName', 't1.Address != t2.Address', 't1.City != t2.City', 't1.State != t2.State', 't1.ZipCode != t2.ZipCode', 't1.CountyName != t2.CountyName', 't1.PhoneNumber != t2.PhoneNumber', 't1.HospitalType != t2.HospitalType', 't1.HospitalOwner != t2.HospitalOwner', 't1.EmergencyService != t2.EmergencyService']
+-> Step 3 failed: No denial constraint can be derived from this descriptive statement using the available predicates.
+-> Predicate selection failed: No denial constraint can be derived from this descriptive statement using the available predicates.
+
+============================================================
+Processing: Users accessing this data through reporting tools or direct queries can rely on ...
+-> Step 3 failed: No denial constraint can be derived from this descriptive statement.
+-> Predicate selection failed: No denial constraint can be derived from this descriptive statement.
+
+============================================================
+Processing: These relationships support valid analysis, accurate reporting, and effective op...
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["ProviderNumber", "HospitalName"],
+  "implied_columns": ["Address", "City", "State", "ZipCode", "CountyName", "PhoneNumber", "HospitalType", "HospitalOwner", "EmergencyService"],
+  "reasoning": "A facility registry can identify hospitals by provider number and name and can be used to check their location, contact details, and facility attributes for discrepancies. The sentence does not identify particular fields to compare, so the other facility attributes are included as possible reconciliation fields.",
+  "missing_concepts": ["reconciliation date or year", "authoritative registry reference", "discrepancy or resolution status"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName', 'Address', 'City', 'State', 'ZipCode', 'CountyName', 'PhoneNumber', 'HospitalType', 'HospitalOwner', 'EmergencyService']
+-> Step 3: Considering 230 predicate candidates
+-> Step 3.5 [GATE]: REJECT — The sentence describes a staff verification procedure before adding a row, but does not assert a specific column-value violation that must be absent from the data. (confidence=high)
+-> Rule gate: NOT a verifiable DC — skipping construction
+-> Step 2 response: {"is_valid":false,"direct_columns":[],"implied_columns":[],"reasoning":"The sentence describes access methods and unspecified consistency relationships, but identifies no data field or specific relationship that maps to a column.","missing_concepts":["users","reporting tools or direct-query access","documented consistency relationships"],"reason":"No concept in the sentence maps to a column with a defined predicate."}...
+-> Step 2 failed: No concept in the sentence maps to a column with a defined predicate.
+-> Schema validation failed: No concept in the sentence maps to a column with a defined predicate.
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalType","EmergencyService","Condition","MeasureCode","MeasureName","Score","Sample"],"implied_columns":["ProviderNumber","HospitalName"],"reasoning":"HospitalType and EmergencyService may indicate a facility’s service scope; Condition identifies the care area, and MeasureCode and MeasureName identify the measures. Score and Sample show whether measure results were reported. ProviderNumber and HospitalName identify the facility whose measures are being assessed.","missing_concepts":["Explicit specialty-facility designation","Complete list of services within each facility’s scope"],"reason":null}...
+-> Step 2: Identified columns ['HospitalType', 'EmergencyService', 'Condition', 'MeasureCode', 'MeasureName', 'Score', 'Sample', 'ProviderNumber', 'HospitalName']
+-> Step 3: Considering 146 predicate candidates
+-> Step 3 failed: No predicates represent authoritative registry values, reconciliation dates, or discrepancies relative to the registry.
+-> Predicate selection failed: No predicates represent authoritative registry values, reconciliation dates, or discrepancies relative to the registry.
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["ProviderNumber","HospitalName","Address","City","State","ZipCode","CountyName","PhoneNumber","HospitalType","HospitalOwner","EmergencyService","Condition","MeasureCode","MeasureName","Score","Sample","Stateavg"],"reasoning":"The sentence names no field or specific rule, but its reference to dataset-wide anomalies and consistency relationships can encompass hospital identity and attributes, measure codes and descriptions, Stateavg's state-and-measure grouping, and reported scores and samples. No narrower set of columns can be established from the sentence.","missing_concepts":["Quality-assurance actions and anomaly corrections are not tracked by a column."],"reason":null}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName', 'Address', 'City', 'State', 'ZipCode', 'CountyName', 'PhoneNumber', 'HospitalType', 'HospitalOwner', 'EmergencyService', 'Condition', 'MeasureCode', 'MeasureName', 'Score', 'Sample', 'Stateavg']
+-> Step 3: Considering 318 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["HospitalName"],"implied_columns":["ProviderNumber"],"reasoning":"Healthcare organizations correspond to the hospitals named in HospitalName; ProviderNumber identifies each hospital when relating its records. The sentence does not specify which relationships or reporting measures it means, so no particular measure or score column can be identified.","missing_concepts":["The specific relationships referred to by 'These relationships'","Operational decisions"],"reason":null}...
+-> Step 2: Identified columns ['HospitalName', 'ProviderNumber']
+-> Step 3: Considering 36 predicate candidates
+-> Step 3 failed: No available predicate can establish that a facility is a specialty facility and a measure is outside its service scope.
+-> Predicate selection failed: No available predicate can establish that a facility is a specialty facility and a measure is outside its service scope.
+-> Step 3 failed: No determinant and dependent columns are specified, so selecting predicates would require inventing a rule.
+-> Predicate selection failed: No determinant and dependent columns are specified, so selecting predicates would require inventing a rule.
+-> Step 3 failed: No specific relationship, requirement, or prohibited combination of values is stated.
+-> Predicate selection failed: No specific relationship, requirement, or prohibited combination of values is stated.
+  Mapped: 21/109
+  Evaluating classification (all 109 sentences)...
+  Evaluating pairwise mapping quality (GT sentences only)...
+  Evaluating aggregate violation (all 109 sentences)...
+  Saving outputs...
+  Saved detailed results to: results/v3/e3_end2end/hmda_e3_hospital_multistep_20261015_090742/metrics/hospital_Multi-Step_|_GPT-6_Sol_detailed_results.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 205.31s
+
+  ── CLASSIFICATION (all 109 sentences) ──────────────────────────────
+     Accuracy:  0.945
+     Precision: 0.714
+     Recall:    1.000
+     F1:        0.833  [PRIMARY]
+     TP:  15  FP:   6
+     FN:   0  TN:  88
+
+  ── AGGREGATE VIOLATION DISCOVERY (all 109 sentences) ─────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     Gold violations:      834
+     Predicted violations: 834
+     Overlap violations:   834
+
+  ── CONSTRAINT EXACT MATCH (GT sentences only) ─────────────────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     TP: 15  FP: 0  FN: 0
+     Predicted: 15, Gold: 15
+
+  ── PAIRWISE SYNTACTIC QUALITY (GT sentences only, n=15) ──────────
+     Exact Match:       1.000 (15/15)
+     Predicate Jaccard: 1.000 (±0.000)
+
+  ── PAIRWISE VIOLATION DISCOVERY (GT sentences only) ────────────────────
+     Exact Match:       1.000 (15/15)
+     Precision:         1.000 (±0.000)
+     Recall:            1.000 (±0.000)
+     F1:                1.000 (±0.000)
+     Violation Jaccard: 1.000 (±0.000)
+
+  INSIGHT: Syntactic vs Violation Gap (pairwise) = 0.000
+  Variant completed
+
+========================================================================================================================
+COMPARISON TABLE
+========================================================================================================================
+
+Sentence Modes (DIRECT / FILTERED):
+  Left  (all sentences):      Clf F1 | Agg Viol F1
+  Right (GT sentences only):  Const F1 | Syn Exact | Viol F1
+  Variant                                Mode         Impl       [ALL] Clf F1   [ALL] AggViol F1   [GT] Const F1   [GT] Syn Exact   [GT] Viol F1 Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Multi-Step | GPT-6 Sol                 SENTENCE_DIRECT multi_step_refinement 0.833          1.000              1.000           1.000            1.000        205.30552656900545
+
+  Best Classification F1 [ALL]:        Multi-Step | GPT-6 Sol (0.833)
+  Best Aggregate Violation F1 [ALL]:   Multi-Step | GPT-6 Sol (1.000)
+  Best Constraint Exact F1 [GT]:       Multi-Step | GPT-6 Sol (1.000)
+  Best Violation F1 Pairwise [GT]:     Multi-Step | GPT-6 Sol (1.000)
+  Fastest Runtime:                     Multi-Step | GPT-6 Sol (205.31s)
+========================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3/e3_end2end/hmda_e3_hospital_multistep_20261015_090742

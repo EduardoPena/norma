@@ -1,0 +1,103 @@
+Execution artifacts: results/v3/telemetry/20261013_215731_662134
+
+================================================================================
+GT-ONLY MAPPER EVALUATION: hmda_e2_restaurant_mistrallarge4_SinglePrompt
+================================================================================
+
+Results directory: results/v3/e2_mapping/hmda_e2_restaurant_mistrallarge4_singleprompt_20261014_233445
+Timestamp:         20261014_233445
+
+Scope: GT constraint sentences only (rules != null)
+No classifier — pure mapping quality measurement.
+
+Metrics computed over GT sentences:
+  Syntactic:   exact match, predicate Jaccard
+  Pairwise:    violation exact match, P/R/F1/Jaccard
+  Aggregate:   pooled violation P/R/F1
+================================================================================
+
+Config YAML saved to: results/v3/e2_mapping/hmda_e2_restaurant_mistrallarge4_singleprompt_20261014_233445/config.yaml
+Execution config saved to: results/v3/e2_mapping/hmda_e2_restaurant_mistrallarge4_singleprompt_20261014_233445/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: restaurant
+--------------------------------------------------------------------------------
+Loading restaurant...
+Total sentences in document: 33
+GT constraint sentences:     7  ← only these are fed to the mapper
+Non-constraint sentences:    26  ← skipped
+
+
+[1/1] Variant: Single Prompt | Mistral Large 4
+  Implementation: llm
+  Model:          mistralai/mistral-large-4-0
+  Creating mapper (llm)...
+  Mapping 7 GT sentences...
+Predicate generation (v2): 260 templates for 1 sentences
+Predicate generation (v2): 310 templates for 3 sentences
+Predicate generation (v2): 296 templates for 3 sentences
+Re-asking 1 sentence(s) with invalid rules
+Predicate generation (v2): 268 templates for 1 sentences
+    Normalized:
+      Sentence:    If an A is issued on re-inspection, the A-grade card must be posted immediately.
+      Raw Pred:    [{'AND': ["t1.grade = 'A'", {'OR': ["t1.inspection_type = 'Cycle Inspection / Re-inspection'", "t1.inspection_type = 'Pre-permit (Operational) / Re-inspection'"]}, {'OR': ['t1.grade_date IS NULL', 't1.grade_date != t1.inspection_date']}]}]
+      Mapped Pred: [{'AND': ["t1.grade = 'A'", {'OR': ["t1.inspection_type LIKE '%Re-inspection%'", "t1.inspection_type LIKE '%Re-inspection%'"]}, {'OR': ['t1.grade_date IS NULL', 't1.grade_date != t1.inspection_date']}]}]
+  Evaluating pairwise quality (7 GT sentences)...
+  Evaluating aggregate violation (GT sentences pooled)...
+  Saving outputs...
+  Saved detailed results: restaurant_Single_Prompt_|_Mistral_Large_4_detailed.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 149.87s  (7 GT sentences)
+
+  ── AGGREGATE VIOLATION DISCOVERY (GT sentences pooled) ───────────────
+     Precision: 1.000
+     Recall:    0.011
+     F1:        0.021  [PRIMARY]
+     Gold violations:      52311
+     Predicted violations: 555
+     Overlap violations:   555
+
+  ── CONSTRAINT EXACT MATCH (GT sentences) ─────────────────────────────
+     Precision: 0.667
+     Recall:    0.571
+     F1:        0.615  [PRIMARY]
+     TP: 4  FP: 2  FN: 3
+     Predicted: 6, Gold: 7
+
+  ── PAIRWISE SYNTACTIC QUALITY (n=7) ──────────────────────────────
+     Exact Match:       0.429 (3/7)
+     Predicate Jaccard: 0.638 (±0.418)
+
+  ── PAIRWISE VIOLATION DISCOVERY ───────────────────────────────────────
+     Exact Match:       0.571 (4/7)
+     Precision:         0.572 (±0.494)
+     Recall:            0.714 (±0.452)
+     F1:                0.572 (±0.494)
+     Violation Jaccard: 0.572 (±0.494)
+
+  INSIGHT: Syntactic vs Violation Gap = 0.143
+     14.3% of constraints find correct violations despite syntactic differences
+  Variant completed
+
+==================================================================================================================================
+COMPARISON TABLE  —  GT sentences only, no classifier
+==================================================================================================================================
+  Variant                                       Impl       Model                  AggViol F1   ConstExact F1   SynExact   SynJacc    ViolF1     ViolJacc   Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Single Prompt | Mistral Large 4               llm        mistralai/mistral-large-4-0 0.021        0.615           0.429      0.638      0.572      0.572      149.87    
+
+  Best Aggregate Violation F1:   Single Prompt | Mistral Large 4 (0.021)
+  Best Constraint Exact F1:      Single Prompt | Mistral Large 4 (0.615)
+  Best Syntactic Exact Match:    Single Prompt | Mistral Large 4 (0.429)
+  Best Pairwise Violation F1:    Single Prompt | Mistral Large 4 (0.572)
+  Fastest:                       Single Prompt | Mistral Large 4 (149.87s)
+==================================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3/e2_mapping/hmda_e2_restaurant_mistrallarge4_singleprompt_20261014_233445

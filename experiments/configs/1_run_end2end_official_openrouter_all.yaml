@@ -1,0 +1,47 @@
+experiment_name: "Official Reproduction - End-to-End - OpenRouter"
+experiment_type: "mapper"
+results_dir: "results/official_openrouter/end2end"
+
+# The first four datasets are comparable to the paper; HMDA variants are extensions.
+datasets:
+  - hospital
+  - restaurant
+  - sisu
+  - tax
+  - hmda_checks
+  - hmdaz
+
+dataset_options:
+  hospital: { data_file: "hospital-holo.csv", gt_file: "hospital-holo_text2rule_gt.json", stream_csv: true, profile_rows: 10000, validate_ground_truth: false, validate_predicates: false }
+  restaurant: { data_file: "restaurant-inspections.csv", gt_file: "restaurant-inspections_text2rule_gt.json", stream_csv: true, profile_rows: 10000, validate_ground_truth: false, validate_predicates: false }
+  sisu: { data_file: "sisu.csv", gt_file: "sisu_text2rule_gt.json", stream_csv: true, profile_rows: 10000, validate_ground_truth: false, validate_predicates: false }
+  sisu-en: { data_file: "sisu-en.csv", gt_file: "sisu-en_text2rule_gt.json", stream_csv: true, profile_rows: 10000, validate_ground_truth: false, validate_predicates: false }
+  tax: { data_file: "tax_normalized.csv", gt_file: "tax_text2rule_gt.json", stream_csv: true, profile_rows: 10000 }
+  hmda_checks: { data_file: "hmda.csv", gt_file: "hmda_regc_checks-text2rule-gt.json", stream_csv: true, profile_rows: 10000, validate_ground_truth: false, validate_predicates: false }
+  hmdaz: { data_file: "hmdaz.csv", gt_file: "hmdaz_text2rule_gt.json", stream_csv: true, profile_rows: 10000, validate_ground_truth: false, validate_predicates: false }
+
+variants:
+  - name: "Classifier + Multi-Step | Qwen3 32B + GPT-5"
+    mode: "SENTENCE_FILTERED"
+    use_context: false
+    classifier:
+      implementation: "llm"
+      provider: "openrouter"
+      model: "qwen/qwen3-32b"
+      prompt_key: "with_examples"
+      batch_size: 10
+    mapper:
+      implementation: "multi_step_refinement"
+      provider: "openrouter"
+      model: "openai/gpt-5"
+      max_refinement_iterations: 2
+      prompt_file: "multi_step_refinement"
+  - name: "Multi-Step | GPT-5"
+    mode: "SENTENCE_DIRECT"
+    use_context: false
+    mapper:
+      implementation: "multi_step_refinement"
+      provider: "openrouter"
+      model: "openai/gpt-5"
+      max_refinement_iterations: 2
+      prompt_file: "multi_step_refinement"

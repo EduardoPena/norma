@@ -1,0 +1,191 @@
+Execution artifacts: results/v3_fix/telemetry/20261021_181933_850838
+
+================================================================================
+GT-ONLY MAPPER EVALUATION: hmda_e2_restaurant_sonnet55_MultiStep
+================================================================================
+
+Results directory: results/v3_fix/e2_mapping/hmda_e2_restaurant_sonnet55_multistep_20261021_193621
+Timestamp:         20261021_193621
+
+Scope: GT constraint sentences only (rules != null)
+No classifier — pure mapping quality measurement.
+
+Metrics computed over GT sentences:
+  Syntactic:   exact match, predicate Jaccard
+  Pairwise:    violation exact match, P/R/F1/Jaccard
+  Aggregate:   pooled violation P/R/F1
+================================================================================
+
+Config YAML saved to: results/v3_fix/e2_mapping/hmda_e2_restaurant_sonnet55_multistep_20261021_193621/config.yaml
+Execution config saved to: results/v3_fix/e2_mapping/hmda_e2_restaurant_sonnet55_multistep_20261021_193621/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: restaurant
+--------------------------------------------------------------------------------
+Loading restaurant...
+Total sentences in document: 33
+GT constraint sentences:     7  ← only these are fed to the mapper
+Non-constraint sentences:    26  ← skipped
+
+
+[1/1] Variant: Multi-Step | Claude Sonnet 5.5
+  Implementation: multi_step_refinement
+  Model:          anthropic/claude-sonnet-5.5
+  Creating mapper (multi_step_refinement)...
+  Mapping 7 GT sentences...
+
+============================================================
+Processing: A score of 0-13 results in a grade of A....
+
+============================================================
+Processing: A score of 14-27 results in a grade of B....
+
+============================================================
+Processing: A score of 28 or more results in a grade of C....
+
+============================================================
+Processing: Every food service establishment is scheduled for at least one inspection per ye...
+
+============================================================
+============================================================
+Processing: If an A is issued on re-inspection, the A-grade card must be posted immediately....
+
+Processing: A restaurant that scores 0 to 13 violations points on its first inspection will ...
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade"],"implied_columns":[],"reasoning":"The sentence maps a score threshold (28 or more) to a grade value of C. The 'score' column holds the numeric inspection score and the 'grade' column holds the A/B/C grade. No other columns are needed to scope the constraint.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade"],"implied_columns":[],"reasoning":"The sentence maps a score range (0-13) to a grade value (A). 'score' is the numeric value column and 'grade' is the status/category column. No other columns are needed to scope the constraint.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade"],"implied_columns":[],"reasoning":"The sentence maps a score range (14-27) to a grade value (B). The score column holds the numeric inspection score and the grade column holds the letter grade A, B, or C. No other columns are needed to scope the constraint.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["camis","inspection_year","inspection_date"],"implied_columns":["inspection_order","inspection_type","days_to_next_inspection","dba","cuisine_description"],"reasoning":"The sentence says every food service establishment (identified by camis) must have at least one inspection per year. The establishment maps to camis, the inspection to inspection_date, and the year to inspection_year. inspection_order counts inspections in sequence and may help with counting them. inspection_type tells whether an inspection is a scheduled cycle inspection. days_to_next_inspection is the gap between inspections. dba and cuisine_description describe the establishment and could scope which ones count as food service.","missing_concepts":["scheduled status (planned vs. actual inspection)"],"reason":null}...
+-> Step 2: Identified columns ['camis', 'inspection_year', 'inspection_date', 'inspection_order', 'inspection_type', 'days_to_next_inspection', 'dba', 'cuisine_description']
+-> Step 2 response: {"is_valid":true,"direct_columns":["grade","inspection_type"],"implied_columns":["grade_date","inspection_date"],"reasoning":"The condition 'an A is issued' maps to grade, and 're-inspection' maps to inspection_type (which includes Re-inspection). 'Immediately' implies a date comparison between when the grade was issued (inspection_date) and when the grade card was posted/grade_date, so both date columns are included inclusively. The posting of the grade card itself has no dedicated column.","missing_concepts":["grade card posting status or posting date"],"reason":null}...
+-> Step 2: Identified columns ['grade', 'inspection_type', 'grade_date', 'inspection_date']
+-> Step 3: Considering 160 predicate candidates
+-> Step 3: Considering 76 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade","inspection_type"],"implied_columns":["grade_date","inspection_date","inspection_order","inspection_year","camis"],"reasoning":"The sentence maps a violation-points range (0-13) to an A grade, so score and grade are the core columns. 'First inspection' points to inspection_type (Initial Inspection) and inspection_order (sequence number). 'Posted immediately' relates to grade_date versus inspection_date, as the grade is issued on the inspection date. camis identifies the restaurant whose inspections are being sequenced, and inspection_year scopes inspections in time.","missing_concepts":["grade card posting action (no column records whether the card was posted)"],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade', 'inspection_type', 'grade_date', 'inspection_date', 'inspection_order', 'inspection_year', 'camis']
+-> Step 3: Considering 176 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.score >= $float', 't1.grade != $string']
+-> Step 3: Selected 3 predicates: ['t1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 3: Selected 3 predicates: ['t1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 3: Selected 1 predicates: ['t1.days_to_next_inspection > $float']
+-> Step 3: Selected 3 predicates: ['t1.grade = $string', 't1.inspection_type LIKE $pattern', 't1.grade_date != t1.inspection_date']
+-> Step 3.5 [GATE]: PASS — Value mapping with a concrete threshold: a violation is any row where score >= 28 and grade != 'C'. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3: Selected 4 predicates: ['t1.inspection_order = $int', 't1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 3.5 [GATE]: PASS — Value mapping: a violation is a row where score is between 0 and 13 (inclusive) and grade is not 'A'. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — Value mapping with a concrete range: a violation is a row where score >= 14 AND score <= 27 AND grade != 'B'. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — Conditional rule: the 'posted immediately' requirement can be checked as grade_date equal to inspection_date, so a violation is grade='A' AND inspection_type LIKE '%Re-inspection' AND grade_date != inspection_date. (confidence=medium)
+-> Step 4: Constructing constraint with 3 predicates and 4 columns
+-> Step 3.5 [GATE]: PASS — Temporal frequency rule with a concrete threshold: a violation is an inspection record whose days_to_next_inspection exceeds 365 days (i.e., no follow-up inspection within a year for the same camis). (confidence=medium)
+-> Step 4: Constructing constraint with 1 predicates and 8 columns
+-> Step 3.5 [GATE]: PASS — Value mapping: a violation occurs when inspection_order = 1 AND score is between 0 and 13 AND grade != 'A'; the "posted immediately" clause is a process detail that can be ignored. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 8 columns
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 28', "t1.grade != 'C'"]}]
+   A record with score >= 28 whose grade is anything other than 'C' is a violation.
+
+-> Verification iteration 1/2
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 0', 't1.score <= 13', "t1.grade != 'A'"]}]
+   A record with a score between 0 and 13 inclusive must have grade 'A'. It is a violation if the score is in that range and the grade is anything else.
+
+-> Verification iteration 1/2
+-> Step 5: Found 123 violations
+
+============================================================
+Processing: An establishment receiving a B or C grade on re-inspection receives two cards: o...
+-> Step 5: Found 402 violations
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 14', 't1.score <= 27', "t1.grade != 'B'"]}]
+   A record with a score between 14 and 27 inclusive whose grade is anything other than B is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 28 violations
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ["t1.grade = 'A'", "t1.inspection_type LIKE '%Re-inspection%'", 't1.grade_date != t1.inspection_date']}]
+   A row with grade A on a re-inspection is a violation if the grade date is not the same as the inspection date.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+-> Step 4: Constructed temporal with 1 rule(s)
+   ['t1.days_to_next_inspection > 365']
+   A violation occurs when the number of days until the next inspection of an establishment exceeds 365, meaning a year passes without inspection.
+
+-> Verification iteration 1/2
+-> Step 5: Found 52041 violations
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.inspection_order = 1', 't1.score >= 0', 't1.score <= 13', "t1.grade != 'A'"]}]
+   A first inspection with a score between 0 and 13 that received a grade other than A is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 272 violations
+-> Step 2 response: {"is_valid":true,"direct_columns":["grade","inspection_type"],"implied_columns":["inspection_date","grade_date","action","score"],"reasoning":"The sentence concerns the letter grade (B or C) received on a re-inspection. The grade column holds the letter grade and inspection_type identifies re-inspections. Posting 'immediately' relates to date columns (inspection_date, grade_date) comparing when the grade was assigned. A 'Grade Pending' card relates to the absence or delay of a final grade (grade_date, score, action), so these are included as implied columns.","missing_concepts":["Grade Pending card","card posting event/timing","posting of cards by the establishment"],"reason":null}...
+-> Step 2: Identified columns ['grade', 'inspection_type', 'inspection_date', 'grade_date', 'action', 'score']
+-> Step 3: Considering 116 predicate candidates
+-> Step 3 failed: The constraint concerns issuing and posting physical cards, which is not captured by any column (grade, inspection_type, dates, action, score). No predicate can express a violation of the card-posting requirement.
+-> Predicate selection failed: The constraint concerns issuing and posting physical cards, which is not captured by any column (grade, inspection_type, dates, action, score). No predicate can express a violation of the card-posting requirement.
+  Evaluating pairwise quality (7 GT sentences)...
+  Evaluating aggregate violation (GT sentences pooled)...
+  Saving outputs...
+  Saved detailed results: restaurant_Multi-Step_|_Claude_Sonnet_5.5_detailed.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 17.68s  (7 GT sentences)
+
+  ── AGGREGATE VIOLATION DISCOVERY (GT sentences pooled) ───────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     Gold violations:      52311
+     Predicted violations: 52310
+     Overlap violations:   52310
+
+  ── CONSTRAINT EXACT MATCH (GT sentences) ─────────────────────────────
+     Precision: 0.833
+     Recall:    0.714
+     F1:        0.769  [PRIMARY]
+     TP: 5  FP: 1  FN: 2
+     Predicted: 6, Gold: 7
+
+  ── PAIRWISE SYNTACTIC QUALITY (n=7) ──────────────────────────────
+     Exact Match:       0.714 (5/7)
+     Predicate Jaccard: 0.786 (±0.364)
+
+  ── PAIRWISE VIOLATION DISCOVERY ───────────────────────────────────────
+     Exact Match:       0.714 (5/7)
+     Precision:         0.714 (±0.452)
+     Recall:            0.714 (±0.452)
+     F1:                0.714 (±0.452)
+     Violation Jaccard: 0.714 (±0.452)
+
+  INSIGHT: Syntactic vs Violation Gap = 0.000
+  Variant completed
+
+==================================================================================================================================
+COMPARISON TABLE  —  GT sentences only, no classifier
+==================================================================================================================================
+  Variant                                       Impl       Model                  AggViol F1   ConstExact F1   SynExact   SynJacc    ViolF1     ViolJacc   Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Multi-Step | Claude Sonnet 5.5                multi_step_refinement anthropic/claude-sonnet-5.5 1.000        0.769           0.714      0.786      0.714      0.714      17.68     
+
+  Best Aggregate Violation F1:   Multi-Step | Claude Sonnet 5.5 (1.000)
+  Best Constraint Exact F1:      Multi-Step | Claude Sonnet 5.5 (0.769)
+  Best Syntactic Exact Match:    Multi-Step | Claude Sonnet 5.5 (0.714)
+  Best Pairwise Violation F1:    Multi-Step | Claude Sonnet 5.5 (0.714)
+  Fastest:                       Multi-Step | Claude Sonnet 5.5 (17.68s)
+==================================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3_fix/e2_mapping/hmda_e2_restaurant_sonnet55_multistep_20261021_193621

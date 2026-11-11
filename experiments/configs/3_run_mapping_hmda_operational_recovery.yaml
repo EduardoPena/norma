@@ -1,0 +1,23 @@
+experiment_name: "HMDA Mapper Operational Recovery"
+experiment_type: "mapper_gt_only"
+results_dir: "results/official_openrouter/mapping_hmda_operational_recovery"
+max_gt_rules: 3
+
+datasets:
+  - hmda_checks
+  - hmdaz
+
+dataset_options:
+  hmda_checks: { data_file: "hmda.csv", gt_file: "hmda_regc_checks-text2rule-gt.json", stream_csv: true, profile_rows: 10000, validate_ground_truth: false, validate_predicates: false }
+  hmdaz: { data_file: "hmdaz.csv", gt_file: "hmdaz_text2rule_gt.json", stream_csv: true, profile_rows: 10000, validate_ground_truth: false, validate_predicates: false }
+
+variants:
+  - name: "Single Prompt | Mistral Medium 3.5 (fallback)"
+    use_context: false
+    mapper: { implementation: "llm", provider: "openrouter", model: "mistralai/mistral-medium-3-5", prompt_key: "with_examples", batch_size: 1 }
+  - name: "Multi-Step | Mistral Medium 3.5 (fallback)"
+    use_context: false
+    mapper: { implementation: "multi_step_refinement", provider: "openrouter", model: "mistralai/mistral-medium-3-5", max_refinement_iterations: 2, prompt_file: "multi_step_refinement", collect_timing: true }
+  - name: "Single Prompt | Qwen3 30B A3B (fallback)"
+    use_context: false
+    mapper: { implementation: "llm", provider: "openrouter", model: "qwen/qwen3-30b-a3b", prompt_key: "with_examples", batch_size: 1 }

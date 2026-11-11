@@ -1,0 +1,225 @@
+Execution artifacts: results/v3/telemetry/20261013_215731_662134
+
+================================================================================
+GT-ONLY MAPPER EVALUATION: hmda_e2_tax_mistrallarge4_MultiStep
+================================================================================
+
+Results directory: results/v3/e2_mapping/hmda_e2_tax_mistrallarge4_multistep_20261014_235111
+Timestamp:         20261014_235111
+
+Scope: GT constraint sentences only (rules != null)
+No classifier — pure mapping quality measurement.
+
+Metrics computed over GT sentences:
+  Syntactic:   exact match, predicate Jaccard
+  Pairwise:    violation exact match, P/R/F1/Jaccard
+  Aggregate:   pooled violation P/R/F1
+================================================================================
+
+Config YAML saved to: results/v3/e2_mapping/hmda_e2_tax_mistrallarge4_multistep_20261014_235111/config.yaml
+Execution config saved to: results/v3/e2_mapping/hmda_e2_tax_mistrallarge4_multistep_20261014_235111/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: tax
+--------------------------------------------------------------------------------
+Loading tax...
+Total sentences in document: 126
+GT constraint sentences:     6  ← only these are fed to the mapper
+Non-constraint sentences:    120  ← skipped
+
+
+[1/1] Variant: Multi-Step | Mistral Large 4
+  Implementation: multi_step_refinement
+  Model:          mistralai/mistral-large-4-0
+  Creating mapper (multi_step_refinement)...
+  Mapping 6 GT sentences...
+
+============================================================
+Processing: Each person is uniquely identified by area code and phone number....
+
+============================================================
+Processing: Two persons with the same ZIP code must live in the same state....
+
+============================================================
+Processing: If a person lives in Denver, their state must be Colorado....
+
+============================================================
+============================================================
+Processing: Within the same ZIP code, one person cannot earn less but have a higher tax rate...
+
+Processing: Within the same state, a person with lower salary cannot have higher tax rate....
+
+============================================================
+Processing: A person single tax exemption cannot be greater than his salary....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["city", "state"],
+  "implied_columns": [],
+  "reasoning": "The sentence establishes a conditional dependency between two geographic attributes: 'Denver' (a city) and 'Colorado' (a state). The column 'city' directly captures the location 'Denver' (stored as uppercase 'DENVER' per the schema), and the column 'state' directly captures 'Colorado' (stored as the abbreviation 'CO' per the schema description). Both columns are explicitly listed in the available predicate columns. The constraint requires that any row where city equals 'DENVER' must have state equal to 'CO'.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['city', 'state']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["zip", "state"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency constraint: if two persons (rows) have the same value in the ZIP code column, they must also have the same value in the state column. This directly involves the `zip` column (ZIP code) and the `state` column (state). No other columns are mentioned or required to express this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['zip', 'state']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["state", "salary", "rate"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly references three concepts that map to columns: 'state' (the grouping scope 'within the same state'), 'salary' (the value being compared as 'lower salary'), and 'tax rate' which maps to the 'rate' column (described in the schema as likely representing a tax rate). The constraint establishes a comparative relationship between salary and rate within state groups, requiring that lower salary values cannot correspond to higher rate values within the same state.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['state', 'salary', 'rate']
+-> Step 3: Considering 58 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["areacode", "phone"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly states that a person is uniquely identified by 'area code' and 'phone number'. These concepts map directly to the 'areacode' and 'phone' columns in the schema. The constraint establishes a uniqueness requirement on the combination of these two columns (i.e., the pair must be unique for each person).",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['areacode', 'phone']
+-> Step 3: Considering 36 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.state != t2.state']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["singleexemp", "salary"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a comparison constraint between two attributes of a person. 'Single tax exemption' directly maps to the column `singleexemp` (defined as the numeric exemption amount associated with single status), and 'his salary' maps to the column `salary`. The constraint requires that for any row (person), the value in `singleexemp` must be less than or equal to the value in `salary`. No additional scoping columns (such as maritalstatus or gender) are required to express this row-level comparison, as the constraint applies to the values themselves regardless of other attributes.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['singleexemp', 'salary']
+-> Step 3: Considering 56 predicate candidates
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency where ZIP code determines state; a violation occurs when two records have the same ZIP code but different state values (t1.zip = t2.zip AND t1.state != t2.state). (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["zip", "salary", "rate"],
+  "implied_columns": [],
+  "reasoning": "The constraint compares earnings and tax rates within groups of the same ZIP code. 'ZIP code' directly maps to the `zip` column. 'Earn less' refers to the `salary` column (income/earnings), and 'higher tax rate' refers to the `rate` column (tax rate). The phrase 'Within the same ZIP code' establishes `zip` as the grouping/scoping column, while `salary` and `rate` are the two value columns being compared (implying that within each ZIP code, a lower salary should not correspond to a higher tax rate).",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['zip', 'salary', 'rate']
+-> Step 3: Considering 78 predicate candidates
+-> Step 3: Selected 3 predicates: ['t1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.state != t2.state']}]
+   Two persons with the same ZIP code but living in different states
+
+-> Verification iteration 1/2
+-> Step 5: Found 7 violations
+-> Step 3: Selected 2 predicates: ['t1.city = $string', 't1.state != $string']
+-> Step 3: Selected 1 predicates: ['t1.singleexemp > t1.salary']
+-> Step 3.5 [GATE]: PASS — Violation occurs when two records share the same state, but the record with the lower salary has a strictly higher tax rate than the other (t1.state = t2.state ∧ t1.salary < t2.salary ∧ t1.rate > t2.rate). (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 3: Selected 2 predicates: ['t1.areacode = t2.areacode', 't1.phone = t2.phone']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a comparative rule that a person's single tax exemption cannot exceed their salary. The concrete violation scenario is a row where singleexemp > salary, which is directly falsifiable from the column values alone. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 2 columns
+-> Step 3: Selected 3 predicates: ['t1.zip = t2.zip', 't1.salary < t2.salary', 't1.rate > t2.rate']
+-> Step 3.5 [GATE]: PASS — The sentence expresses a conditional value mapping: if city='Denver', then state must be 'Colorado' (or 'CO'). This is formalizable as a denial constraint where the violation is a concrete, falsifiable scenario: a row where t1.city='DENVER' AND t1.state≠'CO'. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']}]
+   A violation occurs when two persons are in the same state, one has a lower salary than the other, but that person has a higher tax rate than the person with the higher salary.
+
+-> Verification iteration 1/2
+-> Step 5: Found 362 violations
+-> Step 3.5 [GATE]: PASS — The sentence asserts a comparative rule within groups (same ZIP code): it is impossible for one person to have a lower salary but a higher tax rate than another person in the same ZIP code. This creates a concrete, falsifiable violation scenario: two tuples where t1.zip = t2.zip, t1.salary < t2.salary, and t1.rate > t2.rate cannot coexist. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 4: Constructed bound with 1 rule(s)
+   ['t1.singleexemp > t1.salary']
+   A record where the single tax exemption amount is greater than the salary amount.
+
+-> Verification iteration 1/2
+-> Step 5: Found 89 violations
+-> Step 3.5 [GATE]: PASS — The sentence asserts that the combination of area code and phone number forms a unique identifier for persons, meaning no two distinct persons can share the same values for both columns. This is formalizable as a denial constraint: t1.areacode = t2.areacode ∧ t1.phone = t2.phone ∧ t1.person_id ≠ t2.person_id cannot all be true simultaneously. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ["t1.city = 'DENVER'", "t1.state != 'CO'"]}]
+   A record where the city is Denver but the state is not Colorado (CO) is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 8 violations
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.salary < t2.salary', 't1.rate > t2.rate']}]
+   Two people in the same ZIP code where the person with the lower salary has a higher tax rate than the person with the higher salary
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+-> Step 4: Constructed uniqueness with 1 rule(s)
+   [{'AND': ['t1.areacode = t2.areacode', 't1.phone = t2.phone']}]
+   No two distinct records may have the same area code and phone number combination; the pair (areacode, phone) must uniquely identify a single person across the dataset.
+
+-> Verification iteration 1/2
+-> Step 5: Found 2 violations
+  Evaluating pairwise quality (6 GT sentences)...
+  Evaluating aggregate violation (GT sentences pooled)...
+  Saving outputs...
+  Saved detailed results: tax_Multi-Step_|_Mistral_Large_4_detailed.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 98.39s  (6 GT sentences)
+
+  ── AGGREGATE VIOLATION DISCOVERY (GT sentences pooled) ───────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     Gold violations:      468
+     Predicted violations: 468
+     Overlap violations:   468
+
+  ── CONSTRAINT EXACT MATCH (GT sentences) ─────────────────────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     TP: 6  FP: 0  FN: 0
+     Predicted: 6, Gold: 6
+
+  ── PAIRWISE SYNTACTIC QUALITY (n=6) ──────────────────────────────
+     Exact Match:       1.000 (6/6)
+     Predicate Jaccard: 1.000 (±0.000)
+
+  ── PAIRWISE VIOLATION DISCOVERY ───────────────────────────────────────
+     Exact Match:       1.000 (6/6)
+     Precision:         1.000 (±0.000)
+     Recall:            1.000 (±0.000)
+     F1:                1.000 (±0.000)
+     Violation Jaccard: 1.000 (±0.000)
+
+  INSIGHT: Syntactic vs Violation Gap = 0.000
+  Variant completed
+
+==================================================================================================================================
+COMPARISON TABLE  —  GT sentences only, no classifier
+==================================================================================================================================
+  Variant                                       Impl       Model                  AggViol F1   ConstExact F1   SynExact   SynJacc    ViolF1     ViolJacc   Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Multi-Step | Mistral Large 4                  multi_step_refinement mistralai/mistral-large-4-0 1.000        1.000           1.000      1.000      1.000      1.000      98.39     
+
+  Best Aggregate Violation F1:   Multi-Step | Mistral Large 4 (1.000)
+  Best Constraint Exact F1:      Multi-Step | Mistral Large 4 (1.000)
+  Best Syntactic Exact Match:    Multi-Step | Mistral Large 4 (1.000)
+  Best Pairwise Violation F1:    Multi-Step | Mistral Large 4 (1.000)
+  Fastest:                       Multi-Step | Mistral Large 4 (98.39s)
+==================================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3/e2_mapping/hmda_e2_tax_mistrallarge4_multistep_20261014_235111

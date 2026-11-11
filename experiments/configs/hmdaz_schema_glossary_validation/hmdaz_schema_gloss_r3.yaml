@@ -1,0 +1,32 @@
+experiment_name: hmdaz_schema_gloss_r3
+experiment_type: mapper_gt_only
+results_dir: results/hmdaz_schema_glossary_validation/e2_mapping
+datasets:
+- hmdaz
+dataset_options:
+  hmdaz:
+    gt_file: hmdaz_text2rule_gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+    predicate_space: v2
+variants:
+- name: Single Prompt | prompt v2 + lexical (schema descriptions)
+  use_context: false
+  mapper:
+    implementation: llm
+    provider: openrouter
+    model: openai/gpt-6-luna
+    max_candidate_predicates: 1000
+    max_relevant_columns: 12
+    prompt_key: with_examples_v2
+    batch_size: 3
+    explain_violation: true
+- name: Multi-Step | GPT-6 Luna (schema descriptions)
+  use_context: false
+  mapper:
+    implementation: multi_step_refinement
+    provider: openrouter
+    model: openai/gpt-6-luna
+    max_refinement_iterations: 2
+    prompt_file: multi_step_refinement

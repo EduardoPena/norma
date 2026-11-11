@@ -1,0 +1,561 @@
+{
+  "dataset": "hmda_checks",
+  "variant": "Multi-Step | Qwen3.8-2.4T-A95B",
+  "output_type": "gt_only_mapper",
+  "timestamp": "20261021_185225",
+  "count": 92,
+  "outputs": [
+    {
+      "sentence": "Date application received should = activity year or (activity year minus 1 or activity year minus 2).",
+      "gold_constraint": "[{'OR': ['t1.date_application_received < (t1.activity_year - 2) * 10000', 't1.date_application_received >= (t1.activity_year + 1) * 10000']}]",
+      "pred_constraint": null,
+      "pred_is_non_null": false
+    },
+    {
+      "sentence": "If purchaser type = 1 or 3, then loan type should = 1.",
+      "gold_constraint": "[{'AND': ['t1.purchaser_type IN (1,3)', 't1.loan_type != 1']}]",
+      "pred_constraint": "[{'AND': ['t1.purchaser_type IN (1,3)', 't1.loan_type != 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If loan amount and income are numeric and > 0 and the loan amount is \u2265 $1,000 ($1 million), then loan amount should be < 5 times the income.",
+      "gold_constraint": "[{'AND': ['t1.loan_amount > 0', 't1.applicant_income > 0', 't1.loan_amount >= 1000', 't1.loan_amount >= 5 * t1.applicant_income']}]",
+      "pred_constraint": "[{'AND': ['t1.applicant_income > 0', 't1.loan_amount >= 1000', 't1.loan_amount >= t1.applicant_income * 5']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If property type = 1 and income \u2264 $200 thousand, then loan amount should be < $2 million.",
+      "gold_constraint": "[{'AND': ['t1.property_type = 1', 't1.applicant_income <= 200', 't1.loan_amount >= 2000']}]",
+      "pred_constraint": "[{'AND': ['t1.property_type = 1', 't1.applicant_income <= 200', 't1.loan_amount >= 2000000']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If loan type = 2 and property type = 1 or 2, then loan amount should be \u2264 $729 ($729 thousand).",
+      "gold_constraint": "[{'AND': ['t1.loan_type = 2', 't1.property_type IN (1,2)', 't1.loan_amount > 729']}]",
+      "pred_constraint": "[{'AND': ['t1.loan_type = 2', 't1.property_type IN (1,2)', 't1.loan_amount > 729']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If loan type = 3 and property type = 1 or 2, then loan amount should be \u2264 $1,094 ($1,094 thousands).",
+      "gold_constraint": "[{'AND': ['t1.loan_type = 3', 't1.property_type IN (1,2)', 't1.loan_amount > 1094']}]",
+      "pred_constraint": "[{'AND': ['t1.loan_type = 3', 't1.property_type IN (1,2)', 't1.loan_amount > 1094']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If type of purchaser = 1-4, and property type = 1 or 2, then loan amount should be \u2264 $729 ($729 thousand).",
+      "gold_constraint": "[{'AND': ['t1.purchaser_type IN (1,2,3,4)', 't1.property_type IN (1,2)', 't1.loan_amount > 729']}]",
+      "pred_constraint": "[{'AND': ['t1.purchaser_type >= 1', 't1.purchaser_type <= 4', 't1.property_type IN (1,2)', 't1.loan_amount > 729']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If property type = 3, then loan amount should be in the range of $100 thousand and $10 million.",
+      "gold_constraint": "[{'AND': ['t1.property_type = 3', {'OR': ['t1.loan_amount < 100', 't1.loan_amount > 10000']}]}]",
+      "pred_constraint": "[{'AND': ['t1.property_type = 3', {'OR': ['t1.loan_amount < 100000', 't1.loan_amount > 10000000']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If property type = 2, then loan amount should be \u2264 $150 ($150 thousand).",
+      "gold_constraint": "[{'AND': ['t1.property_type = 2', 't1.loan_amount > 150']}]",
+      "pred_constraint": "[{'AND': ['t1.property_type = 2', 't1.loan_amount > 150']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If lien status = 2, then loan amount should be \u2264 $250 ($250 thousand).",
+      "gold_constraint": "[{'AND': ['t1.lien_status = 2', 't1.loan_amount > 250']}]",
+      "pred_constraint": "[{'AND': ['t1.lien_status = 2', 't1.loan_amount > 250']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If lien status = 3, then loan amount should be \u2264 $100 ($100 thousand).",
+      "gold_constraint": "[{'AND': ['t1.lien_status = 3', 't1.loan_amount > 100']}]",
+      "pred_constraint": "[{'AND': ['t1.lien_status = 3', 't1.loan_amount > 100']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If loan purpose = 1 and property type = 1, then loan amount should be > $10 thousand.",
+      "gold_constraint": "[{'AND': ['t1.loan_purpose = 1', 't1.property_type = 1', 't1.loan_amount <= 10']}]",
+      "pred_constraint": "[{'AND': ['t1.loan_purpose = 1', 't1.property_type = 1', 't1.loan_amount <= 10']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If action taken type = 1, then action taken date should not equal the date application received.",
+      "gold_constraint": "[{'AND': ['t1.action_taken_type = 1', 't1.action_taken_date = t1.date_application_received']}]",
+      "pred_constraint": "[{'AND': ['t1.action_taken_type = 1', 't1.action_taken_date = t1.date_application_received']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If action taken type = 1-5, 7, or 8, then applicant ethnicity, race and/or sex should not = 4, 7, or 4, respectively.",
+      "gold_constraint": "[{'AND': ['t1.action_taken_type IN (1,2,3,4,5,7,8)', {'OR': ['t1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4']}]}]",
+      "pred_constraint": "[{'OR': [{'AND': ['t1.action_taken_type IN (1,2,3,4,5)', 't1.applicant_ethnicity = 4']}, {'AND': ['t1.action_taken_type = 7', 't1.applicant_race_1 = 7']}, {'AND': ['t1.action_taken_type = 8', 't1.applicant_sex = 4']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If action taken type = 1-5, 7 or 8, and applicant ethnicity, race and sex = 4,7,4, respectively, and co-applicant ethnicity, race and sex = 4,7,4, respectively, and there is no co-applicant, then co-applicant ethnicity, race, and sex should = 5,8,5, respectively.",
+      "gold_constraint": "[{'AND': ['t1.action_taken_type IN (1,2,3,4,5,7,8)', 't1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4', 't1.co_applicant_ethnicity = 4', 't1.co_applicant_race_1 = 7', 't1.co_applicant_sex = 4']}]",
+      "pred_constraint": "[{'AND': ['t1.action_taken_type IN (1,2,3,4,5,7,8)', 't1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4', {'OR': ['t1.co_applicant_ethnicity != 5', 't1.co_applicant_race_1 != 8', 't1.co_applicant_sex != 5']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If income is numeric, then income should be < $3 million.",
+      "gold_constraint": "[{'AND': ['t1.applicant_income IS NOT NULL', 't1.applicant_income >= 3000']}]",
+      "pred_constraint": "['t1.applicant_income >= 3000000']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If action taken type = 1, and income and loan amount are numeric, and loan amount is > 5 times income, then income should be > $ 9 thousand.",
+      "gold_constraint": "[{'AND': ['t1.action_taken_type = 1', 't1.loan_amount > 5 * t1.applicant_income', 't1.applicant_income <= 9']}]",
+      "pred_constraint": "[{'AND': ['t1.action_taken_type = 1', 't1.loan_amount > t1.applicant_income * 5', 't1.applicant_income <= 9']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If action taken type = 1-5, 7 or 8, and property type = 1 or 2, then applicant income should not = NA.",
+      "gold_constraint": "[{'AND': ['t1.action_taken_type IN (1,2,3,4,5,7,8)', 't1.property_type IN (1,2)', 't1.applicant_income IS NULL']}]",
+      "pred_constraint": "[{'AND': ['t1.action_taken_type IN (1,2,3,4,5,7,8)', 't1.property_type IN (1,2)', 't1.applicant_income IS NULL']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If applicant ethnicity, race and sex = 4, 7, and 4, respectively, and co-applicant ethnicity, race and sex = 4, 7, and 4, respectively, then applicant income should = NA.",
+      "gold_constraint": "[{'AND': ['t1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4', 't1.co_applicant_ethnicity = 4', 't1.co_applicant_race_1 = 7', 't1.co_applicant_sex = 4', 't1.applicant_income IS NOT NULL']}]",
+      "pred_constraint": "[{'AND': ['t1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4', 't1.co_applicant_ethnicity = 4', 't1.co_applicant_race_1 = 7', 't1.co_applicant_sex = 4', 't1.applicant_income IS NOT NULL']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If HOEPA status = 1 and action taken type = 1, then rate spread should not = NA.",
+      "gold_constraint": "[{'AND': ['t1.hoepa_status = 1', 't1.action_taken_type = 1', 't1.rate_spread IS NULL']}]",
+      "pred_constraint": "[{'AND': ['t1.hoepa_status = 1', 't1.action_taken_type = 1', 't1.rate_spread IS NULL']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If purchaser type = 1-4 and lien status = 1 or 2, then rate spread should be \u2264 10% or NA.",
+      "gold_constraint": "[{'AND': ['t1.purchaser_type IN (1,2,3,4)', 't1.lien_status IN (1,2)', 't1.rate_spread > 10', 't1.rate_spread IS NOT NULL']}]",
+      "pred_constraint": "[{'AND': ['t1.purchaser_type IN (1,2,3,4)', 't1.lien_status IN (1,2)', 't1.rate_spread IS NOT NULL', 't1.rate_spread > 10']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If agency = 5, property type = 1, lien status = 1 and action taken type = 1, rate spread should be \u2264 5% or NA.",
+      "gold_constraint": "[{'AND': ['t1.agency = 5', 't1.property_type = 1', 't1.lien_status = 1', 't1.action_taken_type = 1', 't1.rate_spread > 5', 't1.rate_spread IS NOT NULL']}]",
+      "pred_constraint": "[{'AND': ['t1.agency = 5', 't1.property_type = 1', 't1.lien_status = 1', 't1.action_taken_type = 1', 't1.rate_spread > 5']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If rate spread does not = NA, then rate spread should be < 13%.",
+      "gold_constraint": "[{'AND': ['t1.rate_spread IS NOT NULL', 't1.rate_spread >= 13']}]",
+      "pred_constraint": "[{'AND': ['t1.rate_spread IS NOT NULL', 't1.rate_spread >= 13']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If agency = 1, 2, 3, 7 or 9, action taken type = 1, lien status = 1, and rate spread > 6.5%, then HOEPA status should = 1.",
+      "gold_constraint": "[{'AND': ['t1.agency IN (1,2,3,7,9)', 't1.action_taken_type = 1', 't1.lien_status = 1', 't1.rate_spread > 6.5', 't1.hoepa_status != 1']}]",
+      "pred_constraint": "[{'AND': ['t1.agency IN (1,2,3,7,9)', 't1.action_taken_type = 1', 't1.lien_status = 1', 't1.rate_spread > 6.5', 't1.hoepa_status != 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If agency = 1, 2, 3, 7 or 9, action taken type = 1, lien status = 2, and rate spread > 8.5%, then HOEPA status should = 1.",
+      "gold_constraint": "[{'AND': ['t1.agency IN (1,2,3,7,9)', 't1.action_taken_type = 1', 't1.lien_status = 2', 't1.rate_spread > 8.5', 't1.hoepa_status != 1']}]",
+      "pred_constraint": "[{'AND': ['t1.agency IN (1,2,3,7,9)', 't1.action_taken_type = 1', 't1.lien_status = 2', 't1.rate_spread > 8.5', 't1.hoepa_status != 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If loan purpose = 1, HOEPA Status should not = 1.",
+      "gold_constraint": "[{'AND': ['t1.loan_purpose = 1', 't1.hoepa_status = 1']}]",
+      "pred_constraint": "[{'AND': ['t1.loan_purpose = 1', 't1.hoepa_status = 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If agency = 5, HOEPA status should not = 1.",
+      "gold_constraint": "[{'AND': ['t1.agency = 5', 't1.hoepa_status = 1']}]",
+      "pred_constraint": "[{'AND': ['t1.agency = 5', 't1.hoepa_status = 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If applicant ethnicity, race and sex = 4, 7, and 4, respectively, HOEPA status should not = 1.",
+      "gold_constraint": "[{'AND': ['t1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4', 't1.hoepa_status = 1']}]",
+      "pred_constraint": "[{'AND': ['t1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4', 't1.hoepa_status = 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If property type = 3, HOEPA status should not = 1.",
+      "gold_constraint": "[{'AND': ['t1.property_type = 3', 't1.hoepa_status = 1']}]",
+      "pred_constraint": "[{'AND': ['t1.property_type = 3', 't1.hoepa_status = 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If purchaser type = 1 or 3, HOEPA status should not = 1.",
+      "gold_constraint": "[{'AND': ['t1.purchaser_type IN (1,3)', 't1.hoepa_status = 1']}]",
+      "pred_constraint": "[{'AND': ['t1.purchaser_type IN (1,3)', 't1.hoepa_status = 1']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If loan type = 3 or 4, then property type should not = 3.",
+      "gold_constraint": "[{'AND': ['t1.loan_type IN (3,4)', 't1.property_type = 3']}]",
+      "pred_constraint": "[{'AND': ['t1.loan_type IN (3,4)', 't1.property_type = 3']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If action taken type = 7 or 8, then MSA/MD, state, county, census tract should equal NA.",
+      "gold_constraint": "[{'AND': ['t1.action_taken_type IN (7,8)', {'OR': ['t1.msa_md IS NOT NULL', 't1.state_code IS NOT NULL', 't1.county_code IS NOT NULL', 't1.census_tract_number IS NOT NULL']}]}]",
+      "pred_constraint": null,
+      "pred_is_non_null": false
+    },
+    {
+      "sentence": "If Action taken type = 6, then date application received must = NA.",
+      "gold_constraint": "[{'AND': ['t1.action_taken_type = 6', 't1.date_application_received IS NOT NULL']}]",
+      "pred_constraint": "[{'AND': ['t1.action_taken_type = 6', 't1.date_application_received IS NOT NULL']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Loan type must = 1, 2, 3, or 4.",
+      "gold_constraint": "['t1.loan_type NOT IN (1,2,3,4)']",
+      "pred_constraint": "['t1.loan_type NOT IN (1,2,3,4)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Property type must = 1, 2, or 3.",
+      "gold_constraint": "['t1.property_type NOT IN (1,2,3)']",
+      "pred_constraint": "['t1.property_type NOT IN (1,2,3)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Loan purpose must = 1, 2, or 3.",
+      "gold_constraint": "['t1.loan_purpose NOT IN (1,2,3)']",
+      "pred_constraint": "['t1.loan_purpose NOT IN (1,2,3)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If lien status = 3, then loan purpose must = 2.",
+      "gold_constraint": "[{'AND': ['t1.lien_status = 3', 't1.loan_purpose != 2']}]",
+      "pred_constraint": "[{'AND': ['t1.lien_status = 3', 't1.loan_purpose != 2']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Occupancy must = 1, 2, or 3.",
+      "gold_constraint": "['t1.occupancy NOT IN (1,2,3)']",
+      "pred_constraint": "['t1.occupancy NOT IN (1,2,3)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Loan amount must be numeric and > zero.",
+      "gold_constraint": "['t1.loan_amount <= 0']",
+      "pred_constraint": "['t1.loan_amount <= 0']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Preapproval must = 1, 2, or 3.",
+      "gold_constraint": "['t1.preapproval NOT IN (1,2,3)']",
+      "pred_constraint": "['t1.preapproval NOT IN (1,2,3)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If loan purpose = 1 and action taken type = 6, then preapproval must = 3.",
+      "gold_constraint": "[{'AND': ['t1.loan_purpose = 1', 't1.action_taken_type = 6', 't1.preapproval != 3']}]",
+      "pred_constraint": "[{'AND': ['t1.loan_purpose = 1', 't1.action_taken_type = 6', 't1.preapproval != 3']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If loan purpose = 2 or 3, then preapproval must = 3.",
+      "gold_constraint": "[{'AND': ['t1.loan_purpose IN (2,3)', 't1.preapproval != 3']}]",
+      "pred_constraint": "[{'AND': ['t1.loan_purpose IN (2,3)', 't1.preapproval != 3']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If action taken type = 7 or 8, then preapproval must = 1.",
+      "gold_constraint": "[{'AND': ['t1.action_taken_type IN (7,8)', 't1.preapproval != 1']}]",
+      "pred_constraint": null,
+      "pred_is_non_null": false
+    },
+    {
+      "sentence": "Action taken type must = 1, 2, 3, 4, 5, 6, 7, or 8.",
+      "gold_constraint": "['t1.action_taken_type NOT IN (1,2,3,4,5,6,7,8)']",
+      "pred_constraint": "['t1.action_taken_type NOT IN (1,2,3,4,5,6,7,8)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If reasons for denial are in the range 1-9, then action taken type must = 3 or 7.",
+      "gold_constraint": "[{'AND': [{'OR': [{'AND': ['t1.denial_reason_1 >= 1', 't1.denial_reason_1 <= 9']}, {'AND': ['t1.denial_reason_2 >= 1', 't1.denial_reason_2 <= 9']}, {'AND': ['t1.denial_reason_3 >= 1', 't1.denial_reason_3 <= 9']}]}, 't1.action_taken_type NOT IN (3,7)']}]",
+      "pred_constraint": null,
+      "pred_is_non_null": false
+    },
+    {
+      "sentence": "If date application received = NA, then action taken type must = 6.",
+      "gold_constraint": "[{'AND': ['t1.date_application_received IS NULL', 't1.action_taken_type != 6']}]",
+      "pred_constraint": "[{'AND': ['t1.date_application_received IS NULL', 't1.action_taken_type != 6']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If preapproval = 1, then action taken type must = 1-5, 7 or 8.",
+      "gold_constraint": "[{'AND': ['t1.preapproval = 1', 't1.action_taken_type NOT IN (1,2,3,4,5,7,8)']}]",
+      "pred_constraint": "[{'AND': ['t1.preapproval = 1', 't1.action_taken_type NOT IN (1,2,3,4,5,7,8)']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If preapproval = 2, then action taken type must = 1-5.",
+      "gold_constraint": "[{'AND': ['t1.preapproval = 2', 't1.action_taken_type NOT IN (1,2,3,4,5)']}]",
+      "pred_constraint": "[{'AND': ['t1.preapproval = 2', 't1.action_taken_type NOT IN (1,2,3,4,5)']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If preapproval = 3, then action taken type must = 1-6.",
+      "gold_constraint": "[{'AND': ['t1.preapproval = 3', 't1.action_taken_type NOT IN (1,2,3,4,5,6)']}]",
+      "pred_constraint": "[{'AND': ['t1.preapproval = 3', 't1.action_taken_type NOT IN (1,2,3,4,5,6)']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If date application received does not = NA, then action taken date must be \u2265 date application received.",
+      "gold_constraint": "[{'AND': ['t1.date_application_received IS NOT NULL', 't1.action_taken_date < t1.date_application_received']}]",
+      "pred_constraint": "[{'AND': ['t1.date_application_received IS NOT NULL', 't1.action_taken_date < t1.date_application_received']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Applicant ethnicity must = 1, 2, 3, or 4.",
+      "gold_constraint": "['t1.applicant_ethnicity NOT IN (1,2,3,4)']",
+      "pred_constraint": "['t1.applicant_ethnicity NOT IN (1,2,3,4)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Co-Applicant ethnicity must = 1, 2, 3, 4, or 5.",
+      "gold_constraint": "['t1.co_applicant_ethnicity NOT IN (1,2,3,4,5)']",
+      "pred_constraint": "['t1.co_applicant_ethnicity NOT IN (1,2,3,4,5)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Co-Applicant ethnicity does not = 5; however, co-applicant race field 1 = 8 and/or co-applicant sex = 5.",
+      "gold_constraint": "[{'AND': ['t1.co_applicant_ethnicity != 5', {'OR': ['t1.co_applicant_race_1 = 8', 't1.co_applicant_sex = 5']}]}]",
+      "pred_constraint": "[{'AND': ['t1.co_applicant_ethnicity != 5', {'OR': ['t1.co_applicant_race_1 = 8', 't1.co_applicant_sex = 5']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If applicant ethnicity = 1, 2 or 3 then the first applicant race field must not = 7.",
+      "gold_constraint": "[{'AND': ['t1.applicant_ethnicity IN (1,2,3)', 't1.applicant_race_1 = 7']}]",
+      "pred_constraint": "[{'AND': ['t1.applicant_ethnicity IN (1,2,3)', 't1.applicant_race_1 = 7']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If co-applicant ethnicity = 1, 2 or 3 then the first co-applicant race field must not = 7 or 8.",
+      "gold_constraint": "[{'AND': ['t1.co_applicant_ethnicity IN (1,2,3)', 't1.co_applicant_race_1 IN (7,8)']}]",
+      "pred_constraint": "[{'AND': ['t1.co_applicant_ethnicity IN (1,2,3)', 't1.co_applicant_race_1 IN (7,8)']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Applicant race field 1 must = 1, 2, 3, 4, 5, 6, or 7.",
+      "gold_constraint": "['t1.applicant_race_1 NOT IN (1,2,3,4,5,6,7)']",
+      "pred_constraint": "['t1.applicant_race_1 NOT IN (1,2,3,4,5,6,7)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If applicant race = 1-5 in applicant race field 1, then all other applicant race fields must = blank or 1-5.",
+      "gold_constraint": "[{'AND': ['t1.applicant_race_1 IN (1,2,3,4,5)', {'OR': [{'AND': ['t1.applicant_race_2 IS NOT NULL', 't1.applicant_race_2 NOT IN (1,2,3,4,5)']}, {'AND': ['t1.applicant_race_3 IS NOT NULL', 't1.applicant_race_3 NOT IN (1,2,3,4,5)']}, {'AND': ['t1.applicant_race_4 IS NOT NULL', 't1.applicant_race_4 NOT IN (1,2,3,4,5)']}, {'AND': ['t1.applicant_race_5 IS NOT NULL', 't1.applicant_race_5 NOT IN (1,2,3,4,5)']}]}]}]",
+      "pred_constraint": "[{'AND': ['t1.applicant_race_1 IN (1,2,3,4,5)', {'OR': ['t1.applicant_race_2 NOT IN (1,2,3,4,5)', 't1.applicant_race_3 NOT IN (1,2,3,4,5)', 't1.applicant_race_4 NOT IN (1,2,3,4,5)', 't1.applicant_race_5 NOT IN (1,2,3,4,5)']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If applicant race = 6 or 7 in applicant race field 1, then all other applicant race fields must = blank.",
+      "gold_constraint": "[{'AND': ['t1.applicant_race_1 IN (6,7)', {'OR': ['t1.applicant_race_2 IS NOT NULL', 't1.applicant_race_3 IS NOT NULL', 't1.applicant_race_4 IS NOT NULL', 't1.applicant_race_5 IS NOT NULL']}]}]",
+      "pred_constraint": "[{'AND': ['t1.applicant_race_1 IN (6,7)', {'OR': ['t1.applicant_race_2 IS NOT NULL', 't1.applicant_race_3 IS NOT NULL', 't1.applicant_race_4 IS NOT NULL', 't1.applicant_race_5 IS NOT NULL']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Applicant race must not be the same (i.e. 1,1; 1,1,2; 1,2,3,4,1), when more than one applicant race is designated.",
+      "gold_constraint": "[{'AND': ['t1.applicant_race_1 IS NOT NULL', 't1.applicant_race_2 IS NOT NULL', 't1.applicant_race_1 = t1.applicant_race_2']}, {'AND': ['t1.applicant_race_1 IS NOT NULL', 't1.applicant_race_3 IS NOT NULL', 't1.applicant_race_1 = t1.applicant_race_3']}, {'AND': ['t1.applicant_race_1 IS NOT NULL', 't1.applicant_race_4 IS NOT NULL', 't1.applicant_race_1 = t1.applicant_race_4']}, {'AND': ['t1.applicant_race_1 IS NOT NULL', 't1.applicant_race_5 IS NOT NULL', 't1.applicant_race_1 = t1.applicant_race_5']}, {'AND': ['t1.applicant_race_2 IS NOT NULL', 't1.applicant_race_3 IS NOT NULL', 't1.applicant_race_2 = t1.applicant_race_3']}, {'AND': ['t1.applicant_race_2 IS NOT NULL', 't1.applicant_race_4 IS NOT NULL', 't1.applicant_race_2 = t1.applicant_race_4']}, {'AND': ['t1.applicant_race_2 IS NOT NULL', 't1.applicant_race_5 IS NOT NULL', 't1.applicant_race_2 = t1.applicant_race_5']}, {'AND': ['t1.applicant_race_3 IS NOT NULL', 't1.applicant_race_4 IS NOT NULL', 't1.applicant_race_3 = t1.applicant_race_4']}, {'AND': ['t1.applicant_race_3 IS NOT NULL', 't1.applicant_race_5 IS NOT NULL', 't1.applicant_race_3 = t1.applicant_race_5']}, {'AND': ['t1.applicant_race_4 IS NOT NULL', 't1.applicant_race_5 IS NOT NULL', 't1.applicant_race_4 = t1.applicant_race_5']}]",
+      "pred_constraint": "[{'OR': [{'AND': ['t1.applicant_race_2 IS NOT NULL', 't1.applicant_race_1 = t1.applicant_race_2']}, {'AND': ['t1.applicant_race_3 IS NOT NULL', 't1.applicant_race_1 = t1.applicant_race_3']}, {'AND': ['t1.applicant_race_3 IS NOT NULL', 't1.applicant_race_2 = t1.applicant_race_3']}, {'AND': ['t1.applicant_race_4 IS NOT NULL', 't1.applicant_race_1 = t1.applicant_race_4']}, {'AND': ['t1.applicant_race_4 IS NOT NULL', 't1.applicant_race_2 = t1.applicant_race_4']}, {'AND': ['t1.applicant_race_4 IS NOT NULL', 't1.applicant_race_3 = t1.applicant_race_4']}, {'AND': ['t1.applicant_race_5 IS NOT NULL', 't1.applicant_race_1 = t1.applicant_race_5']}, {'AND': ['t1.applicant_race_5 IS NOT NULL', 't1.applicant_race_2 = t1.applicant_race_5']}, {'AND': ['t1.applicant_race_5 IS NOT NULL', 't1.applicant_race_3 = t1.applicant_race_5']}, {'AND': ['t1.applicant_race_5 IS NOT NULL', 't1.applicant_race_4 = t1.applicant_race_5']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Co-Applicant race field 1 must = 1, 2, 3, 4, 5, 6, 7, or 8.",
+      "gold_constraint": "['t1.co_applicant_race_1 NOT IN (1,2,3,4,5,6,7,8)']",
+      "pred_constraint": "['t1.co_applicant_race_1 NOT IN (1,2,3,4,5,6,7,8)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Co-Applicant race field 1 does not = 8; however, co-applicant ethnicity and/or co-applicant sex = 5.",
+      "gold_constraint": "[{'AND': ['t1.co_applicant_race_1 != 8', {'OR': ['t1.co_applicant_ethnicity = 5', 't1.co_applicant_sex = 5']}]}]",
+      "pred_constraint": "[{'AND': ['t1.co_applicant_race_1 != 8', {'OR': ['t1.co_applicant_ethnicity = 5', 't1.co_applicant_sex = 5']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If co-applicant race = 1-5 in co-applicant race field 1, then all other co-applicant race fields must = blank or 1-5.",
+      "gold_constraint": "[{'AND': ['t1.co_applicant_race_1 IN (1,2,3,4,5)', {'OR': [{'AND': ['t1.co_applicant_race_2 IS NOT NULL', 't1.co_applicant_race_2 NOT IN (1,2,3,4,5)']}, {'AND': ['t1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_3 NOT IN (1,2,3,4,5)']}, {'AND': ['t1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_4 NOT IN (1,2,3,4,5)']}, {'AND': ['t1.co_applicant_race_5 IS NOT NULL', 't1.co_applicant_race_5 NOT IN (1,2,3,4,5)']}]}]}]",
+      "pred_constraint": "[{'AND': ['t1.co_applicant_race_1 IN (1,2,3,4,5)', {'OR': ['t1.co_applicant_race_2 NOT IN (1,2,3,4,5)', 't1.co_applicant_race_3 NOT IN (1,2,3,4,5)', 't1.co_applicant_race_4 NOT IN (1,2,3,4,5)', 't1.co_applicant_race_5 NOT IN (1,2,3,4,5)']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If co-applicant race = 6, 7, or 8 in co-applicant race field 1, then all other co-applicant race fields must = blank.",
+      "gold_constraint": "[{'AND': ['t1.co_applicant_race_1 IN (6,7,8)', {'OR': ['t1.co_applicant_race_2 IS NOT NULL', 't1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_5 IS NOT NULL']}]}]",
+      "pred_constraint": "[{'AND': ['t1.co_applicant_race_1 IN (6,7,8)', {'OR': ['t1.co_applicant_race_2 IS NOT NULL', 't1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_5 IS NOT NULL']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Co-Applicant race must not be the same (i.e. 1,1; 1,1,2; 1,2,3,4,1), when more than one co-applicant race is designated.",
+      "gold_constraint": "[{'AND': ['t1.co_applicant_race_1 IS NOT NULL', 't1.co_applicant_race_2 IS NOT NULL', 't1.co_applicant_race_1 = t1.co_applicant_race_2']}, {'AND': ['t1.co_applicant_race_1 IS NOT NULL', 't1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_1 = t1.co_applicant_race_3']}, {'AND': ['t1.co_applicant_race_1 IS NOT NULL', 't1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_1 = t1.co_applicant_race_4']}, {'AND': ['t1.co_applicant_race_1 IS NOT NULL', 't1.co_applicant_race_5 IS NOT NULL', 't1.co_applicant_race_1 = t1.co_applicant_race_5']}, {'AND': ['t1.co_applicant_race_2 IS NOT NULL', 't1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_2 = t1.co_applicant_race_3']}, {'AND': ['t1.co_applicant_race_2 IS NOT NULL', 't1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_2 = t1.co_applicant_race_4']}, {'AND': ['t1.co_applicant_race_2 IS NOT NULL', 't1.co_applicant_race_5 IS NOT NULL', 't1.co_applicant_race_2 = t1.co_applicant_race_5']}, {'AND': ['t1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_3 = t1.co_applicant_race_4']}, {'AND': ['t1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_5 IS NOT NULL', 't1.co_applicant_race_3 = t1.co_applicant_race_5']}, {'AND': ['t1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_5 IS NOT NULL', 't1.co_applicant_race_4 = t1.co_applicant_race_5']}]",
+      "pred_constraint": "[{'OR': [{'AND': ['t1.co_applicant_race_2 IS NOT NULL', 't1.co_applicant_race_1 = t1.co_applicant_race_2']}, {'AND': ['t1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_1 = t1.co_applicant_race_3']}, {'AND': ['t1.co_applicant_race_3 IS NOT NULL', 't1.co_applicant_race_2 = t1.co_applicant_race_3']}, {'AND': ['t1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_1 = t1.co_applicant_race_4']}, {'AND': ['t1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_2 = t1.co_applicant_race_4']}, {'AND': ['t1.co_applicant_race_4 IS NOT NULL', 't1.co_applicant_race_3 = t1.co_applicant_race_4']}, {'AND': ['t1.co_applicant_race_5 IS NOT NULL', 't1.co_applicant_race_1 = t1.co_applicant_race_5']}, {'AND': ['t1.co_applicant_race_5 IS NOT NULL', 't1.co_applicant_race_2 = t1.co_applicant_race_5']}, {'AND': ['t1.co_applicant_race_5 IS NOT NULL', 't1.co_applicant_race_3 = t1.co_applicant_race_5']}, {'AND': ['t1.co_applicant_race_5 IS NOT NULL', 't1.co_applicant_race_4 = t1.co_applicant_race_5']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Applicant sex must = 1, 2, 3, or 4.",
+      "gold_constraint": "['t1.applicant_sex NOT IN (1,2,3,4)']",
+      "pred_constraint": "['t1.applicant_sex NOT IN (1,2,3,4)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Co-Applicant sex must = 1, 2, 3, 4, or 5.",
+      "gold_constraint": "['t1.co_applicant_sex NOT IN (1,2,3,4,5)']",
+      "pred_constraint": "['t1.co_applicant_sex NOT IN (1,2,3,4,5)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Co-Applicant sex does not = 5; however, co-applicant ethnicity = 5 and/or co-applicant race field 1 = 8.",
+      "gold_constraint": "[{'AND': ['t1.co_applicant_sex != 5', {'OR': ['t1.co_applicant_ethnicity = 5', 't1.co_applicant_race_1 = 8']}]}]",
+      "pred_constraint": "[{'AND': ['t1.co_applicant_sex != 5', {'OR': ['t1.co_applicant_ethnicity = 5', 't1.co_applicant_race_1 = 8']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Income must be numeric and > 0, or equal NA.",
+      "gold_constraint": "[{'AND': ['t1.applicant_income <= 0', 't1.applicant_income IS NOT NULL']}]",
+      "pred_constraint": "[{'AND': ['t1.applicant_income IS NOT NULL', 't1.applicant_income <= 0']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If property type = 3, then income must = NA.",
+      "gold_constraint": "[{'AND': ['t1.property_type = 3', 't1.applicant_income IS NOT NULL']}]",
+      "pred_constraint": "[{'AND': ['t1.property_type = 3', 't1.applicant_income IS NOT NULL']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If applicant ethnicity, race, and sex = 4, 7, and 4, respectively, and co-applicant ethnicity, race, and sex = 5, 8, and 5, respectively, and action taken = 1-5 or 7-8, then applicant income must = NA.",
+      "gold_constraint": "[{'AND': ['t1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4', 't1.co_applicant_ethnicity = 5', 't1.co_applicant_race_1 = 8', 't1.co_applicant_sex = 5', 't1.action_taken_type IN (1,2,3,4,5,7,8)', 't1.applicant_income IS NOT NULL']}]",
+      "pred_constraint": "[{'AND': ['t1.applicant_ethnicity = 4', 't1.applicant_race_1 = 7', 't1.applicant_sex = 4', 't1.co_applicant_ethnicity = 5', 't1.co_applicant_race_1 = 8', 't1.co_applicant_sex = 5', 't1.action_taken_type IN (1,2,3,4,5,7,8)', 't1.applicant_income IS NOT NULL']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Type of purchaser must = 0, 1, 2, 3, 4, 5, 6, 7, 8, or 9.",
+      "gold_constraint": "['t1.purchaser_type NOT IN (0,1,2,3,4,5,6,7,8,9)']",
+      "pred_constraint": "['t1.purchaser_type NOT IN (0,1,2,3,4,5,6,7,8,9)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If type of purchaser = 1, 2, 3, 4, 5, 6, 7, 8, or 9, then action taken type must be 1 or 6.",
+      "gold_constraint": "[{'AND': ['t1.purchaser_type IN (1,2,3,4,5,6,7,8,9)', 't1.action_taken_type NOT IN (1,6)']}]",
+      "pred_constraint": "[{'AND': ['t1.purchaser_type IN (1,2,3,4,5,6,7,8,9)', 't1.action_taken_type NOT IN (1,6)']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If type of purchaser = 2, then loan type must = 2, 3, or 4.",
+      "gold_constraint": "[{'AND': ['t1.purchaser_type = 2', 't1.loan_type NOT IN (2,3,4)']}]",
+      "pred_constraint": "[{'AND': ['t1.purchaser_type = 2', 't1.loan_type NOT IN (2,3,4)']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If (agency code = 2, 3, 5, 7, or 9) or (agency code = 1 and action taken not = 3 or 7), then reasons for denial must = 1, 2, 3, 4, 5, 6, 7, 8, 9, or blank.",
+      "gold_constraint": "[{'AND': [{'OR': ['t1.agency IN (2,3,5,7,9)', {'AND': ['t1.agency = 1', 't1.action_taken_type NOT IN (3,7)']}]}, {'OR': [{'AND': ['t1.denial_reason_1 IS NOT NULL', 't1.denial_reason_1 NOT IN (1,2,3,4,5,6,7,8,9)']}, {'AND': ['t1.denial_reason_2 IS NOT NULL', 't1.denial_reason_2 NOT IN (1,2,3,4,5,6,7,8,9)']}, {'AND': ['t1.denial_reason_3 IS NOT NULL', 't1.denial_reason_3 NOT IN (1,2,3,4,5,6,7,8,9)']}]}]}]",
+      "pred_constraint": null,
+      "pred_is_non_null": false
+    },
+    {
+      "sentence": "Responses for reasons for denial must not be the same (i.e. 1,1; 1,1,2; 1,2,2;...........).",
+      "gold_constraint": "[{'AND': ['t1.denial_reason_1 IS NOT NULL', 't1.denial_reason_2 IS NOT NULL', 't1.denial_reason_1 = t1.denial_reason_2']}, {'AND': ['t1.denial_reason_1 IS NOT NULL', 't1.denial_reason_3 IS NOT NULL', 't1.denial_reason_1 = t1.denial_reason_3']}, {'AND': ['t1.denial_reason_2 IS NOT NULL', 't1.denial_reason_3 IS NOT NULL', 't1.denial_reason_2 = t1.denial_reason_3']}]",
+      "pred_constraint": "[{'OR': ['t1.denial_reason_1 = t1.denial_reason_2', 't1.denial_reason_1 = t1.denial_reason_3', 't1.denial_reason_2 = t1.denial_reason_3']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If agency code = 1 and action taken = 3 or 7, then at least one reason for denial must be provided and must = 1, 2, 3, 4, 5, 6, 7, 8, or 9. Other reasons for denial must = 1, 2, 3, 4, 5, 6, 7, 8, 9 or blank.",
+      "gold_constraint": "[{'AND': ['t1.agency = 1', 't1.action_taken_type IN (3,7)', {'OR': [{'AND': ['t1.denial_reason_1 IS NULL', 't1.denial_reason_2 IS NULL', 't1.denial_reason_3 IS NULL']}, {'AND': ['t1.denial_reason_1 IS NOT NULL', 't1.denial_reason_1 NOT IN (1,2,3,4,5,6,7,8,9)']}, {'AND': ['t1.denial_reason_2 IS NOT NULL', 't1.denial_reason_2 NOT IN (1,2,3,4,5,6,7,8,9)']}, {'AND': ['t1.denial_reason_3 IS NOT NULL', 't1.denial_reason_3 NOT IN (1,2,3,4,5,6,7,8,9)']}]}]}]",
+      "pred_constraint": null,
+      "pred_is_non_null": false
+    },
+    {
+      "sentence": "If action taken type = 2-8, then rate spread must = NA.",
+      "gold_constraint": "[{'AND': ['t1.action_taken_type IN (2,3,4,5,6,7,8)', 't1.rate_spread IS NOT NULL']}]",
+      "pred_constraint": "[{'AND': ['t1.action_taken_type >= 2', 't1.action_taken_type <= 8', 't1.rate_spread IS NOT NULL']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If lien status = 1, then rate spread must be > 1.5% and \u2264 99.99% or NA.",
+      "gold_constraint": "[{'AND': ['t1.lien_status = 1', 't1.rate_spread IS NOT NULL', {'OR': ['t1.rate_spread <= 1.5', 't1.rate_spread > 99.99']}]}]",
+      "pred_constraint": null,
+      "pred_is_non_null": false
+    },
+    {
+      "sentence": "If lien status = 2, then rate spread must be > 3.5% and \u2264 99.99% or NA.",
+      "gold_constraint": "[{'AND': ['t1.lien_status = 2', 't1.rate_spread IS NOT NULL', {'OR': ['t1.rate_spread <= 3.5', 't1.rate_spread > 99.99']}]}]",
+      "pred_constraint": "[{'AND': ['t1.lien_status = 2', {'OR': ['t1.rate_spread <= 3.5', 't1.rate_spread > 99.99']}]}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If lien status = 3, then rate spread must = NA.",
+      "gold_constraint": "[{'AND': ['t1.lien_status = 3', 't1.rate_spread IS NOT NULL']}]",
+      "pred_constraint": "[{'AND': ['t1.lien_status = 3', 't1.rate_spread IS NOT NULL']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If action taken type = 2-5, 7, or 8, HOEPA status must = 2.",
+      "gold_constraint": "[{'AND': ['t1.action_taken_type IN (2,3,4,5,7,8)', 't1.hoepa_status != 2']}]",
+      "pred_constraint": null,
+      "pred_is_non_null": false
+    },
+    {
+      "sentence": "HOEPA status must = 1 or 2.",
+      "gold_constraint": "['t1.hoepa_status NOT IN (1,2)']",
+      "pred_constraint": "['t1.hoepa_status NOT IN (1,2)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If lien status = 3, then HOEPA status must = 2.",
+      "gold_constraint": "[{'AND': ['t1.lien_status = 3', 't1.hoepa_status != 2']}]",
+      "pred_constraint": "[{'AND': ['t1.lien_status = 3', 't1.hoepa_status != 2']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Lien status must = 1, 2, 3, or 4.",
+      "gold_constraint": "['t1.lien_status NOT IN (1,2,3,4)']",
+      "pred_constraint": "['t1.lien_status NOT IN (1,2,3,4)']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If loan purpose = 1 or 3, then lien status must = 1, 2, or 4.",
+      "gold_constraint": "[{'AND': ['t1.loan_purpose IN (1,3)', 't1.lien_status NOT IN (1,2,4)']}]",
+      "pred_constraint": "[{'AND': ['t1.loan_purpose IN (1,3)', 't1.lien_status NOT IN (1,2,4)']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If action taken type = 1-5, 7 or 8, then lien status must = 1, 2, or 3.",
+      "gold_constraint": "[{'AND': ['t1.action_taken_type IN (1,2,3,4,5,7,8)', 't1.lien_status NOT IN (1,2,3)']}]",
+      "pred_constraint": "[{'AND': ['t1.action_taken_type IN (1,2,3,4,5,7,8)', 't1.lien_status NOT IN (1,2,3)']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "If action taken type = 6, then lien status must = 4.",
+      "gold_constraint": "[{'AND': ['t1.action_taken_type = 6', 't1.lien_status != 4']}]",
+      "pred_constraint": "[{'AND': ['t1.action_taken_type = 6', 't1.lien_status != 4']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Agency code must = 1, 2, 3, 5, 7, 9. The agency that submits the data must be the same as the reported agency code.",
+      "gold_constraint": "['t1.agency NOT IN (1,2,3,5,7,9)']",
+      "pred_constraint": null,
+      "pred_is_non_null": false
+    },
+    {
+      "sentence": "Application/loan number must be unique.",
+      "gold_constraint": "[{'AND': ['t1.respondent_id = t2.respondent_id', 't1.agency = t2.agency', 't1.loan_number = t2.loan_number']}]",
+      "pred_constraint": "['t1.loan_number = t2.loan_number']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Activity year must = year being processed (= 2014).",
+      "gold_constraint": "['t1.activity_year != 2014']",
+      "pred_constraint": "['t1.activity_year != 2014']",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Application/Loan number must not = blank or all zeros.",
+      "gold_constraint": "[{'OR': ['t1.loan_number IS NULL', 't1.loan_number = 0']}]",
+      "pred_constraint": "[{'OR': ['t1.loan_number IS NULL', 't1.loan_number = 0']}]",
+      "pred_is_non_null": true
+    },
+    {
+      "sentence": "Century (CC) and Year (YY) of action taken date must = activity century/year (CCYY) for period being processed.",
+      "gold_constraint": "[{'OR': ['t1.action_taken_date < t1.activity_year * 10000', 't1.action_taken_date >= (t1.activity_year + 1) * 10000']}]",
+      "pred_constraint": null,
+      "pred_is_non_null": false
+    }
+  ]
+}

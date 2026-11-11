@@ -1,0 +1,15 @@
+experiment_name: "HMDAZ Qwen Structured Retry"
+experiment_type: "mapper_gt_only"
+results_dir: "results/official_openrouter/mapping_hmdaz_qwen_structured_retry"
+max_gt_rules: 3
+
+datasets:
+  - hmdaz
+
+dataset_options:
+  hmdaz: { data_file: "hmdaz.csv", gt_file: "hmdaz_text2rule_gt.json", stream_csv: true, profile_rows: 10000, validate_ground_truth: false, validate_predicates: false }
+
+variants:
+  - name: "Single Prompt | Qwen3 32B"
+    use_context: false
+    mapper: { implementation: "llm", provider: "openrouter", model: "qwen/qwen3-32b", prompt_key: "with_examples", batch_size: 10, structured_output: true }

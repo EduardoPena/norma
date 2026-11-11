@@ -1,0 +1,423 @@
+Execution artifacts: results/v3/telemetry/20261013_215731_662134
+
+================================================================================
+GT-ONLY MAPPER EVALUATION: hmda_e2_hospital_mistrallarge4_MultiStep
+================================================================================
+
+Results directory: results/v3/e2_mapping/hmda_e2_hospital_mistrallarge4_multistep_20261014_233135
+Timestamp:         20261014_233135
+
+Scope: GT constraint sentences only (rules != null)
+No classifier — pure mapping quality measurement.
+
+Metrics computed over GT sentences:
+  Syntactic:   exact match, predicate Jaccard
+  Pairwise:    violation exact match, P/R/F1/Jaccard
+  Aggregate:   pooled violation P/R/F1
+================================================================================
+
+Config YAML saved to: results/v3/e2_mapping/hmda_e2_hospital_mistrallarge4_multistep_20261014_233135/config.yaml
+Execution config saved to: results/v3/e2_mapping/hmda_e2_hospital_mistrallarge4_multistep_20261014_233135/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: hospital
+--------------------------------------------------------------------------------
+Loading hospital...
+Total sentences in document: 109
+GT constraint sentences:     15  ← only these are fed to the mapper
+Non-constraint sentences:    94  ← skipped
+
+
+[1/1] Variant: Multi-Step | Mistral Large 4
+  Implementation: multi_step_refinement
+  Model:          mistralai/mistral-large-4-0
+  Creating mapper (multi_step_refinement)...
+  Mapping 15 GT sentences...
+
+============================================================
+Processing: A provider number uniquely identifies a hospital name....
+
+============================================================
+Processing: A hospital name uniquely determines its provider number....
+
+============================================================
+============================================================
+Processing: A hospital name uniquely determines its city....
+
+
+============================================================
+Processing: A hospital name uniquely determines its ZIP code....
+Processing: A hospital name uniquely determines its street address....
+
+============================================================
+Processing: A city name uniquely determines its county....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["HospitalName", "City"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency where HospitalName uniquely determines City. Both concepts are explicitly mentioned in the sentence ('hospital name' and 'its city') and map directly to the HospitalName and City columns in the schema, both of which are available in the predicate list.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalName', 'City']
+-> Step 3: Considering 28 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["HospitalName", "ProviderNumber"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency constraint where HospitalName uniquely determines ProviderNumber (i.e., each hospital name maps to exactly one provider number). Both columns are explicitly named in the sentence and are present in the predicate list.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalName', 'ProviderNumber']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["HospitalName", "ZipCode"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency constraint where the hospital name (HospitalName) uniquely determines the ZIP code (ZipCode). Both concepts are explicitly mentioned in the sentence and correspond directly to columns in the available schema that have predicates defined. The constraint asserts that for any given HospitalName value, there is exactly one associated ZipCode value.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalName', 'ZipCode']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["ProviderNumber", "HospitalName"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency constraint where a provider number uniquely determines (identifies) a hospital name. This directly involves the ProviderNumber column as the identifying attribute and the HospitalName column as the dependent attribute. Both columns are explicitly named in the sentence and are present in the available predicate list.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['ProviderNumber', 'HospitalName']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["City", "CountyName"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency constraint where a city name determines its county. 'City name' directly maps to the City column, and 'county' maps to the CountyName column. The phrase 'uniquely determines' indicates that City is a determinant of CountyName (City → CountyName), meaning each city value maps to exactly one county value.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['City', 'CountyName']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.City != t2.City']
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.ZipCode != t2.ZipCode']
+-> Step 3: Selected 2 predicates: ['t1.ProviderNumber = t2.ProviderNumber', 't1.HospitalName != t2.HospitalName']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["HospitalName", "Address"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency constraint where the hospital name determines the street address. 'Hospital name' maps directly to the HospitalName column, and 'street address' maps directly to the Address column (described in the schema as 'The hospital's street address'). Both columns are explicitly mentioned in the sentence and are available in the predicate list. No other columns are required to express this relationship.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalName', 'Address']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.ProviderNumber != t2.ProviderNumber']
+-> Step 3: Selected 2 predicates: ['t1.City = t2.City', 't1.CountyName != t2.CountyName']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency where ProviderNumber determines HospitalName. A concrete violation exists when two records share the same ProviderNumber but have different HospitalName values (t1.ProviderNumber = t2.ProviderNumber AND t1.HospitalName != t2.HospitalName). (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency: the same hospital name must always map to the same city. A concrete violation occurs when two records have identical HospitalName values but different City values (t1.HospitalName = t2.HospitalName AND t1.City != t2.City), which is directly expressible from the matched columns. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency: HospitalName determines ZipCode. A concrete violation exists when two records share the same HospitalName but have different ZipCode values (t1.HospitalName = t2.HospitalName AND t1.ZipCode != t2.ZipCode), which is directly checkable from the data. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency: the same HospitalName must always map to the same ProviderNumber. A concrete violation occurs when two records share the same HospitalName but have different ProviderNumbers (t1.HospitalName = t2.HospitalName AND t1.ProviderNumber != t2.ProviderNumber). (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.Address != t2.Address']
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.City != t2.City']}]
+   If two records have the same hospital name, they must have the same city. A violation exists when the same hospital name is associated with two different cities.
+
+-> Verification iteration 1/2
+-> Step 5: Found 27 violations
+
+============================================================
+Processing: A hospital name uniquely determines its phone number....
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency (City → CountyName). The concrete violation scenario is two records sharing the same City value but having different CountyName values, which is exactly captured by the predicates t1.City = t2.City AND t1.CountyName != t2.CountyName. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.ProviderNumber != t2.ProviderNumber']}]
+   Two records with the same hospital name but different provider numbers is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 25 violations
+
+============================================================
+Processing: A hospital name uniquely determines its ownership type....
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.ZipCode != t2.ZipCode']}]
+   Two records with the same hospital name must not have different ZIP codes.
+
+-> Verification iteration 1/2
+-> Step 5: Found 27 violations
+
+============================================================
+Processing: A hospital identified by name, phone, and owner must have a consistent state....
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency: HospitalName determines Address. A concrete violation exists when two records share the same HospitalName but have different Address values (t1.HospitalName = t2.HospitalName AND t1.Address != t2.Address), which the denial constraint forbids. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.ProviderNumber = t2.ProviderNumber', 't1.HospitalName != t2.HospitalName']}]
+   Two records with the same ProviderNumber must not have different HospitalNames
+
+-> Verification iteration 1/2
+-> Step 5: Found 25 violations
+
+============================================================
+Processing: A measure code uniquely determines its measure name....
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.Address != t2.Address']}]
+   Two records with the same hospital name must not have different street addresses.
+
+-> Verification iteration 1/2
+-> Step 5: Found 25 violations
+
+============================================================
+Processing: A measure name uniquely determines its measure code....
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.City = t2.City', 't1.CountyName != t2.CountyName']}]
+   Two records with the same city name but different county names
+
+-> Verification iteration 1/2
+-> Step 5: Found 69 violations
+
+============================================================
+Processing: A measure code uniquely determines the medical condition it measures....
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["HospitalName", "HospitalOwner"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency where 'hospital name' (HospitalName) uniquely determines 'ownership type' (HospitalOwner). Both concepts map directly to columns in the schema: HospitalName is the name of the hospital, and HospitalOwner is described as the hospital's ownership category with values like government, proprietary, and voluntary non-profit. Both columns are available in the predicate list.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalName', 'HospitalOwner']
+-> Step 3: Considering 32 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["MeasureCode", "MeasureName"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency constraint stating that MeasureCode uniquely determines MeasureName. Both 'measure code' and 'measure name' are explicitly mentioned in the sentence and correspond directly to the MeasureCode and MeasureName columns in the schema. No additional columns are needed to scope or express this constraint.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['MeasureCode', 'MeasureName']
+-> Step 3: Considering 28 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["HospitalName", "PhoneNumber", "HospitalOwner", "State"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency constraint: a hospital identified by the combination of name (HospitalName), phone (PhoneNumber), and owner (HospitalOwner) must have a consistent state (State). This means that for any given combination of these three identifying attributes, the State value must be the same across all records. All four columns are explicitly mentioned in the sentence or directly map to the concepts described ('name' → HospitalName, 'phone' → PhoneNumber, 'owner' → HospitalOwner, 'state' → State).",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalName', 'PhoneNumber', 'HospitalOwner', 'State']
+-> Step 3: Considering 72 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["HospitalName", "PhoneNumber"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency constraint where 'hospital name' (HospitalName) uniquely determines 'phone number' (PhoneNumber). Both columns are explicitly named in the sentence and are present in the available predicate list. The constraint asserts that each distinct hospital name maps to exactly one phone number.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['HospitalName', 'PhoneNumber']
+-> Step 3: Considering 36 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["MeasureName", "MeasureCode"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency constraint where 'measure name' (MeasureName) uniquely determines 'measure code' (MeasureCode). Both concepts map directly to columns explicitly named in the sentence and present in the available schema's predicate list. The constraint asserts that each MeasureName value corresponds to exactly one MeasureCode value.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['MeasureName', 'MeasureCode']
+-> Step 3: Considering 28 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.HospitalOwner != t2.HospitalOwner']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["MeasureCode", "Condition"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency constraint: 'A measure code uniquely determines the medical condition it measures.' The phrase 'measure code' directly maps to the MeasureCode column, and 'medical condition' directly maps to the Condition column (defined in the schema as 'The condition or care area associated with the reported measure'). Both columns are explicitly present in the available schema and are included in the list of columns with predicates defined. The constraint establishes that MeasureCode functionally determines Condition (i.e., each MeasureCode value maps to exactly one Condition value).",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['MeasureCode', 'Condition']
+-> Step 3: Considering 32 predicate candidates
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency: HospitalName determines HospitalOwner. A concrete violation exists when two records share the same HospitalName but have different HospitalOwner values (t1.HospitalName = t2.HospitalName AND t1.HospitalOwner != t2.HospitalOwner), which contradicts the uniqueness claim. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency where MeasureCode determines MeasureName. The concrete violation scenario is two rows having the same MeasureCode value but different MeasureName values, which is expressible as the denial constraint: NOT (t1.MeasureCode = t2.MeasureCode AND t1.MeasureName != t2.MeasureName). (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3: Selected 2 predicates: ['t1.HospitalName = t2.HospitalName', 't1.PhoneNumber != t2.PhoneNumber']
+-> Step 3: Selected 2 predicates: ['t1.MeasureName = t2.MeasureName', 't1.MeasureCode != t2.MeasureCode']
+-> Step 3: Selected 4 predicates: ['t1.HospitalName = t2.HospitalName', 't1.PhoneNumber = t2.PhoneNumber', 't1.HospitalOwner = t2.HospitalOwner', 't1.State != t2.State']
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.HospitalOwner != t2.HospitalOwner']}]
+   Two records with the same hospital name but different ownership types
+
+-> Verification iteration 1/2
+-> Step 5: Found 24 violations
+
+============================================================
+Processing: A measure code uniquely determines the state average for that measure....
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency: the same HospitalName must always map to the same PhoneNumber. A concrete violation exists when two records have identical HospitalName values but different PhoneNumber values (t1.HospitalName = t2.HospitalName AND t1.PhoneNumber != t2.PhoneNumber). (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3: Selected 2 predicates: ['t1.MeasureCode = t2.MeasureCode', 't1.Condition != t2.Condition']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency where MeasureName determines MeasureCode. A concrete violation exists when two records share the same MeasureName but have different MeasureCodes (t1.MeasureName = t2.MeasureName AND t1.MeasureCode != t2.MeasureCode). (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.MeasureCode = t2.MeasureCode', 't1.MeasureName != t2.MeasureName']}]
+   Two records with the same MeasureCode but different MeasureNames is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 77 violations
+
+============================================================
+Processing: The same medical condition and measure name must be associated with the same hos...
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.PhoneNumber != t2.PhoneNumber']}]
+   Two records with the same hospital name but different phone numbers is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 24 violations
+
+============================================================
+Processing: Hospitals in the same ZIP code must have the same emergency service availability...
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency where MeasureCode uniquely determines Condition. A concrete violation exists when two rows share the same MeasureCode but have different Condition values (t1.MeasureCode = t2.MeasureCode AND t1.Condition != t2.Condition). (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency where the combination of HospitalName, PhoneNumber, and HospitalOwner determines State; a concrete violation occurs when two records share identical values for name, phone, and owner but have conflicting State values (t1.HospitalName = t2.HospitalName ∧ t1.PhoneNumber = t2.PhoneNumber ∧ t1.HospitalOwner = t2.HospitalOwner ∧ t1.State ≠ t2.State). (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 4 columns
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.MeasureName = t2.MeasureName', 't1.MeasureCode != t2.MeasureCode']}]
+   Two records sharing the same MeasureName but having different MeasureCodes is a violation, as the measure name must uniquely determine its code.
+
+-> Verification iteration 1/2
+-> Step 5: Found 37 violations
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.MeasureCode = t2.MeasureCode', 't1.Condition != t2.Condition']}]
+   Two records with the same MeasureCode but different Condition values is a violation
+
+-> Verification iteration 1/2
+-> Step 5: Found 40 violations
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["ZipCode", "EmergencyService"],
+  "implied_columns": [],
+  "reasoning": "The constraint enforces that hospitals sharing the same geographic location (ZIP code) must have identical emergency service status. 'ZIP code' directly maps to the ZipCode column, which stores the hospital's ZIP code as an integer. 'Emergency service availability' directly maps to the EmergencyService column, which indicates whether the hospital offers emergency service (encoded as 'yes' or 'no'). The constraint establishes a functional dependency where the ZipCode value determines the EmergencyService value across all hospital records.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['ZipCode', 'EmergencyService']
+-> Step 3: Considering 40 predicate candidates
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.HospitalName = t2.HospitalName', 't1.PhoneNumber = t2.PhoneNumber', 't1.HospitalOwner = t2.HospitalOwner', 't1.State != t2.State']}]
+   Two rows with the same HospitalName, PhoneNumber, and HospitalOwner must not have different State values. A violation occurs when two records share the same hospital identifier but report conflicting states.
+
+-> Verification iteration 1/2
+-> Step 5: Found 24 violations
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["Condition", "MeasureName", "HospitalType"],
+  "implied_columns": [],
+  "reasoning": "The sentence explicitly mentions three concepts that map directly to schema columns: 'medical condition' corresponds to the Condition column (described as the condition or care area), 'measure name' corresponds to the MeasureName column (the text description of the measure), and 'hospital type' corresponds to the HospitalType column (the category describing the hospital type). The constraint establishes that the combination of Condition and MeasureName must functionally determine (be associated with) a consistent HospitalType value.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['Condition', 'MeasureName', 'HospitalType']
+-> Step 3: Considering 50 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.ZipCode = t2.ZipCode', 't1.EmergencyService != t2.EmergencyService']
+-> Step 3: Selected 3 predicates: ['t1.Condition = t2.Condition', 't1.MeasureName = t2.MeasureName', 't1.HospitalType != t2.HospitalType']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency: ZipCode determines EmergencyService. A concrete violation exists when two hospital records share the same ZipCode but have different EmergencyService values (e.g., one 'yes' and one 'no'), expressible as t1.ZipCode = t2.ZipCode AND t1.EmergencyService != t2.EmergencyService. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency where the combination of Condition and MeasureName determines HospitalType. A concrete violation exists when two tuples share the same Condition and MeasureName values but have different HospitalType values (t1.Condition = t2.Condition AND t1.MeasureName = t2.MeasureName AND t1.HospitalType != t2.HospitalType). (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["MeasureCode", "Stateavg"],
+  "implied_columns": [],
+  "reasoning": "The sentence describes a functional dependency constraint: 'measure code' explicitly maps to the MeasureCode column, and 'the state average' explicitly maps to the Stateavg column. The phrase 'uniquely determines' indicates a functional dependency relationship (MeasureCode → Stateavg) between these two columns. Both columns are present in the available schema and in the list of columns with predicates defined.",
+  "missing_concepts": [],
+  "reason": null
+}...
+-> Step 2: Identified columns ['MeasureCode', 'Stateavg']
+-> Step 3: Considering 28 predicate candidates
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.ZipCode = t2.ZipCode', 't1.EmergencyService != t2.EmergencyService']}]
+   Two hospitals in the same ZIP code have different emergency service availability values (one has 'yes' and the other has 'no', or vice versa).
+
+-> Verification iteration 1/2
+-> Step 5: Found 25 violations
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.Condition = t2.Condition', 't1.MeasureName = t2.MeasureName', 't1.HospitalType != t2.HospitalType']}]
+   Two records with the same medical condition and measure name must not be associated with different hospital types.
+
+-> Verification iteration 1/2
+-> Step 5: Found 40 violations
+-> Step 3: Selected 2 predicates: ['t1.MeasureCode = t2.MeasureCode', 't1.Stateavg != t2.Stateavg']
+-> Step 3.5 [GATE]: PASS — The sentence asserts a functional dependency where MeasureCode determines Stateavg. A concrete violation occurs when two tuples share the same MeasureCode but have different Stateavg values (t1.MeasureCode = t2.MeasureCode AND t1.Stateavg != t2.Stateavg), which the denial constraint forbids. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.MeasureCode = t2.MeasureCode', 't1.Stateavg != t2.Stateavg']}]
+   Two records with the same MeasureCode must not have different Stateavg values.
+
+-> Verification iteration 1/2
+-> Step 5: Found 815 violations
+  Evaluating pairwise quality (15 GT sentences)...
+  Evaluating aggregate violation (GT sentences pooled)...
+  Saving outputs...
+  Saved detailed results: hospital_Multi-Step_|_Mistral_Large_4_detailed.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 181.34s  (15 GT sentences)
+
+  ── AGGREGATE VIOLATION DISCOVERY (GT sentences pooled) ───────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     Gold violations:      834
+     Predicted violations: 834
+     Overlap violations:   834
+
+  ── CONSTRAINT EXACT MATCH (GT sentences) ─────────────────────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     TP: 15  FP: 0  FN: 0
+     Predicted: 15, Gold: 15
+
+  ── PAIRWISE SYNTACTIC QUALITY (n=15) ──────────────────────────────
+     Exact Match:       1.000 (15/15)
+     Predicate Jaccard: 1.000 (±0.000)
+
+  ── PAIRWISE VIOLATION DISCOVERY ───────────────────────────────────────
+     Exact Match:       1.000 (15/15)
+     Precision:         1.000 (±0.000)
+     Recall:            1.000 (±0.000)
+     F1:                1.000 (±0.000)
+     Violation Jaccard: 1.000 (±0.000)
+
+  INSIGHT: Syntactic vs Violation Gap = 0.000
+  Variant completed
+
+==================================================================================================================================
+COMPARISON TABLE  —  GT sentences only, no classifier
+==================================================================================================================================
+  Variant                                       Impl       Model                  AggViol F1   ConstExact F1   SynExact   SynJacc    ViolF1     ViolJacc   Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Multi-Step | Mistral Large 4                  multi_step_refinement mistralai/mistral-large-4-0 1.000        1.000           1.000      1.000      1.000      1.000      181.34    
+
+  Best Aggregate Violation F1:   Multi-Step | Mistral Large 4 (1.000)
+  Best Constraint Exact F1:      Multi-Step | Mistral Large 4 (1.000)
+  Best Syntactic Exact Match:    Multi-Step | Mistral Large 4 (1.000)
+  Best Pairwise Violation F1:    Multi-Step | Mistral Large 4 (1.000)
+  Fastest:                       Multi-Step | Mistral Large 4 (181.34s)
+==================================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3/e2_mapping/hmda_e2_hospital_mistrallarge4_multistep_20261014_233135

@@ -1,0 +1,33 @@
+experiment_name: "GT-Only Mapper - Remaining Datasets - OpenRouter GPT-5.4"
+experiment_type: "mapper_gt_only"
+results_dir: "results/all_datasets_gpt54/mapping"
+
+datasets:
+  - hmda_checks
+  - hmdaz
+
+dataset_options:
+  hmda_checks:
+    data_file: "hmda.csv"
+    gt_file: "hmda_regc_checks-text2rule-gt.json"
+    stream_csv: true
+    profile_rows: 10000
+    validate_ground_truth: false
+    validate_predicates: false
+  hmdaz:
+    data_file: "hmdaz.csv"
+    gt_file: "hmdaz_text2rule_gt.json"
+    stream_csv: true
+    profile_rows: 10000
+    validate_ground_truth: false
+    validate_predicates: false
+
+variants:
+  - name: "MultiStep | OpenRouter | GPT-5.4"
+    use_context: false
+    mapper:
+      implementation: "multi_step_refinement"
+      provider: "openrouter"
+      model: "openai/gpt-5.4"
+      max_refinement_iterations: 2
+      prompt_file: "multi_step_refinement"

@@ -1,0 +1,41 @@
+experiment_name: sp_colret_hospital_r1
+experiment_type: mapper_gt_only
+results_dir: results/sp_column_retrieval_validation/e2_mapping
+datasets:
+- hospital
+dataset_options:
+  hospital:
+    gt_file: hospital-holo_text2rule_gt.json
+    sample_rows: 1000000
+    stream_csv: true
+    drop_multi_rule_sentences: false
+    predicate_space: v2
+variants:
+- name: Single Prompt | prompt v2 + semantic
+  use_context: false
+  mapper:
+    implementation: llm
+    provider: openrouter
+    model: openai/gpt-6-luna
+    max_candidate_predicates: 1000
+    max_relevant_columns: 12
+    prompt_key: with_examples_v2
+    batch_size: 3
+    column_context: true
+    explain_violation: true
+    embedding_model: openai/text-embedding-3-large
+    column_retrieval: semantic
+- name: Single Prompt | prompt v2 + hybrid
+  use_context: false
+  mapper:
+    implementation: llm
+    provider: openrouter
+    model: openai/gpt-6-luna
+    max_candidate_predicates: 1000
+    max_relevant_columns: 12
+    prompt_key: with_examples_v2
+    batch_size: 3
+    column_context: true
+    explain_violation: true
+    embedding_model: openai/text-embedding-3-large
+    column_retrieval: hybrid

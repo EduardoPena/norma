@@ -1,0 +1,255 @@
+Execution artifacts: results/v3_fix/telemetry/20261021_212614_456531
+
+================================================================================
+FULL MAPPER EVALUATION: hmda_e3_tax_C_MS
+================================================================================
+
+Results directory: results/v3_fix/e3_end2end/hmda_e3_tax_c_ms_20261021_221745
+Timestamp: 20261021_221745
+
+Evaluation scope:
+  SENTENCE_DIRECT / FILTERED:
+    Classification metrics     → ALL sentences
+    Aggregate violation        → ALL sentences (all predicted vs all GT)
+    Pairwise mapping metrics   → GT constraint sentences only
+  DOCUMENT:
+    Aggregate violation        → all predicted rules vs all GT constraints
+    All other metrics          → N/A
+================================================================================
+
+Config YAML saved to: results/v3_fix/e3_end2end/hmda_e3_tax_c_ms_20261021_221745/config.yaml
+Execution config saved to: results/v3_fix/e3_end2end/hmda_e3_tax_c_ms_20261021_221745/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: tax
+--------------------------------------------------------------------------------
+Loading tax...
+Total sentences:          126
+GT constraint sentences:  6
+Non-constraint sentences: 120
+
+
+[1/1] Variant: C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5
+  Mode:           SENTENCE_FILTERED
+  Implementation: multi_step_refinement
+  Processing all 126 sentences (mode=SENTENCE_FILTERED)...
+
+[SENTENCE_FILTERED] Processing 126 sentences
+  Phase 1: 12 rules
+
+============================================================
+Processing: The tax table contains fifteen distinct fields that capture a comprehensive prof...
+
+============================================================
+============================================================
+Processing: Two persons with the same ZIP code must live in the same state....
+
+============================================================
+Processing: For example, all individuals with ZIP code 58776 in the sample data reside in No...
+
+Processing: Each person is uniquely identified by area code and phone number....
+============================================================
+Processing: If a person lives in Denver, their state must be Colorado....
+
+============================================================
+
+Processing: Geographic reference tables maintained by the system list approximately 180 majo...
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip","state"],"implied_columns":[],"reasoning":"The sentence says that rows sharing the same ZIP code must share the same state, which is a functional dependency zip -> state. 'ZIP code' maps to zip and 'state' maps to state. The person identity is implicit in the row, so no other column is needed.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['zip', 'state']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip","state"],"implied_columns":[],"reasoning":"The sentence says every individual with ZIP code 58776 resides in North Dakota. This is a functional-dependency-style constraint between zip (the ZIP code) and state (the state abbreviation, here ND). City and areacode are geographic but are not mentioned, so they are not needed.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['zip', 'state']
+-> Step 3: Considering 36 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":[],"implied_columns":["fname","lname","gender","areacode","phone","city","state","zip","maritalstatus","haschild","salary","rate","singleexemp","marriedexemp","childexemp"],"reasoning":"The sentence says the tax table has fifteen distinct fields that profile each taxpayer. It names no specific column, but it refers to the whole set of fields. The table has exactly fifteen columns, and all of them have predicates, so every column is relevant.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['fname', 'lname', 'gender', 'areacode', 'phone', 'city', 'state', 'zip', 'maritalstatus', 'haschild', 'salary', 'rate', 'singleexemp', 'marriedexemp', 'childexemp']
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state"],"implied_columns":[],"reasoning":"The sentence says that if a person lives in Denver (a city), their state must be Colorado. The city column holds the city name (Denver) and the state column holds the state abbreviation (CO). Zip and areacode are geographically related, but the constraint does not mention them, so they are not needed.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['city', 'state']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["city","state"],"implied_columns":[],"reasoning":"The sentence describes geographic reference data with explicit city-state associations across about 180 major metropolitan areas. The city and state columns carry these associations, so both are relevant. The sentence refers to separate reference tables maintained by the system, which are not in the schema, but the city-state pairing maps to the tax table's city and state columns. Zip and areacode are geographic but are not mentioned, so they are not included.","missing_concepts":["separate geographic reference table","count of approximately 180 metropolitan areas (aggregate count)"],"reason":null}...
+-> Step 2: Identified columns ['city', 'state']
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["areacode","phone"],"implied_columns":["fname","lname"],"reasoning":"The sentence says a person is uniquely identified by the combination of area code and phone number, so areacode and phone are the key columns. The person's identity attributes (fname, lname) are implied as the entity being identified, since the uniqueness constraint determines which person a given area code and phone pair refers to. Including them is a cautious choice, since the sentence does not name them.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['areacode', 'phone', 'fname', 'lname']
+-> Step 3: Considering 64 predicate candidates
+-> Step 3: Considering 482 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.zip = t2.zip', 't1.state != t2.state']
+-> Step 3: Selected 2 predicates: ['t1.city = $string', 't1.state != $string']
+-> Step 3: Selected 2 predicates: ['t1.zip = $int', 't1.state != $string']
+-> Step 3 failed: The sentence is a descriptive statement about reference data (a count of about 180 metro areas with city-state pairs). It states no enforceable constraint that can be expressed as a denial constraint over the city and state columns.
+-> Predicate selection failed: The sentence is a descriptive statement about reference data (a count of about 180 metro areas with city-state pairs). It states no enforceable constraint that can be expressed as a denial constraint over the city and state columns.
+
+============================================================
+Processing: Within the same state, a person with lower salary cannot have higher tax rate....
+-> Step 3: Selected 2 predicates: ['t1.areacode = t2.areacode', 't1.phone = t2.phone']
+-> Step 3.5 [GATE]: PASS — Functional dependency zip -> state: a violation is a pair of tuples with t1.zip = t2.zip but t1.state != t2.state. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — Value mapping: ZIP 58776 must map to North Dakota; violation is a row with zip = 58776 and state != 'ND' (state values are two-letter abbreviations). (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — Value mapping with a concrete violation: a row where city = 'Denver' AND state != 'Colorado' is a checkable violation, though the profile shows state values as two-letter codes and city values in uppercase, so the constants should likely be 'DENVER' and 'CO'. (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3 failed: The sentence is a descriptive statement about schema (the number of fields), not a data constraint, so it cannot be expressed as a denial constraint.
+-> Predicate selection failed: The sentence is a descriptive statement about schema (the number of fields), not a data constraint, so it cannot be expressed as a denial constraint.
+
+============================================================
+Processing: Looking at the sample data, Ohio residents demonstrate this pattern clearly acro...
+-> Step 3.5 [GATE]: PASS — Area code and phone number together act as a key identifying a person, so two distinct records with the same areacode and phone but a different person (e.g., different fname or lname) violate the constraint. (confidence=medium)
+-> Step 4: Constructing constraint with 2 predicates and 4 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":["state","salary","rate"],"implied_columns":[],"reasoning":"The constraint compares salary and tax rate between persons within the same state. 'state' is the grouping column, 'salary' is the 'lower salary' value, and 'rate' is the tax rate (the table is a tax table and rate is described as likely the tax rate). No other columns are needed to scope the constraint.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['state', 'salary', 'rate']
+-> Step 3: Considering 58 predicate candidates
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.state != t2.state']}]
+   Two rows with the same ZIP code but different states are a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 14 violations
+
+============================================================
+Processing: Within the same ZIP code, one person cannot earn less but have a higher tax rate...
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.zip = 58776', "t1.state != 'ND'"]}]
+   A record with ZIP code 58776 whose state is not North Dakota ('ND') is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: The system tracks three exemption categories separately: single, married, and ch...
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ["t1.city = 'DENVER'", "t1.state != 'CO'"]}]
+   A record with city DENVER whose state is anything other than CO is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 8 violations
+
+============================================================
+Processing: These values appear as integer fields measured in dollars....
+-> Step 2 response: {"is_valid":true,"direct_columns":["state","salary"],"implied_columns":[],"reasoning":"\"Ohio residents\" maps to the state column, which holds state abbreviations (Ohio would be \"OH\"). \"Across different income levels\" maps to salary, the only income-like column. \"This pattern\" is not defined in the sentence, so no other columns can be identified, though rate might be the pattern's subject; it is not named, so it is left out.","missing_concepts":["the specific 'pattern' being referenced is undefined"],"reason":null}...
+-> Step 2: Identified columns ['state', 'salary']
+-> Step 3: Considering 36 predicate candidates
+-> Step 4: Constructed uniqueness with 1 rule(s)
+   [{'AND': ['t1.areacode = t2.areacode', 't1.phone = t2.phone']}]
+   Two different records with the same area code and the same phone number is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 4 violations
+
+============================================================
+Processing: A person single tax exemption cannot be greater than his salary....
+-> Step 3: Selected 3 predicates: ['t1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']
+-> Step 2 response: {"is_valid":true,"direct_columns":["zip","salary","rate"],"implied_columns":[],"reasoning":"The constraint groups records by ZIP code (zip), compares earnings (salary), and compares the tax rate (rate). Within the same zip, a lower salary must not come with a higher rate. Other columns such as state or city are not mentioned, so they are not needed to scope the constraint.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['zip', 'salary', 'rate']
+-> Step 3: Considering 78 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","marriedexemp","childexemp"],"implied_columns":["maritalstatus","haschild"],"reasoning":"The sentence names three exemption categories (single, married, child), which map directly to singleexemp, marriedexemp and childexemp. The categories also relate to maritalstatus (S/M) and haschild (Y/N), which determine which exemption applies, so they are included as implied columns.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'marriedexemp', 'childexemp', 'maritalstatus', 'haschild']
+-> Step 2 response: {"is_valid":true,"direct_columns":["salary","singleexemp","marriedexemp","childexemp"],"implied_columns":[],"reasoning":"The sentence says the values are integer fields measured in dollars. This points to integer monetary columns: salary, which is the income amount, and the three exemption amount columns (singleexemp, marriedexemp, childexemp). Rate is a float tax percentage, so it is not an integer dollar field. Areacode and zip are integers but are identifiers, not dollar amounts.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['salary', 'singleexemp', 'marriedexemp', 'childexemp']
+-> Step 3: Considering 138 predicate candidates
+-> Step 3: Considering 148 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["singleexemp","salary"],"implied_columns":["maritalstatus"],"reasoning":"The sentence compares the single tax exemption (singleexemp) to the person's salary (salary), so both are direct columns. The 'single' exemption may relate to marital status, so maritalstatus is included as a possible scoping column, given the instruction to be inclusive.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['singleexemp', 'salary', 'maritalstatus']
+-> Step 3: Considering 74 predicate candidates
+-> Step 3 failed: The sentence describes an observation about sample data without stating a concrete constraint; the 'pattern' is never defined, so no denial constraint can be derived.
+-> Predicate selection failed: The sentence describes an observation about sample data without stating a concrete constraint; the 'pattern' is never defined, so no denial constraint can be derived.
+-> Step 3.5 [GATE]: PASS — Comparative rule within a group: a violation is two tuples with the same state where t1.salary < t2.salary and t1.rate > t2.rate, which is directly checkable from the data. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 3: Selected 1 predicates: ['t1.singleexemp > t1.salary']
+-> Step 3 failed: The sentence only describes data type and units (integer dollars), which is not a checkable row-level or cross-row constraint.
+-> Predicate selection failed: The sentence only describes data type and units (integer dollars), which is not a checkable row-level or cross-row constraint.
+-> Step 3 failed: The sentence is descriptive of the schema (three separate exemption columns) and does not state a checkable constraint on the data, so no violating condition can be expressed as a denial constraint.
+-> Predicate selection failed: The sentence is descriptive of the schema (three separate exemption columns) and does not state a checkable constraint on the data, so no violating condition can be expressed as a denial constraint.
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.state = t2.state', 't1.salary < t2.salary', 't1.rate > t2.rate']}]
+   Two people in the same state where the one with the lower salary has a strictly higher tax rate than the one with the higher salary.
+
+-> Verification iteration 1/2
+-> Step 3: Selected 3 predicates: ['t1.zip = t2.zip', 't1.salary < t2.salary', 't1.rate > t2.rate']
+-> Step 3.5 [GATE]: PASS — Comparative rule within a single row: a violation occurs when singleexemp > salary for the same tuple, which is directly checkable from the column values. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 3 columns
+-> Step 5: Found 362 violations
+-> Step 3.5 [GATE]: PASS — Comparative rule within a ZIP group: violation is two tuples with t1.zip = t2.zip AND t1.salary < t2.salary AND t1.rate > t2.rate (lower earner has higher tax rate). (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 3 columns
+-> Step 4: Constructed comparative with 1 rule(s)
+   ['t1.singleexemp > t1.salary']
+   A record is a violation when its single tax exemption is greater than its salary.
+
+-> Verification iteration 1/2
+-> Step 5: Found 89 violations
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.zip = t2.zip', 't1.salary < t2.salary', 't1.rate > t2.rate']}]
+   Two people in the same ZIP code where one has a lower salary but a higher tax rate than the other is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 2 violations
+  Phase 2: Mapped 12 rules
+  Evaluating classification (all 126 sentences)...
+  Evaluating pairwise mapping quality (GT sentences only)...
+  Evaluating aggregate violation (all 126 sentences)...
+  Saving outputs...
+  Saved detailed results to: results/v3_fix/e3_end2end/hmda_e3_tax_c_ms_20261021_221745/metrics/tax_C+MS_|_Qwen3.8-2.4T-A95B_+_Claude_Sonnet_5.5_detailed_results.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 30.69s
+
+  ── CLASSIFICATION (all 126 sentences) ──────────────────────────────
+     Accuracy:  0.992
+     Precision: 0.857
+     Recall:    1.000
+     F1:        0.923  [PRIMARY]
+     TP:   6  FP:   1
+     FN:   0  TN: 119
+
+  ── AGGREGATE VIOLATION DISCOVERY (all 126 sentences) ─────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     Gold violations:      468
+     Predicted violations: 468
+     Overlap violations:   468
+
+  ── CONSTRAINT EXACT MATCH (GT sentences only) ─────────────────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     TP: 6  FP: 0  FN: 0
+     Predicted: 6, Gold: 6
+
+  ── PAIRWISE SYNTACTIC QUALITY (GT sentences only, n=6) ──────────
+     Exact Match:       1.000 (6/6)
+     Predicate Jaccard: 1.000 (±0.000)
+
+  ── PAIRWISE VIOLATION DISCOVERY (GT sentences only) ────────────────────
+     Exact Match:       1.000 (6/6)
+     Precision:         1.000 (±0.000)
+     Recall:            1.000 (±0.000)
+     F1:                1.000 (±0.000)
+     Violation Jaccard: 1.000 (±0.000)
+
+  INSIGHT: Syntactic vs Violation Gap (pairwise) = 0.000
+  Variant completed
+
+========================================================================================================================
+COMPARISON TABLE
+========================================================================================================================
+
+Sentence Modes (DIRECT / FILTERED):
+  Left  (all sentences):      Clf F1 | Agg Viol F1
+  Right (GT sentences only):  Const F1 | Syn Exact | Viol F1
+  Variant                                Mode         Impl       [ALL] Clf F1   [ALL] AggViol F1   [GT] Const F1   [GT] Syn Exact   [GT] Viol F1 Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5 SENTENCE_FILTERED multi_step_refinement 0.923          1.000              1.000           1.000            1.000        30.685678872978315
+
+  Best Classification F1 [ALL]:        C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5 (0.923)
+  Best Aggregate Violation F1 [ALL]:   C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5 (1.000)
+  Best Constraint Exact F1 [GT]:       C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5 (1.000)
+  Best Violation F1 Pairwise [GT]:     C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5 (1.000)
+  Fastest Runtime:                     C+MS | Qwen3.8-2.4T-A95B + Claude Sonnet 5.5 (30.69s)
+========================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3_fix/e3_end2end/hmda_e3_tax_c_ms_20261021_221745

@@ -1,0 +1,349 @@
+Execution artifacts: results/v3_fix/telemetry/20261021_181933_850838
+
+================================================================================
+GT-ONLY MAPPER EVALUATION: hmda_e2_sisu_sonnet55_MultiStep
+================================================================================
+
+Results directory: results/v3_fix/e2_mapping/hmda_e2_sisu_sonnet55_multistep_20261021_193646
+Timestamp:         20261021_193646
+
+Scope: GT constraint sentences only (rules != null)
+No classifier — pure mapping quality measurement.
+
+Metrics computed over GT sentences:
+  Syntactic:   exact match, predicate Jaccard
+  Pairwise:    violation exact match, P/R/F1/Jaccard
+  Aggregate:   pooled violation P/R/F1
+================================================================================
+
+Config YAML saved to: results/v3_fix/e2_mapping/hmda_e2_sisu_sonnet55_multistep_20261021_193646/config.yaml
+Execution config saved to: results/v3_fix/e2_mapping/hmda_e2_sisu_sonnet55_multistep_20261021_193646/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: sisu
+--------------------------------------------------------------------------------
+Loading sisu...
+Total sentences in document: 42
+GT constraint sentences:     17  ← only these are fed to the mapper
+Non-constraint sentences:    25  ← skipped
+
+
+[1/1] Variant: Multi-Step | Claude Sonnet 5.5
+  Implementation: multi_step_refinement
+  Model:          anthropic/claude-sonnet-5.5
+  Creating mapper (multi_step_refinement)...
+  Mapping 17 GT sentences...
+
+============================================================
+Processing: O estudante deverá especificar a instituição....
+
+============================================================
+Processing: O estudante deverá especificar o local de oferta....
+
+============================================================
+Processing: O estudante deverá especificar o curso....
+
+============================================================
+Processing: O estudante deverá especificar o turno....
+
+============================================================
+Processing: O estudante deverá especificar a modalidade de concorrência....
+
+============================================================
+Processing: É vedada ao estudante a inscrição em mais de uma modalidade de concorrência para...
+-> Step 2 response: {"is_valid":true,"direct_columns":["mod_concorrencia"],"implied_columns":["tipo_mod_concorrencia","tp_cota"],"reasoning":"The sentence requires the student (candidate) to specify the competition modality (modalidade de concorrência). This maps directly to mod_concorrencia, the textual description of the competition modality. tipo_mod_concorrencia is the coded version of the same concept, and tp_cota is a related quota type category, so both are included as implied columns. The student/candidate identity columns are not needed because this is a simple required-field constraint.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['mod_concorrencia', 'tipo_mod_concorrencia', 'tp_cota']
+-> Step 2 response: {"is_valid":true,"direct_columns":["turno"],"implied_columns":["inscrito","cpf","inscricao_enem"],"reasoning":"The sentence requires the student (estudante) to specify the shift (turno). The 'turno' column directly captures the course shift/attendance mode. The student is identified by inscrito, cpf and inscricao_enem, which are included as the entity identifiers to whom the requirement applies.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['turno', 'inscrito', 'cpf', 'inscricao_enem']
+-> Step 2 response: {"is_valid":true,"direct_columns":["nome_campus","municipio_campus"],"implied_columns":["codigo_campus","uf_campus","nome_ies","codigo_ies","sigla_ies","uf_ies"],"reasoning":"\"Local de oferta\" (place where the course is offered) maps to the campus where the course is offered: nome_campus and municipio_campus describe the location, and codigo_campus and uf_campus identify it. The institution columns (nome_ies, codigo_ies, sigla_ies, uf_ies) are included as possible location context. The student (candidate) specifying it implies a required field. Per the instruction to be inclusive, these columns are listed.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['nome_campus', 'municipio_campus', 'codigo_campus', 'uf_campus', 'nome_ies', 'codigo_ies', 'sigla_ies', 'uf_ies']
+-> Step 2 response: {"is_valid":true,"direct_columns":["nome_ies","sigla_ies","codigo_ies"],"implied_columns":["inscrito","cpf","inscricao_enem"],"reasoning":"The sentence says the student must specify the institution, so the mandated field is the institution identifier. The institution is represented by codigo_ies (code), nome_ies (name) and sigla_ies (abbreviation). The student is the candidate, identified by inscrito, cpf and inscricao_enem, but these are only context for who must provide the value and are not strictly required.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['nome_ies', 'sigla_ies', 'codigo_ies', 'inscrito', 'cpf', 'inscricao_enem']
+-> Step 3: Considering 50 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["nome_curso"],"implied_columns":["codigo_curso"],"reasoning":"The sentence says the student must specify the course, so the mandated field is the course. nome_curso holds the course name and codigo_curso is its identifier, so both could be used to check that a course is specified. The 'student' concept maps to the candidate, but the constraint only requires the course to be provided, so no candidate columns are needed.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['nome_curso', 'codigo_curso']
+-> Step 3: Considering 36 predicate candidates
+-> Step 3: Considering 60 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["mod_concorrencia","tipo_mod_concorrencia","nome_curso","codigo_curso","turno","nome_ies","codigo_ies","sigla_ies","nome_campus","codigo_campus","municipio_campus","uf_campus","inscrito"],"implied_columns":["cpf","inscricao_enem","opcao","tp_cota","uf_ies"],"reasoning":"The rule says a student (identified by cpf, inscricao_enem or inscrito) cannot be enrolled in more than one competition modality (mod_concorrencia, tipo_mod_concorrencia, tp_cota) for the same course (codigo_curso, nome_curso), shift (turno), institution (codigo_ies, nome_ies, sigla_ies) and offer location (codigo_campus, nome_campus, municipio_campus, uf_campus). The student identifier columns scope the uniqueness check. opcao may distinguish the application options, and uf_ies is an additional institution descriptor.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['mod_concorrencia', 'tipo_mod_concorrencia', 'nome_curso', 'codigo_curso', 'turno', 'nome_ies', 'codigo_ies', 'sigla_ies', 'nome_campus', 'codigo_campus', 'municipio_campus', 'uf_campus', 'inscrito', 'cpf', 'inscricao_enem', 'opcao', 'tp_cota', 'uf_ies']
+-> Step 3: Considering 92 predicate candidates
+-> Step 3: Considering 152 predicate candidates
+-> Step 3: Selected 1 predicates: ['t1.mod_concorrencia IS NULL']
+-> Step 3: Selected 1 predicates: ['t1.turno IS NULL']
+-> Step 3: Selected 1 predicates: ['t1.nome_curso IS NULL']
+-> Step 3: Selected 1 predicates: ['t1.nome_ies IS NULL']
+-> Step 3: Selected 1 predicates: ['t1.nome_campus IS NULL']
+-> Step 3: Considering 344 predicate candidates
+-> Step 3.5 [GATE]: PASS — The sentence requires the student to specify the course, a required-field rule; a violation is a record where nome_curso IS NULL. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — The sentence states that the student must specify the competition modality, a required-field rule whose violation is a record where mod_concorrencia IS NULL (the profile shows 1 null). (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 3 columns
+-> Step 3.5 [GATE]: PASS — The sentence states that the student must specify the shift (turno), a required-field rule; a violation is a record where turno IS NULL. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 4 columns
+-> Step 3.5 [GATE]: PASS — The sentence says the student must specify the institution, which is a required-field rule; a violation is a record where nome_ies IS NULL (the profile shows 2 nulls). (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 6 columns
+-> Step 3.5 [GATE]: PASS — The sentence requires the student to specify the offering location, which maps to a required-field rule on the campus name; the violation is a record where nome_campus IS NULL. (confidence=medium)
+-> Step 4: Constructing constraint with 1 predicates and 8 columns
+-> Step 4: Constructed required with 1 rule(s)
+   ['t1.nome_curso IS NULL']
+   A record is a violation when the course name (nome_curso) is missing.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: É vedada ao estudante a inscrição na segunda edição anual do processo seletivo d...
+-> Step 4: Constructed required with 1 rule(s)
+   ['t1.mod_concorrencia IS NULL']
+   A record is a violation if the competition modality (mod_concorrencia) is not specified (null).
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: O Sisu disponibilizará ao estudante a nota mínima para linguagens....
+-> Step 4: Constructed required with 1 rule(s)
+   ['t1.turno IS NULL']
+   A record where the student has not specified a turno (shift) is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: O Sisu disponibilizará ao estudante a nota mínima para ciências humanas....
+-> Step 4: Constructed required with 1 rule(s)
+   ['t1.nome_campus IS NULL']
+   A record is a violation when the campus name (offering location) is missing.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: O Sisu disponibilizará ao estudante a nota mínima para ciências da natureza....
+-> Step 3: Selected 6 predicates: ['t1.cpf = t2.cpf', 't1.codigo_curso = t2.codigo_curso', 't1.turno = t2.turno', 't1.codigo_ies = t2.codigo_ies', 't1.codigo_campus = t2.codigo_campus', 't1.mod_concorrencia != t2.mod_concorrencia']
+-> Step 4: Constructed required with 1 rule(s)
+   ['t1.nome_ies IS NULL']
+   A record is a violation when the institution name (nome_ies) is missing.
+
+-> Verification iteration 1/2
+-> Step 5: Found 2 violations
+
+============================================================
+Processing: O Sisu disponibilizará ao estudante a nota mínima para matemática....
+-> Step 3.5 [GATE]: PASS — A violation occurs when two records share the same cpf, codigo_curso, turno, codigo_ies and codigo_campus but have different mod_concorrencia, meaning the student enrolled in more than one competition modality for the same course, shift, institution and location. (confidence=high)
+-> Step 4: Constructing constraint with 6 predicates and 18 columns
+-> Step 2 response: {"is_valid":true,"direct_columns":["nota_minima_l"],"implied_columns":["media_minima","nota_minima_ch","nota_minima_cn","nota_minima_m","nota_minima_r"],"reasoning":"The sentence says Sisu will make available to the student the minimum score for Linguagens (L). This maps directly to nota_minima_l. The other minimum score columns (nota_minima_ch, nota_minima_cn, nota_minima_m, nota_minima_r) and media_minima are related minimum-score fields, included as implied columns because of the instruction to be inclusive. The columns that identify the course or modality (e.g. nome_curso) are not mentioned, so they are not included.","missing_concepts":["disponibilizará ao estudante (availability or disclosure to the student)"],"reason":null}...
+-> Step 2: Identified columns ['nota_minima_l', 'media_minima', 'nota_minima_ch', 'nota_minima_cn', 'nota_minima_m', 'nota_minima_r']
+-> Step 2 response: {"is_valid":true,"direct_columns":["nota_minima_cn"],"implied_columns":["nota_cn","media_minima","nota_cn_com_peso","peso_cn"],"reasoning":"The sentence refers to the minimum score for Ciências da Natureza (natural sciences) made available to the student, which maps directly to nota_minima_cn. Related columns include the candidate's nota_cn score (to be compared against the minimum), nota_cn_com_peso, peso_cn and media_minima, which are the other CN-related and minimum-threshold columns. They are included to be inclusive.","missing_concepts":["Sisu disponibilizará ao estudante (information disclosure/availability to the student)"],"reason":null}...
+-> Step 2: Identified columns ['nota_minima_cn', 'nota_cn', 'media_minima', 'nota_cn_com_peso', 'peso_cn']
+-> Step 2 response: {"is_valid":true,"direct_columns":["nota_minima_ch"],"implied_columns":["nota_ch","nota_ch_com_peso","peso_ch"],"reasoning":"The sentence says Sisu will make the minimum score for Ciências Humanas available to the student. 'Nota mínima para ciências humanas' maps directly to nota_minima_ch. The candidate's CH score (nota_ch), the weighted CH score (nota_ch_com_peso) and the CH weight (peso_ch) are related and could be compared against or used with this minimum, so they are included as implied columns.","missing_concepts":["disponibilização ao estudante (act of making available/disclosure to the student)"],"reason":null}...
+-> Step 2: Identified columns ['nota_minima_ch', 'nota_ch', 'nota_ch_com_peso', 'peso_ch']
+-> Step 3: Considering 160 predicate candidates
+-> Step 3: Considering 312 predicate candidates
+-> Step 3: Considering 230 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["edicao","nome_curso","turno","nome_campus","nome_ies","matricula","ds_periodicidade","mod_concorrencia"],"implied_columns":["cpf","inscricao_enem","codigo_curso","codigo_campus","codigo_ies","sigla_ies","ano","aprovado","tipo_mod_concorrencia","tp_cota","inscrito","municipio_campus","uf_campus","uf_ies","grau"],"reasoning":"The rule bars a student from enrolling in the second annual edition (edicao=2) for the same course, shift, campus (local de oferta) and institution when they were already matriculated via the first edition. Edition is edicao; course is nome_curso/codigo_curso; shift is turno; offering location is campus (codigo_campus, nome_campus, municipio_campus); institution is codigo_ies/nome_ies/sigla_ies; 'independentemente da modalidade de oferta' relates to mod_concorrencia/tipo_mod_concorrencia/tp_cota (ignored in the match); enrollment resulting from selection is matricula (EFETIVADA) and aprovado; 'annual' relates to ds_periodicidade and ano. The student identity is needed to match across editions: cpf, inscricao_enem, inscrito.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['edicao', 'nome_curso', 'turno', 'nome_campus', 'nome_ies', 'matricula', 'ds_periodicidade', 'mod_concorrencia', 'cpf', 'inscricao_enem', 'codigo_curso', 'codigo_campus', 'codigo_ies', 'sigla_ies', 'ano', 'aprovado', 'tipo_mod_concorrencia', 'tp_cota', 'inscrito', 'municipio_campus', 'uf_campus', 'uf_ies', 'grau']
+-> Step 2 response: {"is_valid":true,"direct_columns":["nota_minima_m"],"implied_columns":["nota_m","nota_m_com_peso","peso_m","media_minima","nome_curso","codigo_curso"],"reasoning":"The sentence says Sisu will make the minimum mathematics score available to the student. The column nota_minima_m directly stores the minimum score for mathematics (M). Related columns are included for context: nota_m (the candidate's math score), nota_m_com_peso and peso_m (weighted math score and weight), and media_minima (minimum average). The course identifiers (nome_curso, codigo_curso) scope which minimum applies. The student/candidate identity is also related but is not essential.","missing_concepts":["disponibilizar ao estudante (availability/disclosure to student)"],"reason":null}...
+-> Step 2: Identified columns ['nota_minima_m', 'nota_m', 'nota_m_com_peso', 'peso_m', 'media_minima', 'nome_curso', 'codigo_curso']
+-> Step 3: Considering 278 predicate candidates
+-> Step 3: Selected 1 predicates: ['t1.nota_minima_l IS NULL']
+-> Step 3: Selected 1 predicates: ['t1.nota_minima_ch IS NULL']
+-> Step 3: Selected 1 predicates: ['t1.nota_minima_cn IS NULL']
+-> Step 4: Constructed functional_dependency with 1 rule(s)
+   [{'AND': ['t1.cpf = t2.cpf', 't1.codigo_curso = t2.codigo_curso', 't1.turno = t2.turno', 't1.codigo_ies = t2.codigo_ies', 't1.codigo_campus = t2.codigo_campus', 't1.mod_concorrencia != t2.mod_concorrencia']}]
+   The same student registered for the same course, shift, institution and campus under two different competition modalities is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 320 violations
+
+============================================================
+Processing: O Sisu disponibilizará ao estudante a nota mínima para redação....
+-> Step 3: Selected 1 predicates: ['t1.nota_minima_m IS NULL']
+-> Step 3.5 [GATE]: PASS — The sentence says Sisu will provide the minimum language score for each record, so it is a required field and a violation is a row where nota_minima_l IS NULL. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 6 columns
+-> Step 3.5 [GATE]: PASS — The sentence states that Sisu will provide the minimum humanities score for each student, so a required-field violation is a record where nota_minima_ch IS NULL. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 4 columns
+-> Step 3.5 [GATE]: PASS — The sentence says the minimum grade for natural sciences will be provided for each student/entry, a required-field rule whose violation is a record where nota_minima_cn IS NULL. (confidence=medium)
+-> Step 4: Constructing constraint with 1 predicates and 5 columns
+-> Step 3: Considering 438 predicate candidates
+-> Step 4: Constructed required with 1 rule(s)
+   ['t1.nota_minima_l IS NULL']
+   A record is a violation when the minimum language score (nota_minima_l) is missing.
+
+-> Verification iteration 1/2
+-> Step 3.5 [GATE]: PASS — The sentence says the minimum math score will be provided for each course, a required-field rule; a violation is a record where nota_minima_m IS NULL. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 7 columns
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: O Sisu disponibilizará ao estudante a média mínima para aprovação....
+-> Step 2 response: {"is_valid":true,"direct_columns":["nota_minima_r"],"implied_columns":["nota_r","nota_r_com_peso","peso_r","media_minima","inscricao_enem","cpf","inscrito"],"reasoning":"The sentence says Sisu will provide the student with the minimum score for the essay (redação). Essay is the R component, so nota_minima_r is the direct match. Related columns are the candidate's essay score (nota_r), its weighted version (nota_r_com_peso), the essay weight (peso_r), and media_minima as the minimum-score related field. The student identifiers (cpf, inscricao_enem, inscrito) are included as the recipient of the information, though the constraint is mainly about nota_minima_r being available.","missing_concepts":["Sisu disponibilizar/informar ao estudante (disclosure or communication action)"],"reason":null}...
+-> Step 2: Identified columns ['nota_minima_r', 'nota_r', 'nota_r_com_peso', 'peso_r', 'media_minima', 'inscricao_enem', 'cpf', 'inscrito']
+-> Step 3: Considering 248 predicate candidates
+-> Step 4: Constructed required with 1 rule(s)
+   ['t1.nota_minima_ch IS NULL']
+   A record whose minimum humanities score (nota_minima_ch) is missing violates the constraint.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: Encerrado o período de inscrição, o estudante será classificado na ordem decresc...
+-> Step 4: Constructed required with 1 rule(s)
+   ['t1.nota_minima_cn IS NULL']
+   A record is a violation when the minimum natural sciences grade (nota_minima_cn) is missing.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: O estudante será selecionado em apenas uma de suas opções....
+-> Step 4: Constructed required with 1 rule(s)
+   ['t1.nota_minima_m IS NULL']
+   A record is a violation when the minimum math score (nota_minima_m) is missing.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: O estudante será selecionado exclusivamente em sua 1ª opção, caso tenha obtido n...
+-> Step 2 response: {"is_valid":true,"direct_columns":["media_minima"],"implied_columns":["nota_candidato","aprovado"],"reasoning":"The sentence says the Sisu will provide the student with the minimum average for approval. This maps directly to media_minima (minimum average score). Approval relates to the aprovado column, and nota_candidato is the candidate's score that would be compared against the minimum average. Neither is named in the sentence, so they are implied context. Student/course scoping columns are not needed.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['media_minima', 'nota_candidato', 'aprovado']
+-> Step 3: Considering 74 predicate candidates
+-> Step 3: Selected 1 predicates: ['t1.nota_minima_r IS NULL']
+-> Step 3: Selected 10 predicates: ['t1.cpf = t2.cpf', 't1.edicao = $int', 't2.edicao = $int', 't1.matricula = $string', 't1.nome_curso = t2.nome_curso', 't1.turno = t2.turno', 't1.nome_campus = t2.nome_campus', 't1.nome_ies = t2.nome_ies', 't1.ds_periodicidade = $string', 't2.ds_periodicidade = $string']
+-> Step 2 response: {"is_valid":true,"direct_columns":["opcao","aprovado"],"implied_columns":["cpf","inscricao_enem","inscrito","edicao","classificacao","matricula"],"reasoning":"The sentence says a student will be selected (approved) in only one of their options. 'Opções' maps to opcao (values 1 and 2), and 'selecionado' maps to aprovado (S/N). The student must be identified, so cpf, inscricao_enem and inscrito identify the candidate and group the rows. edicao may scope the grouping, since the same student can appear in different editions. classificacao and matricula are possibly related to selection status, so they are included as lower-confidence columns.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['opcao', 'aprovado', 'cpf', 'inscricao_enem', 'inscrito', 'edicao', 'classificacao', 'matricula']
+-> Step 3.5 [GATE]: PASS — The sentence says the system will provide a minimum essay score for each student, which is a required field; the violation is a record where nota_minima_r IS NULL. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 8 columns
+-> Step 3: Selected 1 predicates: ['t1.media_minima IS NULL']
+-> Step 3: Considering 144 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["opcao","aprovado","classificacao","nota_candidato","nota_corte"],"implied_columns":["inscrito","cpf","inscricao_enem","codigo_curso","nota_minima_l","nota_minima_ch","nota_minima_cn","nota_minima_m","nota_minima_r","media_minima"],"reasoning":"The sentence concerns a student (identified by inscrito/cpf/inscricao_enem) being selected (aprovado) only in their 1st option (opcao = 1) if they obtained enough score to be classified (nota_candidato vs nota_corte, classificacao, and minimum score thresholds) in that option. The course (codigo_curso) identifies the option's target. A candidate is approved only in opcao 1 when classified there.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['opcao', 'aprovado', 'classificacao', 'nota_candidato', 'nota_corte', 'inscrito', 'cpf', 'inscricao_enem', 'codigo_curso', 'nota_minima_l', 'nota_minima_ch', 'nota_minima_cn', 'nota_minima_m', 'nota_minima_r', 'media_minima']
+-> Step 2 response: {"is_valid":true,"direct_columns":["classificacao","nota_candidato","opcao","qt_vagas_concorrencia","codigo_campus","nome_campus","codigo_curso","nome_curso","turno","mod_concorrencia","tipo_mod_concorrencia","tp_cota"],"implied_columns":["codigo_ies","nome_ies","sigla_ies","aprovado","nota_corte","municipio_campus","uf_campus","inscrito","cpf","inscricao_enem","edicao","etapa","ds_etapa","ano"],"reasoning":"The sentence says candidates are ranked in descending order of scores within the chosen vaga option (opcao), limited by available places (qt_vagas_concorrencia) per offering location (campus), course and shift, and competition modality. Ranking maps to classificacao and nota_candidato; the option the candidate applied for maps to opcao; location of offer maps to campus columns (codigo_campus, nome_campus, municipio_campus, uf_campus) and institution columns; course to codigo_curso/nome_curso; shift to turno; competition modality to mod_concorrencia, tipo_mod_concorrencia and tp_cota. Approval (aprovado) and nota_corte are implied outcomes of the vacancy limit. Candidate identifiers and edition/stage scope the grouping.","missing_concepts":["enrollment period closing (inscrição period end date)"],"reason":null}...
+-> Step 2: Identified columns ['classificacao', 'nota_candidato', 'opcao', 'qt_vagas_concorrencia', 'codigo_campus', 'nome_campus', 'codigo_curso', 'nome_curso', 'turno', 'mod_concorrencia', 'tipo_mod_concorrencia', 'tp_cota', 'codigo_ies', 'nome_ies', 'sigla_ies', 'aprovado', 'nota_corte', 'municipio_campus', 'uf_campus', 'inscrito', 'cpf', 'inscricao_enem', 'edicao', 'etapa', 'ds_etapa', 'ano']
+-> Step 3.5 [GATE]: PASS — A student (same cpf) cannot have an enrollment record in edicao=1 with matricula='EFETIVADA' in an annual course and also an enrollment record in edicao=2 for the same nome_curso, turno, nome_campus and nome_ies; the violation is two rows with the same cpf, course, shift, campus and institution, one in edition 1 with a matricula and one in edition 2. (confidence=medium)
+-> Step 4: Constructing constraint with 10 predicates and 23 columns
+-> Step 3.5 [GATE]: PASS — The sentence says Sisu will provide the minimum average for each student, which is a required-field rule; the violation is a row where media_minima IS NULL. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 3 columns
+-> Step 4: Constructed required with 1 rule(s)
+   ['t1.nota_minima_r IS NULL']
+   A record is a violation when the minimum writing grade (nota_minima_r) is missing.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+
+============================================================
+Processing: O estudante será selecionado em sua 2ª opção, caso possua nota suficiente para t...
+-> Step 3: Considering 746 predicate candidates
+-> Step 3: Selected 5 predicates: ['t1.cpf = t2.cpf', 't1.edicao = t2.edicao', 't1.opcao != t2.opcao', 't1.aprovado = $string', 't2.aprovado = $string']
+-> Step 4: Constructed required with 1 rule(s)
+   ['t1.media_minima IS NULL']
+   A record is a violation when the minimum average for approval (media_minima) is missing.
+
+-> Verification iteration 1/2
+-> Step 5: Found 1 violations
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.cpf = t2.cpf', 't1.edicao = 1', 't2.edicao = 2', "t1.matricula = 'EFETIVADA'", 't1.nome_curso = t2.nome_curso', 't1.turno = t2.turno', 't1.nome_campus = t2.nome_campus', 't1.nome_ies = t2.nome_ies', "t1.ds_periodicidade = 'Anual'", "t2.ds_periodicidade = 'Anual'"]}]
+   A violation occurs when the same student has an effective enrollment in edition 1 of an annual Sisu process for a course/shift/campus/institution and also has a registration in edition 2 of the annual process for the same course/shift/campus/institution.
+
+-> Verification iteration 1/2
+-> Step 5: Found 0 violations
+-> Step 2 response: {"is_valid":true,"direct_columns":["opcao","aprovado","nota_candidato","nota_corte"],"implied_columns":["cpf","inscricao_enem","inscrito","codigo_curso","codigo_ies","codigo_campus","edicao","classificacao","media_minima"],"reasoning":"The sentence concerns a student's 1st and 2nd choices (opcao), whether they are selected/approved (aprovado), and having sufficient score (nota_candidato compared against nota_corte). The student must be identified across rows (cpf, inscricao_enem, inscrito) to check selection in option 1 versus option 2, and edicao scopes the selection process. Course/institution/campus codes identify which option's course is concerned. classificacao and media_minima relate to selection and sufficiency of score.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['opcao', 'aprovado', 'nota_candidato', 'nota_corte', 'cpf', 'inscricao_enem', 'inscrito', 'codigo_curso', 'codigo_ies', 'codigo_campus', 'edicao', 'classificacao', 'media_minima']
+-> Step 3.5 [GATE]: PASS — A student (same cpf) in the same edition cannot be approved ('S') in two different options: violation is t1.cpf=t2.cpf AND t1.edicao=t2.edicao AND t1.opcao!=t2.opcao AND both aprovado='S'. (confidence=high)
+-> Step 4: Constructing constraint with 5 predicates and 8 columns
+-> Step 3: Selected 3 predicates: ['t1.opcao = $int', 't1.nota_candidato >= t1.nota_corte', 't1.aprovado != $string']
+-> Step 3: Considering 474 predicate candidates
+-> Step 3: Considering 656 predicate candidates
+-> Step 4: Constructed uniqueness with 1 rule(s)
+   [{'AND': ['t1.cpf = t2.cpf', 't1.edicao = t2.edicao', 't1.opcao != t2.opcao', "t1.aprovado = 'S'", "t2.aprovado = 'S'"]}]
+   A violation occurs when the same student (same cpf) in the same edition is approved ('S') in both option 1 and option 2.
+
+-> Verification iteration 1/2
+-> Step 3.5 [GATE]: PASS — Conditional rule: a student whose nota_candidato >= nota_corte for their 1st option (opcao = 1) must be approved in that option, so a violation is a row with opcao = 1, nota_candidato >= nota_corte, and aprovado != 'S'. (confidence=medium)
+-> Step 4: Constructing constraint with 3 predicates and 15 columns
+-> Step 5: Found 150 violations
+-> Step 3: Selected 7 predicates: ['t1.opcao = t2.opcao', 't1.codigo_campus = t2.codigo_campus', 't1.codigo_curso = t2.codigo_curso', 't1.turno = t2.turno', 't1.mod_concorrencia = t2.mod_concorrencia', 't1.nota_candidato > t2.nota_candidato', 't1.classificacao > t2.classificacao']
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.opcao = 1', 't1.nota_candidato >= t1.nota_corte', "t1.aprovado != 'S'"]}]
+   A record for the 1st option where the candidate's score reaches the cutoff score but is not marked as approved ('S') is a violation.
+
+-> Verification iteration 1/2
+-> Step 5: Found 3 violations
+-> Step 3.5 [GATE]: PASS — Within the same option, campus, course, shift and competition modality, a candidate with a higher score must not have a worse (higher-numbered) classification than a candidate with a lower score; the violation is t1.nota_candidato > t2.nota_candidato together with t1.classificacao > t2.classificacao for the same group. (confidence=high)
+-> Step 4: Constructing constraint with 7 predicates and 26 columns
+-> Step 3: Selected 6 predicates: ['t1.inscricao_enem = t2.inscricao_enem', 't1.opcao = $int', 't2.opcao = $int', 't2.aprovado = $string', 't1.nota_candidato >= t1.nota_corte', 't1.aprovado != $string']
+-> Step 3.5 [GATE]: PASS — Conditional rule: for the same inscricao_enem, if the 2nd-option row has nota_candidato >= nota_corte and the 1st-option row was approved (aprovado = 'S'), then the 2nd-option row must not be approved; violation is t1 (opcao=2) with nota_candidato >= nota_corte and aprovado='S' while t2 (opcao=1) for the same enrollment has aprovado='S'. (confidence=medium)
+-> Step 4: Constructing constraint with 6 predicates and 13 columns
+-> Step 4: Constructed comparative with 1 rule(s)
+   [{'AND': ['t1.opcao = t2.opcao', 't1.codigo_campus = t2.codigo_campus', 't1.codigo_curso = t2.codigo_curso', 't1.turno = t2.turno', 't1.mod_concorrencia = t2.mod_concorrencia', 't1.nota_candidato > t2.nota_candidato', 't1.classificacao > t2.classificacao']}]
+   Within the same option, campus, course, shift and competition modality, a candidate with a higher score must not be ranked below (have a larger classification number than) a candidate with a lower score.
+
+-> Verification iteration 1/2
+-> Step 5: Found 42 violations
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.inscricao_enem = t2.inscricao_enem', 't1.opcao = 2', 't2.opcao = 1', "t2.aprovado = 'N'", 't1.nota_candidato >= t1.nota_corte', "t1.aprovado != 'S'"]}]
+   A student whose 1st option was not approved, and whose score on the 2nd option is at least the cutoff, is not marked as approved in the 2nd option.
+
+-> Verification iteration 1/2
+-> Step 5: Found 133 violations
+  Evaluating pairwise quality (17 GT sentences)...
+  Evaluating aggregate violation (GT sentences pooled)...
+  Saving outputs...
+  Saved detailed results: sisu_Multi-Step_|_Claude_Sonnet_5.5_detailed.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 46.67s  (17 GT sentences)
+
+  ── AGGREGATE VIOLATION DISCOVERY (GT sentences pooled) ───────────────
+     Precision: 0.792
+     Recall:    0.966
+     F1:        0.871  [PRIMARY]
+     Gold violations:      533
+     Predicted violations: 650
+     Overlap violations:   515
+
+  ── CONSTRAINT EXACT MATCH (GT sentences) ─────────────────────────────
+     Precision: 0.647
+     Recall:    0.647
+     F1:        0.647  [PRIMARY]
+     TP: 11  FP: 6  FN: 6
+     Predicted: 17, Gold: 17
+
+  ── PAIRWISE SYNTACTIC QUALITY (n=17) ──────────────────────────────
+     Exact Match:       0.647 (11/17)
+     Predicate Jaccard: 0.843 (±0.238)
+
+  ── PAIRWISE VIOLATION DISCOVERY ───────────────────────────────────────
+     Exact Match:       0.824 (14/17)
+     Precision:         0.881 (±0.319)
+     Recall:            0.924 (±0.241)
+     F1:                0.873 (±0.317)
+     Violation Jaccard: 0.865 (±0.322)
+
+  INSIGHT: Syntactic vs Violation Gap = 0.176
+     17.6% of constraints find correct violations despite syntactic differences
+  Variant completed
+
+==================================================================================================================================
+COMPARISON TABLE  —  GT sentences only, no classifier
+==================================================================================================================================
+  Variant                                       Impl       Model                  AggViol F1   ConstExact F1   SynExact   SynJacc    ViolF1     ViolJacc   Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Multi-Step | Claude Sonnet 5.5                multi_step_refinement anthropic/claude-sonnet-5.5 0.871        0.647           0.647      0.843      0.873      0.865      46.67     
+
+  Best Aggregate Violation F1:   Multi-Step | Claude Sonnet 5.5 (0.871)
+  Best Constraint Exact F1:      Multi-Step | Claude Sonnet 5.5 (0.647)
+  Best Syntactic Exact Match:    Multi-Step | Claude Sonnet 5.5 (0.647)
+  Best Pairwise Violation F1:    Multi-Step | Claude Sonnet 5.5 (0.873)
+  Fastest:                       Multi-Step | Claude Sonnet 5.5 (46.67s)
+==================================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3_fix/e2_mapping/hmda_e2_sisu_sonnet55_multistep_20261021_193646

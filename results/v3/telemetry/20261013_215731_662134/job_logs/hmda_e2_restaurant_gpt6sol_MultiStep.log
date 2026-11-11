@@ -1,0 +1,212 @@
+Execution artifacts: results/v3/telemetry/20261013_215731_662134
+
+================================================================================
+GT-ONLY MAPPER EVALUATION: hmda_e2_restaurant_gpt6sol_MultiStep
+================================================================================
+
+Results directory: results/v3/e2_mapping/hmda_e2_restaurant_gpt6sol_multistep_20261014_124259
+Timestamp:         20261014_124259
+
+Scope: GT constraint sentences only (rules != null)
+No classifier — pure mapping quality measurement.
+
+Metrics computed over GT sentences:
+  Syntactic:   exact match, predicate Jaccard
+  Pairwise:    violation exact match, P/R/F1/Jaccard
+  Aggregate:   pooled violation P/R/F1
+================================================================================
+
+Config YAML saved to: results/v3/e2_mapping/hmda_e2_restaurant_gpt6sol_multistep_20261014_124259/config.yaml
+Execution config saved to: results/v3/e2_mapping/hmda_e2_restaurant_gpt6sol_multistep_20261014_124259/execution_config.csv
+
+--------------------------------------------------------------------------------
+Dataset: restaurant
+--------------------------------------------------------------------------------
+Loading restaurant...
+Total sentences in document: 33
+GT constraint sentences:     7  ← only these are fed to the mapper
+Non-constraint sentences:    26  ← skipped
+
+
+[1/1] Variant: Multi-Step | GPT-6 Sol
+  Implementation: multi_step_refinement
+  Model:          openai/gpt-6-sol
+  Creating mapper (multi_step_refinement)...
+  Mapping 7 GT sentences...
+
+============================================================
+Processing: A score of 0-13 results in a grade of A....
+
+============================================================
+Processing: A score of 14-27 results in a grade of B....
+============================================================
+Processing: A score of 28 or more results in a grade of C....
+
+
+============================================================
+Processing: Every food service establishment is scheduled for at least one inspection per ye...
+
+============================================================
+Processing: A restaurant that scores 0 to 13 violations points on its first inspection will ...
+
+============================================================
+Processing: If an A is issued on re-inspection, the A-grade card must be posted immediately....
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade"],"implied_columns":[],"reasoning":"The constraint maps scores of 28 or more to grade C, so it directly involves the score and grade columns.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade"],"implied_columns":[],"reasoning":"The numeric score range of 0–13 determines the inspection grade A.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 3: Considering 40 predicate candidates
+-> Step 2 response: {"is_valid":true,"direct_columns":["score","grade"],"implied_columns":[],"reasoning":"The constraint maps the numeric score range 14–27 to the inspection grade B.","missing_concepts":[],"reason":null}...
+-> Step 2: Identified columns ['score', 'grade']
+-> Step 3: Considering 40 predicate candidates
+-> Step 3: Selected 2 predicates: ['t1.score >= $float', 't1.grade != $string']
+-> Step 3: Selected 3 predicates: ['t1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 3: Selected 3 predicates: ['t1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["grade", "inspection_type"],
+  "implied_columns": ["grade_date", "inspection_date"],
+  "reasoning": "The condition is an A grade issued on a re-inspection. Grade and inspection type identify that condition; grade date and inspection date provide the available timing context for 'immediately.'",
+  "missing_concepts": ["A-grade card posting status", "card posting date or time"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['grade', 'inspection_type', 'grade_date', 'inspection_date']
+-> Step 3: Considering 76 predicate candidates
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["score", "grade", "inspection_type", "inspection_order"],
+  "implied_columns": ["camis", "inspection_date", "grade_date"],
+  "reasoning": "Score represents violation points, grade represents the A grade, and inspection_type and inspection_order help identify a first inspection. Camis identifies the restaurant; inspection_date and grade_date provide timing context for the inspection and grade.",
+  "missing_concepts": ["Whether the grade card was posted", "Date or time the grade card was posted"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['score', 'grade', 'inspection_type', 'inspection_order', 'camis', 'inspection_date', 'grade_date']
+-> Step 3.5 [GATE]: PASS — A row violates the rule if its score is between 0 and 13 inclusive and its grade is not 'A'. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 3.5 [GATE]: PASS — A row with score ≥ 28 and grade other than 'C' violates the stated value mapping. (confidence=high)
+-> Step 4: Constructing constraint with 2 predicates and 2 columns
+-> Step 3: Considering 154 predicate candidates
+-> Step 3.5 [GATE]: PASS — A row violates the rule if its score is between 14 and 27 inclusive and its grade is not 'B'. (confidence=high)
+-> Step 4: Constructing constraint with 3 predicates and 2 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["camis", "inspection_date", "inspection_year"],
+  "implied_columns": ["days_to_next_inspection", "inspection_order", "inspection_type"],
+  "reasoning": "camis identifies each establishment, while inspection_date and inspection_year identify inspections and the year in which they occur. The gap to the next inspection and inspection sequence can help assess annual frequency; inspection_type can distinguish categories of inspections. These fields record inspections, not whether one was scheduled.",
+  "missing_concepts": ["scheduled inspection date or scheduling status"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['camis', 'inspection_date', 'inspection_year', 'days_to_next_inspection', 'inspection_order', 'inspection_type']
+-> Step 3: Considering 132 predicate candidates
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 14', 't1.score <= 27', "t1.grade != 'B'"]}]
+   A row has a score between 14 and 27, inclusive, but its grade is not B.
+
+-> Verification iteration 1/2
+-> Step 5: Found 28 violations
+
+============================================================
+Processing: An establishment receiving a B or C grade on re-inspection receives two cards: o...
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.score >= 0', 't1.score <= 13', "t1.grade != 'A'"]}]
+   A row with a score between 0 and 13 has a grade other than A.
+
+-> Verification iteration 1/2
+-> Step 5: Found 402 violations
+-> Step 3: Selected 1 predicates: ['t1.days_to_next_inspection > $float']
+-> Step 3 failed: No predicate can test whether the card was posted immediately without a posting date or posting status.
+-> Predicate selection failed: No predicate can test whether the card was posted immediately without a posting date or posting status.
+-> Step 4: Constructed conditional with 1 rule(s)
+   [{'AND': ['t1.score >= 28', "t1.grade != 'C'"]}]
+   A score of 28 or more has a grade other than C.
+
+-> Verification iteration 1/2
+-> Step 3: Selected 4 predicates: ['t1.inspection_order = $int', 't1.score >= $float', 't1.score <= $float', 't1.grade != $string']
+-> Step 5: Found 123 violations
+-> Step 3.5 [GATE]: PASS — A row with inspection_order = 1 and a score from 0 to 13 violates the rule if its grade is not A; the posting requirement is not checkable from these columns. (confidence=high)
+-> Step 4: Constructing constraint with 4 predicates and 7 columns
+-> Step 2 response: {
+  "is_valid": true,
+  "direct_columns": ["grade", "inspection_type"],
+  "implied_columns": ["camis", "inspection_date", "grade_date", "inspection_order"],
+  "reasoning": "Grade identifies B or C, and inspection_type identifies re-inspections. camis identifies the establishment. The inspection and grade dates, along with inspection_order, may help establish when and in what sequence the re-inspection occurred, but they cannot establish when a card was posted.",
+  "missing_concepts": ["number of cards received", "letter-grade card issuance", "Grade Pending card issuance or status", "which card was posted", "card posting date or time"],
+  "reason": null
+}...
+-> Step 2: Identified columns ['grade', 'inspection_type', 'camis', 'inspection_date', 'grade_date', 'inspection_order']
+-> Step 3.5 [GATE]: PASS — An establishment with more than 365 days between scheduled inspections would violate the annual inspection frequency requirement. (confidence=high)
+-> Step 4: Constructing constraint with 1 predicates and 6 columns
+-> Step 3: Considering 120 predicate candidates
+-> Step 4: Constructed temporal with 1 rule(s)
+   ['t1.days_to_next_inspection > 365']
+   An establishment goes more than 365 days before its next inspection.
+
+-> Verification iteration 1/2
+-> Step 5: Found 52041 violations
+-> Step 4: Constructed value_mapping with 1 rule(s)
+   [{'AND': ['t1.inspection_order = 1', 't1.score >= 0', 't1.score <= 13', "t1.grade != 'A'"]}]
+   A restaurant's first inspection scores 0–13 points but receives a grade other than A.
+
+-> Verification iteration 1/2
+-> Step 5: Found 272 violations
+-> Step 3 failed: The card and posting requirements cannot be checked using the available columns.
+-> Predicate selection failed: The card and posting requirements cannot be checked using the available columns.
+  Evaluating pairwise quality (7 GT sentences)...
+  Evaluating aggregate violation (GT sentences pooled)...
+  Saving outputs...
+  Saved detailed results: restaurant_Multi-Step_|_GPT-6_Sol_detailed.csv
+
+  ── RUNTIME ───────────────────────────────────────────────────────────
+     Pipeline runtime: 23.93s  (7 GT sentences)
+
+  ── AGGREGATE VIOLATION DISCOVERY (GT sentences pooled) ───────────────
+     Precision: 1.000
+     Recall:    1.000
+     F1:        1.000  [PRIMARY]
+     Gold violations:      52311
+     Predicted violations: 52309
+     Overlap violations:   52309
+
+  ── CONSTRAINT EXACT MATCH (GT sentences) ─────────────────────────────
+     Precision: 0.800
+     Recall:    0.571
+     F1:        0.667  [PRIMARY]
+     TP: 4  FP: 1  FN: 3
+     Predicted: 5, Gold: 7
+
+  ── PAIRWISE SYNTACTIC QUALITY (n=7) ──────────────────────────────
+     Exact Match:       0.571 (4/7)
+     Predicate Jaccard: 0.643 (±0.440)
+
+  ── PAIRWISE VIOLATION DISCOVERY ───────────────────────────────────────
+     Exact Match:       0.571 (4/7)
+     Precision:         0.571 (±0.495)
+     Recall:            0.571 (±0.495)
+     F1:                0.571 (±0.495)
+     Violation Jaccard: 0.571 (±0.495)
+
+  INSIGHT: Syntactic vs Violation Gap = 0.000
+  Variant completed
+
+==================================================================================================================================
+COMPARISON TABLE  —  GT sentences only, no classifier
+==================================================================================================================================
+  Variant                                       Impl       Model                  AggViol F1   ConstExact F1   SynExact   SynJacc    ViolF1     ViolJacc   Runtime(s)
+  --------------------------------------------------------------------------------------------------------------------------------
+  Multi-Step | GPT-6 Sol                        multi_step_refinement openai/gpt-6-sol       1.000        0.667           0.571      0.643      0.571      0.571      23.93     
+
+  Best Aggregate Violation F1:   Multi-Step | GPT-6 Sol (1.000)
+  Best Constraint Exact F1:      Multi-Step | GPT-6 Sol (0.667)
+  Best Syntactic Exact Match:    Multi-Step | GPT-6 Sol (0.571)
+  Best Pairwise Violation F1:    Multi-Step | GPT-6 Sol (0.571)
+  Fastest:                       Multi-Step | GPT-6 Sol (23.93s)
+==================================================================================================================================
+
+================================================================================
+EXPERIMENT COMPLETE
+================================================================================
+
+Progress: 1/1 variants completed
+
+Results saved to: results/v3/e2_mapping/hmda_e2_restaurant_gpt6sol_multistep_20261014_124259
